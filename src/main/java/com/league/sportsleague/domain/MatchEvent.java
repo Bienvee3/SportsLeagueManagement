@@ -139,6 +139,7 @@ public class MatchEvent {
 
     @Override
     public String toString() {
+        String minute = null;
         return "MatchEvent{" +
                 "id=" + id +
                 ", eventType=" + eventType +

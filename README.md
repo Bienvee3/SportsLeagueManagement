@@ -7,12 +7,15 @@ Algebra Bernays University — Academic Year 2026/2027
 ---
 
 ## 📌 Project Overview
+
 A robust multi-tier web application designed to manage sports leagues, schedules, match events, dynamic standings, and historical result corrections with full audit logging and AI-assisted match report generation.
 
 ### Aggregate Structure
+
 $$\text{League} \longrightarrow \text{Season} \longrightarrow \text{Round} \longrightarrow \text{Fixture} \longrightarrow \text{Team} \quad \text{and} \quad \text{Fixture} \longrightarrow \text{MatchEvent}$$
 
 ### Advanced Requirements
+
 1. **Round-Robin Fixture Generation**: Home/away balance algorithm with no team playing twice in the same round.
 2. **Dynamic Standings with Tie-Breaks**: Configurable tie-break criteria applied in strict order:
    - Total Points
@@ -26,6 +29,7 @@ $$\text{League} \longrightarrow \text{Season} \longrightarrow \text{Round} \long
 ---
 
 ## 🛠️ Technology Stack
+
 * **Language & Runtime**: Java 25 LTS
 * **Framework**: Spring Boot 4.1
 * **Persistence & ORM**: Spring Data JPA over Hibernate 7
@@ -42,15 +46,18 @@ $$\text{League} \longrightarrow \text{Season} \longrightarrow \text{Round} \long
 ## 🚀 Getting Started
 
 ### Prerequisites
+
 * JDK 25 installed and available on `PATH`.
 * Docker & Docker Compose (optional for local database container).
 
 ### Running PostgreSQL locally
+
 ```bash
 docker compose up -d
 ```
 
 ### Running the Application
+
 ```bash
 # Windows
 .\mvnw.cmd spring-boot:run
@@ -60,6 +67,7 @@ docker compose up -d
 ```
 
 ### Running Tests
+
 ```bash
 .\mvnw.cmd test
 ```
@@ -67,4 +75,5 @@ docker compose up -d
 ---
 
 ## 📖 Architecture Decision Records (ADRs)
+
 * [ADR 001: Relational Persistence Model with PostgreSQL, Spring Data JPA, and Flyway](docs/adr/001-persistence-model.md)
