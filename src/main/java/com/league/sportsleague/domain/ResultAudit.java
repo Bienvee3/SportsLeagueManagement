@@ -18,32 +18,32 @@ import java.util.UUID;
 public class ResultAudit {
 
     @Id
-    @Column(name = "id", nullable = false, updatable = false)
+    @Column(updatable = false)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "fixture_id", nullable = false)
     private Fixture fixture;
 
-    @Column(name = "old_home_score")
+    @Column(updatable = false)
     private Integer oldHomeScore;
 
-    @Column(name = "old_away_score")
+    @Column(updatable = false)
     private Integer oldAwayScore;
 
-    @Column(name = "new_home_score", nullable = false)
+    @Column(updatable = false)
     private int newHomeScore;
 
-    @Column(name = "new_away_score", nullable = false)
+    @Column(updatable = false)
     private int newAwayScore;
 
-    @Column(name = "reason", nullable = false, columnDefinition = "TEXT")
+    @Column(updatable = false, columnDefinition = "TEXT")
     private String reason;
 
-    @Column(name = "corrected_by", nullable = false, length = 100)
+    @Column(updatable = false)
     private String correctedBy;
 
-    @Column(name = "corrected_at", nullable = false, updatable = false)
+    @Column(updatable = false)
     private Instant correctedAt;
 
     public ResultAudit() {
@@ -72,77 +72,45 @@ public class ResultAudit {
         }
     }
 
-    // Getters and Setters
-    public UUID getId() {
-        return id;
+    void setFixture(Fixture fixture) {
+        this.fixture = fixture;
     }
 
-    public void setId(UUID id) {
-        this.id = id;
+    // Read-only Accessors
+    public UUID getId() {
+        return id;
     }
 
     public Fixture getFixture() {
         return fixture;
     }
 
-    public void setFixture(Fixture fixture) {
-        this.fixture = fixture;
-    }
-
     public Integer getOldHomeScore() {
         return oldHomeScore;
-    }
-
-    public void setOldHomeScore(Integer oldHomeScore) {
-        this.oldHomeScore = oldHomeScore;
     }
 
     public Integer getOldAwayScore() {
         return oldAwayScore;
     }
 
-    public void setOldAwayScore(Integer oldAwayScore) {
-        this.oldAwayScore = oldAwayScore;
-    }
-
     public int getNewHomeScore() {
         return newHomeScore;
-    }
-
-    public void setNewHomeScore(int newHomeScore) {
-        this.newHomeScore = newHomeScore;
     }
 
     public int getNewAwayScore() {
         return newAwayScore;
     }
 
-    public void setNewAwayScore(int newAwayScore) {
-        this.newAwayScore = newAwayScore;
-    }
-
     public String getReason() {
         return reason;
-    }
-
-    public void setReason(String reason) {
-        this.reason = reason;
     }
 
     public String getCorrectedBy() {
         return correctedBy;
     }
 
-    public void setCorrectedBy(String correctedBy) {
-        this.correctedBy = correctedBy;
-    }
-
     public Instant getCorrectedAt() {
         return correctedAt;
-    }
-
-    public void setCorrectedAt(Instant correctedAt) {
-        this.correctedAt = correctedAt;
     }
 
     @Override

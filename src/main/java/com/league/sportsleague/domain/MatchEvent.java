@@ -20,7 +20,7 @@ import java.util.UUID;
 public class MatchEvent {
 
     @Id
-    @Column(name = "id", nullable = false, updatable = false)
+    @Column(updatable = false)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -32,36 +32,38 @@ public class MatchEvent {
     private Team team;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "event_type", nullable = false, length = 30)
     private MatchEventType eventType;
 
-    @Column(name = "minute", nullable = false)
-    private int minute;
+    private int matchMinute;
 
-    @Column(name = "player_name", nullable = false, length = 100)
     private String playerName;
 
-    // Optional attribute / relation
-    @Column(name = "assisting_player", length = 100)
+    // Optional attribute required by LO4
     private String assistingPlayer;
 
-    @Column(name = "notes", length = 255)
     private String notes;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(updatable = false)
     private Instant createdAt;
 
     public MatchEvent() {
         this.id = UUID.randomUUID();
     }
 
-    public MatchEvent(Fixture fixture, Team team, MatchEventType eventType, int minute, String playerName) {
+    public MatchEvent(Fixture fixture, Team team, MatchEventType eventType, int matchMinute, String playerName) {
+        this(fixture, team, eventType, matchMinute, playerName, null, null);
+    }
+
+    public MatchEvent(Fixture fixture, Team team, MatchEventType eventType, int matchMinute,
+                      String playerName, String assistingPlayer, String notes) {
         this();
         this.fixture = fixture;
         this.team = team;
         this.eventType = eventType;
-        this.minute = minute;
+        this.matchMinute = matchMinute;
         this.playerName = playerName;
+        this.assistingPlayer = assistingPlayer;
+        this.notes = notes;
     }
 
     @PrePersist
@@ -74,84 +76,52 @@ public class MatchEvent {
         }
     }
 
-    // Getters and Setters
-    public UUID getId() {
-        return id;
+    void setFixture(Fixture fixture) {
+        this.fixture = fixture;
     }
 
-    public void setId(UUID id) {
-        this.id = id;
+    // Read-only Accessors
+    public UUID getId() {
+        return id;
     }
 
     public Fixture getFixture() {
         return fixture;
     }
 
-    public void setFixture(Fixture fixture) {
-        this.fixture = fixture;
-    }
-
     public Team getTeam() {
         return team;
-    }
-
-    public void setTeam(Team team) {
-        this.team = team;
     }
 
     public MatchEventType getEventType() {
         return eventType;
     }
 
-    public void setEventType(MatchEventType eventType) {
-        this.eventType = eventType;
-    }
-
-    public int getMinute() {
-        return minute;
-    }
-
-    public void setMinute(int minute) {
-        this.minute = minute;
+    public int getMatchMinute() {
+        return matchMinute;
     }
 
     public String getPlayerName() {
         return playerName;
     }
 
-    public void setPlayerName(String playerName) {
-        this.playerName = playerName;
-    }
-
     public String getAssistingPlayer() {
         return assistingPlayer;
-    }
-
-    public void setAssistingPlayer(String assistingPlayer) {
-        this.assistingPlayer = assistingPlayer;
     }
 
     public String getNotes() {
         return notes;
     }
 
-    public void setNotes(String notes) {
-        this.notes = notes;
-    }
-
     public Instant getCreatedAt() {
         return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof MatchEvent other)) return false;
-        return minute == other.minute &&
+        return matchMinute == other.matchMinute &&
                 eventType == other.eventType &&
                 Objects.equals(fixture != null ? fixture.getId() : null,
                                other.fixture != null ? other.fixture.getId() : null) &&
@@ -164,7 +134,7 @@ public class MatchEvent {
     public int hashCode() {
         return Objects.hash(fixture != null ? fixture.getId() : null,
                             team != null ? team.getId() : null,
-                            eventType, minute, playerName);
+                            eventType, matchMinute, playerName);
     }
 
     @Override

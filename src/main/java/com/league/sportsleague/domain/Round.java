@@ -16,6 +16,7 @@ import jakarta.persistence.UniqueConstraint;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -28,27 +29,22 @@ import java.util.UUID;
 public class Round {
 
     @Id
-    @Column(name = "id", nullable = false, updatable = false)
+    @Column(updatable = false)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "season_id", nullable = false)
     private Season season;
 
-    @Column(name = "round_number", nullable = false)
     private int roundNumber;
 
-    @Column(name = "name", nullable = false, length = 100)
     private String name;
 
-    @Column(name = "start_date")
     private LocalDate startDate;
 
-    @Column(name = "end_date")
     private LocalDate endDate;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 20)
     private RoundStatus status = RoundStatus.SCHEDULED;
 
     @OneToMany(mappedBy = "round", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
@@ -75,6 +71,20 @@ public class Round {
         }
     }
 
+    // Domain Mutators
+    public void startRound() {
+        this.status = RoundStatus.IN_PROGRESS;
+    }
+
+    public void completeRound() {
+        this.status = RoundStatus.COMPLETED;
+    }
+
+    public void updateSchedule(LocalDate startDate, LocalDate endDate) {
+        this.startDate = startDate;
+        this.endDate = endDate;
+    }
+
     // Bidirectional helper methods
     public void addFixture(Fixture fixture) {
         fixtures.add(fixture);
@@ -86,69 +96,41 @@ public class Round {
         fixture.setRound(null);
     }
 
-    // Getters and Setters
-    public UUID getId() {
-        return id;
+    void setSeason(Season season) {
+        this.season = season;
     }
 
-    public void setId(UUID id) {
-        this.id = id;
+    // Read-only Accessors
+    public UUID getId() {
+        return id;
     }
 
     public Season getSeason() {
         return season;
     }
 
-    public void setSeason(Season season) {
-        this.season = season;
-    }
-
     public int getRoundNumber() {
         return roundNumber;
-    }
-
-    public void setRoundNumber(int roundNumber) {
-        this.roundNumber = roundNumber;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public LocalDate getStartDate() {
         return startDate;
-    }
-
-    public void setStartDate(LocalDate startDate) {
-        this.startDate = startDate;
     }
 
     public LocalDate getEndDate() {
         return endDate;
     }
 
-    public void setEndDate(LocalDate endDate) {
-        this.endDate = endDate;
-    }
-
     public RoundStatus getStatus() {
         return status;
     }
 
-    public void setStatus(RoundStatus status) {
-        this.status = status;
-    }
-
     public List<Fixture> getFixtures() {
-        return fixtures;
-    }
-
-    public void setFixtures(List<Fixture> fixtures) {
-        this.fixtures = fixtures;
+        return Collections.unmodifiableList(fixtures);
     }
 
     @Override

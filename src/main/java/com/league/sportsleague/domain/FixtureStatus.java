@@ -7,3 +7,4 @@ public enum FixtureStatus {
     POSTPONED,
     CANCELLED
 }
+

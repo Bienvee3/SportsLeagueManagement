@@ -24,7 +24,7 @@ import java.util.UUID;
 public class SeasonTeam {
 
     @Id
-    @Column(name = "id", nullable = false, updatable = false)
+    @Column(updatable = false)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -35,14 +35,12 @@ public class SeasonTeam {
     @JoinColumn(name = "team_id", nullable = false)
     private Team team;
 
-    @Column(name = "initial_seed", nullable = false)
     private int initialSeed = 0;
 
-    @Column(name = "registration_date", nullable = false, updatable = false)
+    @Column(updatable = false)
     private Instant registrationDate;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 20)
     private SeasonTeamStatus status = SeasonTeamStatus.CONFIRMED;
 
     public SeasonTeam() {
@@ -67,53 +65,52 @@ public class SeasonTeam {
         }
     }
 
-    // Getters and Setters
-    public UUID getId() {
-        return id;
+    // Domain Mutators
+    public void updateSeed(int seed) {
+        this.initialSeed = seed;
     }
 
-    public void setId(UUID id) {
-        this.id = id;
+    public void updateStatus(SeasonTeamStatus status) {
+        if (status != null) {
+            this.status = status;
+        }
+    }
+
+    public void withdraw() {
+        this.status = SeasonTeamStatus.WITHDRAWN;
+    }
+
+    public void disqualify() {
+        this.status = SeasonTeamStatus.DISQUALIFIED;
+    }
+
+    void setSeason(Season season) {
+        this.season = season;
+    }
+
+    // Read-only Accessors
+    public UUID getId() {
+        return id;
     }
 
     public Season getSeason() {
         return season;
     }
 
-    public void setSeason(Season season) {
-        this.season = season;
-    }
-
     public Team getTeam() {
         return team;
-    }
-
-    public void setTeam(Team team) {
-        this.team = team;
     }
 
     public int getInitialSeed() {
         return initialSeed;
     }
 
-    public void setInitialSeed(int initialSeed) {
-        this.initialSeed = initialSeed;
-    }
-
     public Instant getRegistrationDate() {
         return registrationDate;
     }
 
-    public void setRegistrationDate(Instant registrationDate) {
-        this.registrationDate = registrationDate;
-    }
-
     public SeasonTeamStatus getStatus() {
         return status;
-    }
-
-    public void setStatus(SeasonTeamStatus status) {
-        this.status = status;
     }
 
     @Override

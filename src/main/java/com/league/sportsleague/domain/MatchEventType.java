@@ -8,3 +8,4 @@ public enum MatchEventType {
     OWN_GOAL,
     SUBSTITUTION
 }
+

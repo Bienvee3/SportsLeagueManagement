@@ -16,6 +16,7 @@ import jakarta.persistence.UniqueConstraint;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -28,27 +29,23 @@ import java.util.UUID;
 public class Season {
 
     @Id
-    @Column(name = "id", nullable = false, updatable = false)
+    @Column(updatable = false)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "league_id", nullable = false)
     private League league;
 
-    @Column(name = "name", nullable = false, length = 100)
     private String name;
 
-    @Column(name = "year_start", nullable = false)
     private int yearStart;
 
-    @Column(name = "year_end", nullable = false)
     private int yearEnd;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 20)
     private SeasonStatus status = SeasonStatus.UPCOMING;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(updatable = false)
     private Instant createdAt;
 
     @OneToMany(mappedBy = "season", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
@@ -80,6 +77,21 @@ public class Season {
         }
     }
 
+    // Domain State Transition
+    public void activate() {
+        this.status = SeasonStatus.ACTIVE;
+    }
+
+    public void complete() {
+        this.status = SeasonStatus.COMPLETED;
+    }
+
+    public void updateStatus(SeasonStatus status) {
+        if (status != null) {
+            this.status = status;
+        }
+    }
+
     // Bidirectional helper methods
     public void addSeasonTeam(SeasonTeam seasonTeam) {
         seasonTeams.add(seasonTeam);
@@ -101,77 +113,45 @@ public class Season {
         round.setSeason(null);
     }
 
-    // Getters and Setters
-    public UUID getId() {
-        return id;
+    void setLeague(League league) {
+        this.league = league;
     }
 
-    public void setId(UUID id) {
-        this.id = id;
+    // Read-only Accessors
+    public UUID getId() {
+        return id;
     }
 
     public League getLeague() {
         return league;
     }
 
-    public void setLeague(League league) {
-        this.league = league;
-    }
-
     public String getName() {
         return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public int getYearStart() {
         return yearStart;
     }
 
-    public void setYearStart(int yearStart) {
-        this.yearStart = yearStart;
-    }
-
     public int getYearEnd() {
         return yearEnd;
-    }
-
-    public void setYearEnd(int yearEnd) {
-        this.yearEnd = yearEnd;
     }
 
     public SeasonStatus getStatus() {
         return status;
     }
 
-    public void setStatus(SeasonStatus status) {
-        this.status = status;
-    }
-
     public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
     public List<SeasonTeam> getSeasonTeams() {
-        return seasonTeams;
-    }
-
-    public void setSeasonTeams(List<SeasonTeam> seasonTeams) {
-        this.seasonTeams = seasonTeams;
+        return Collections.unmodifiableList(seasonTeams);
     }
 
     public List<Round> getRounds() {
-        return rounds;
-    }
-
-    public void setRounds(List<Round> rounds) {
-        this.rounds = rounds;
+        return Collections.unmodifiableList(rounds);
     }
 
     @Override

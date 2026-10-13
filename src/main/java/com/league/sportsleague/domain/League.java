@@ -12,6 +12,7 @@ import jakarta.persistence.Table;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -21,25 +22,21 @@ import java.util.UUID;
 public class League {
 
     @Id
-    @Column(name = "id", nullable = false, updatable = false)
+    @Column(updatable = false)
     private UUID id;
 
-    @Column(name = "name", nullable = false, length = 100)
     private String name;
 
-    @Column(name = "slug", nullable = false, unique = true, length = 100)
+    @Column(unique = true, updatable = false)
     private String slug;
 
-    @Column(name = "sport_type", nullable = false, length = 50)
     private String sportType = "FOOTBALL";
 
-    @Column(name = "country", nullable = false, length = 100)
     private String country;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(updatable = false)
     private Instant createdAt;
 
-    @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
     @OneToMany(mappedBy = "league", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
@@ -53,7 +50,7 @@ public class League {
         this();
         this.name = name;
         this.slug = slug;
-        this.sportType = sportType;
+        this.sportType = (sportType != null) ? sportType : "FOOTBALL";
         this.country = country;
     }
 
@@ -74,7 +71,16 @@ public class League {
         this.updatedAt = Instant.now();
     }
 
-    // Bidirectional synchronization helper methods
+    // Domain Mutators
+    public void updateDetails(String name, String country, String sportType) {
+        this.name = name;
+        this.country = country;
+        if (sportType != null) {
+            this.sportType = sportType;
+        }
+    }
+
+    // Bidirectional Collection Synchronization
     public void addSeason(Season season) {
         seasons.add(season);
         season.setLeague(this);
@@ -85,69 +91,37 @@ public class League {
         season.setLeague(null);
     }
 
-    // Getters and Setters
+    // Read-only Accessors
     public UUID getId() {
         return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public String getSlug() {
         return slug;
-    }
-
-    public void setSlug(String slug) {
-        this.slug = slug;
     }
 
     public String getSportType() {
         return sportType;
     }
 
-    public void setSportType(String sportType) {
-        this.sportType = sportType;
-    }
-
     public String getCountry() {
         return country;
-    }
-
-    public void setCountry(String country) {
-        this.country = country;
     }
 
     public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
     public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
     public List<Season> getSeasons() {
-        return seasons;
-    }
-
-    public void setSeasons(List<Season> seasons) {
-        this.seasons = seasons;
+        return Collections.unmodifiableList(seasons);
     }
 
     @Override

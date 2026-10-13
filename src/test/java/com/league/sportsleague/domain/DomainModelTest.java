@@ -77,4 +77,19 @@ class DomainModelTest {
         assertEquals(team1, team2);
         assertEquals(team1.hashCode(), team2.hashCode());
     }
+
+    @Test
+    @DisplayName("Should protect collections against direct external mutation")
+    void shouldProtectCollectionsAgainstDirectExternalMutation() {
+        League league = new League("LaLiga", "laliga", "FOOTBALL", "Spain");
+        Season season = new Season(league, "2026/2027", 2026, 2027, SeasonStatus.UPCOMING);
+
+        // Attempting to modify unmodifiable collection directly must fail
+        assertThrows(UnsupportedOperationException.class, () -> league.getSeasons().add(season));
+
+        // Adding via domain helper method must succeed
+        league.addSeason(season);
+        assertEquals(1, league.getSeasons().size());
+    }
 }
+
