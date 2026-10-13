@@ -142,7 +142,7 @@ VALUES
 );
 
 -- 7. Insert Match Events for Dinamo vs Hajduk
-INSERT INTO match_events (id, fixture_id, team_id, event_type, minute, player_name, assisting_player, notes, created_at)
+INSERT INTO match_events (id, fixture_id, team_id, event_type, match_minute, player_name, assisting_player, notes, created_at)
 VALUES
 (
     '77777777-7777-7777-7777-777777777701',
@@ -177,3 +177,4 @@ VALUES
     'Curling shot into top right corner',
     CURRENT_TIMESTAMP
 );
+

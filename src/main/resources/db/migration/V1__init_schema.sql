@@ -86,12 +86,12 @@ CREATE TABLE match_events (
     fixture_id UUID NOT NULL REFERENCES fixtures(id) ON DELETE CASCADE,
     team_id UUID NOT NULL REFERENCES teams(id),
     event_type VARCHAR(30) NOT NULL,
-    minute INTEGER NOT NULL,
+    match_minute INTEGER NOT NULL,
     player_name VARCHAR(100) NOT NULL,
     assisting_player VARCHAR(100),
     notes VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT chk_match_events_minute CHECK (minute >= 1 AND minute <= 130)
+    CONSTRAINT chk_match_events_minute CHECK (match_minute >= 1 AND match_minute <= 130)
 );
 
 CREATE INDEX idx_match_events_fixture_id ON match_events(fixture_id);
@@ -111,3 +111,4 @@ CREATE TABLE result_audits (
 );
 
 CREATE INDEX idx_result_audits_fixture_id ON result_audits(fixture_id);
+

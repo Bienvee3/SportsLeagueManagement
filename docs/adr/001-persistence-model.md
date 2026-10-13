@@ -78,3 +78,4 @@ We chose **Option 1: PostgreSQL 17 + Spring Data JPA over Hibernate 7 with Flywa
 ## Accepted Consequences
 1. **Mandatory Flyway Script Authoring**: Any future schema change must be introduced via incremental Flyway versioned scripts (e.g., `V3__...sql`), never through JPA annotations alone.
 2. **Performance Monitoring**: Because entities use `FetchType.LAZY` by default to avoid cartesian explosions, service methods that load parent-child aggregates must explicitly define `@Query` with fetch joins or `@EntityGraph`, which will be demonstrated and documented in Milestone 4.
+
