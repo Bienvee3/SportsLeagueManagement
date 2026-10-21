@@ -77,3 +77,4 @@ docker compose up -d
 ## 📖 Architecture Decision Records (ADRs)
 
 * [ADR 001: Relational Persistence Model with PostgreSQL, Spring Data JPA, and Flyway](docs/adr/001-persistence-model.md)
+* [Development Guidelines & Clean Code Standards](docs/development-guidelines.md)
