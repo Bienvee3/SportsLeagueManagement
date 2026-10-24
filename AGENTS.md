@@ -121,3 +121,14 @@ Upon completing any task or work session, the agent **must update** `docs/CURREN
 - Exact verification and test results.
 - Immediate pending tasks.
 - Known issues or technical constraints.
+
+---
+
+## 9. Visual Architecture & UML Documentation Directive
+
+- **Mandatory Trigger**: When requested by the user, the agent must produce detailed architectural documentation in `docs/` (compatible with Obsidian Markdown notes).
+- **Required Elements**:
+  - **Application Distribution**: Clear breakdown of MVC (Model-View-Controller) layers, DTO mapping, and Service transaction boundaries.
+  - **Class & Aggregate Diagrams**: UML class diagrams (via Mermaid `classDiagram`) showing entities, business keys, associations, and methods.
+  - **Database Schema / ERD**: Entity-relationship diagrams (via Mermaid `erDiagram`) mapping tables, primary keys, foreign keys, and constraints.
+  - **Sequence / Flow Diagrams**: Visual flows for core business operations (Round-Robin scheduling, dynamic tie-break standings calculation, and audited result correction).

@@ -1,6 +1,6 @@
 # Current Project Status — Sports League Management
 
-**Last Updated**: 2026-10-21  
+**Last Updated**: 2026-10-24  
 **Active Branch**: `main`  
 **Latest Local Commit**: `59eccb4 docs(guidelines): define clean code standards and atomic commit policy`  
 **Git Working Tree**: Clean (`Working tree clean`). Ahead of `origin/main` by 1 commit.
@@ -60,3 +60,8 @@ The project is currently transitioning into **Milestone 2 (Week 8)**, with Sprin
 - **Technical Requirements**: Implement `@Query` with explicit join fetch to prevent N+1 query performance penalties.
 - **Verification**: Add `@DataJpaTest` test slice and verify green build via `mvnw.cmd test`.
 - **Proposed Local Commit**: `feat(repo): implement Spring Data JPA repositories with fetch join queries` (local only, no push).
+
+---
+
+## 7. Directives Recorded for Future Sessions
+- **Architecture & UML Documentation (DEC-006)**: When requested by the user, provide complete architectural documentation with graphical UML aids (Mermaid diagrams compatible with Obsidian) covering MVC breakdown, class relationships, database schema/ERD, and business process flows.

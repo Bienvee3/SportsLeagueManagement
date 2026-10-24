@@ -13,6 +13,7 @@ This directory centralizes the record of verified technical decisions for the **
 | **DEC-003** | 2026-10-14 | **Rich Domain Model: Collection Immutability & Business Key Equality** | Accepted | Entity source code in `com.league.sportsleague.domain` |
 | **DEC-004** | 2026-10-15 | **Column Naming: `match_minute` for H2 Test Compatibility** | Accepted | Commit `193bc6d` · `V1__init_schema.sql` · `MatchEvent.java` |
 | **DEC-005** | 2026-10-21 | **Shared AI Agent Memory Architecture (`AGENTS.md` + `CLAUDE.md`)** | Accepted | `AGENTS.md` (master) · `CLAUDE.md` (reference) |
+| **DEC-006** | 2026-10-24 | **Visual Architecture & UML Documentation Standard** | Accepted | [AGENTS.md](../../AGENTS.md) § 9 · [Architecture Doc](../ARCHITECTURE.md) |
 
 ---
 
@@ -41,3 +42,7 @@ This directory centralizes the record of verified technical decisions for the **
 ### DEC-005: Shared Agent Memory Framework
 - **Context**: Seamless interoperability between OMP (active) and Claude Code (future) without duplicate instructions or divergent operational rules.
 - **Decision**: `AGENTS.md` acts as the single master source of truth. `CLAUDE.md` links directly to `AGENTS.md` and provides platform-specific Windows terminal command wrappers.
+
+### DEC-006: Visual Architecture & UML Documentation Standard
+- **Context**: Need clear, multi-tier architectural visualization across sessions (MVC layers, class hierarchy, relational schema, execution flows) compatible with Obsidian knowledge bases.
+- **Decision**: Maintain standard Mermaid UML diagrams (`classDiagram`, `erDiagram`, sequence diagrams) within `docs/` for application structure, domain entities, and core business processes upon user trigger.
