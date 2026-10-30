@@ -15,6 +15,15 @@ This document serves as the **single source of technical and operational truth**
 - **Local Path**: `C:\Users\Bienve\dev\Java\SportsLeagueManagement`
 
 ---
+## 1a. Language Policy
+
+- **Everything inside the repository** (source code, comments, Javadoc, Flyway SQL, configuration files, all `docs/` Markdown, PlantUML diagrams, commit messages, ADRs, test names) MUST be written in **English**.
+- **Agent chat responses** to the student MAY be in Spanish (the student's language).
+- **Obsidian vault notes** requested by the student MUST be in Spanish.
+- Any agent that produces non-English content inside the repository is in violation of this policy and must correct it before committing.
+
+---
+
 
 ## 2. Verified Technology Stack
 

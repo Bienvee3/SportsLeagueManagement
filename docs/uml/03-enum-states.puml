@@ -1,7 +1,8 @@
 @startuml 03-enum-states
 ' ============================================================
 ' P39 Sports League Management
-' Diagramas de Estado para los 4 enums con transiciones
+' State Diagrams for the 4 stateful enums
+' Transitions derived from actual domain methods in source code
 ' ============================================================
 
 !theme plain
@@ -13,14 +14,15 @@ skinparam ArrowThickness 1.5
 skinparam defaultFontSize 12
 
 ' ============================================================
-' SeasonStatus  — Season.java
+' SeasonStatus — Season.java
+' Driven by: activate(), complete(), updateStatus()
 ' ============================================================
 state "SeasonStatus" as SS {
     state UPCOMING_S  as "UPCOMING"  #59a14f
     state ACTIVE_S    as "ACTIVE"    #f28e2b
     state COMPLETED_S as "COMPLETED" #e15759
 
-    [*]           --> UPCOMING_S  : constructor / default
+    [*]           --> UPCOMING_S  : constructor default
     UPCOMING_S    --> ACTIVE_S    : activate()\nupdateStatus(ACTIVE)
     ACTIVE_S      --> COMPLETED_S : complete()\nupdateStatus(COMPLETED)
     UPCOMING_S    --> COMPLETED_S : updateStatus(COMPLETED)
@@ -30,20 +32,22 @@ state "SeasonStatus" as SS {
 }
 
 ' ============================================================
-' RoundStatus  — Round.java
+' RoundStatus — Round.java
+' Driven by: startRound(), completeRound()
 ' ============================================================
 state "RoundStatus" as RS {
     state SCHEDULED_R   as "SCHEDULED"   #59a14f
     state IN_PROGRESS_R as "IN_PROGRESS" #f28e2b
     state COMPLETED_R   as "COMPLETED"   #e15759
 
-    [*]             --> SCHEDULED_R   : constructor / default
+    [*]             --> SCHEDULED_R   : constructor default
     SCHEDULED_R     --> IN_PROGRESS_R : startRound()
     IN_PROGRESS_R   --> COMPLETED_R   : completeRound()
 }
 
 ' ============================================================
-' FixtureStatus  — Fixture.java
+' FixtureStatus — Fixture.java
+' Driven by: recordResult(), postpone(), cancel(), reschedule()
 ' ============================================================
 state "FixtureStatus" as FS {
     state SCHEDULED_F   as "SCHEDULED"   #59a14f
@@ -52,7 +56,7 @@ state "FixtureStatus" as FS {
     state POSTPONED_F   as "POSTPONED"   #edc948
     state CANCELLED_F   as "CANCELLED"   #e15759
 
-    [*]             --> SCHEDULED_F   : constructor / default
+    [*]             --> SCHEDULED_F   : constructor default
     SCHEDULED_F     --> FINISHED_F    : recordResult(home, away)
     SCHEDULED_F     --> POSTPONED_F   : postpone(reason)
     SCHEDULED_F     --> CANCELLED_F   : cancel()
@@ -67,14 +71,15 @@ state "FixtureStatus" as FS {
 }
 
 ' ============================================================
-' SeasonTeamStatus  — SeasonTeam.java
+' SeasonTeamStatus — SeasonTeam.java
+' Driven by: withdraw(), disqualify(), updateStatus()
 ' ============================================================
 state "SeasonTeamStatus" as STS {
     state CONFIRMED_T    as "CONFIRMED"    #59a14f
     state WITHDRAWN_T    as "WITHDRAWN"    #edc948
     state DISQUALIFIED_T as "DISQUALIFIED" #e15759
 
-    [*]             --> CONFIRMED_T    : constructor / default
+    [*]             --> CONFIRMED_T    : constructor default
     CONFIRMED_T     --> WITHDRAWN_T    : withdraw()\nupdateStatus(WITHDRAWN)
     CONFIRMED_T     --> DISQUALIFIED_T : disqualify()\nupdateStatus(DISQUALIFIED)
     WITHDRAWN_T     --> CONFIRMED_T    : updateStatus(CONFIRMED)

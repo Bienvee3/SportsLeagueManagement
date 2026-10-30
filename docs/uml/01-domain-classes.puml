@@ -1,8 +1,8 @@
 @startuml 01-domain-classes
 ' ============================================================
 ' P39 Sports League Management
-' Diagrama de Clases — Capa de Dominio (implementado 100%)
-' Generado desde código fuente verificado — 2026-10-30
+' Class Diagram — Domain Layer (100% implemented)
+' Generated from verified source code — 2026-10-30
 ' ============================================================
 
 !theme plain
@@ -23,12 +23,12 @@ skinparam packageBackgroundColor #fafafa
 skinparam packageFontStyle bold
 
 ' ============================================================
-' PACKAGE: Entidades JPA
+' PACKAGE: JPA Entities & Enums
 ' ============================================================
 package "com.league.sportsleague.domain" <<Domain Layer>> {
 
     ' ----------------------------------------------------------
-    ' ENTIDAD: League  (Aggregate Root)
+    ' ENTITY: League  (Aggregate Root)
     ' ----------------------------------------------------------
     class League << (E,#59a14f) @Entity >> {
         ' --- Fields ---
@@ -65,11 +65,11 @@ package "com.league.sportsleague.domain" <<Domain Layer>> {
     note right of League
         <b>Business Key:</b> slug
         <b>Table:</b> leagues
-        <b>Cascade:</b> ALL → Season
+        <b>Cascade:</b> ALL -> Season
     end note
 
     ' ----------------------------------------------------------
-    ' ENTIDAD: Season
+    ' ENTITY: Season
     ' ----------------------------------------------------------
     class Season << (E,#59a14f) @Entity >> {
         ' --- Fields ---
@@ -117,7 +117,7 @@ package "com.league.sportsleague.domain" <<Domain Layer>> {
     end note
 
     ' ----------------------------------------------------------
-    ' ENTIDAD: Team
+    ' ENTITY: Team
     ' ----------------------------------------------------------
     class Team << (E,#59a14f) @Entity >> {
         ' --- Fields ---
@@ -151,12 +151,12 @@ package "com.league.sportsleague.domain" <<Domain Layer>> {
     note right of Team
         <b>Business Key:</b> shortCode
         <b>Table:</b> teams
-        Entidad independiente — sin
-        cascade desde Fixture ni Round
+        Independent entity — no cascade
+        inbound from Fixture or Round
     end note
 
     ' ----------------------------------------------------------
-    ' ENTIDAD: SeasonTeam  (Asociación many-to-many con atributos)
+    ' ENTITY: SeasonTeam  (Many-to-many association with attributes)
     ' ----------------------------------------------------------
     class SeasonTeam << (E,#ff9da7) @Entity >> {
         ' --- Fields ---
@@ -194,7 +194,7 @@ package "com.league.sportsleague.domain" <<Domain Layer>> {
     end note
 
     ' ----------------------------------------------------------
-    ' ENTIDAD: Round
+    ' ENTITY: Round
     ' ----------------------------------------------------------
     class Round << (E,#f28e2b) @Entity >> {
         ' --- Fields ---
@@ -239,7 +239,7 @@ package "com.league.sportsleague.domain" <<Domain Layer>> {
     end note
 
     ' ----------------------------------------------------------
-    ' ENTIDAD: Fixture
+    ' ENTITY: Fixture
     ' ----------------------------------------------------------
     class Fixture << (E,#e15759) @Entity >> {
         ' --- Fields ---
@@ -282,7 +282,7 @@ package "com.league.sportsleague.domain" <<Domain Layer>> {
         + getEvents() : List<MatchEvent>  {unmodifiable}
         + getAudits() : List<ResultAudit>  {unmodifiable}
         ' --- equals/hashCode on: round.id + homeTeam.shortCode + awayTeam.shortCode ---
-        ' --- CHECK: home_team_id <> away_team_id ---
+        ' --- DB CHECK: home_team_id <> away_team_id ---
     }
 
     note right of Fixture
@@ -294,7 +294,7 @@ package "com.league.sportsleague.domain" <<Domain Layer>> {
     end note
 
     ' ----------------------------------------------------------
-    ' ENTIDAD: MatchEvent
+    ' ENTITY: MatchEvent
     ' ----------------------------------------------------------
     class MatchEvent << (E,#edc948) @Entity >> {
         ' --- Fields ---
@@ -333,14 +333,15 @@ package "com.league.sportsleague.domain" <<Domain Layer>> {
                 + matchMinute + playerName
         <b>Table:</b> match_events
         <b>CHECK:</b> match_minute BETWEEN 1 AND 130
-        Columna: <b>match_minute</b> (no "minute" — reservado en H2)
+        Column named <b>match_minute</b>
+        ("minute" is reserved keyword in H2)
     end note
 
     ' ----------------------------------------------------------
-    ' ENTIDAD: ResultAudit  (inmutable — audit trail)
+    ' ENTITY: ResultAudit  (immutable audit trail)
     ' ----------------------------------------------------------
     class ResultAudit << (E,#b07aa1) @Entity >> {
-        ' --- Fields (todos updatable=false) ---
+        ' --- Fields (all updatable=false) ---
         - id : UUID
         - fixture : Fixture  {LAZY, FK: fixture_id, nullable=false}
         - oldHomeScore : Integer  {updatable=false}
@@ -356,7 +357,7 @@ package "com.league.sportsleague.domain" <<Domain Layer>> {
         ' --- JPA Callbacks ---
         # onCreate() : void
         ~ setFixture(fixture:Fixture) : void
-        ' --- Accessors (sin setters — registro inmutable) ---
+        ' --- Accessors (no setters — immutable record) ---
         + getId() : UUID
         + getFixture() : Fixture
         + getOldHomeScore() : Integer
@@ -366,14 +367,14 @@ package "com.league.sportsleague.domain" <<Domain Layer>> {
         + getReason() : String
         + getCorrectedBy() : String
         + getCorrectedAt() : Instant
-        ' --- equals/hashCode on: id (registro inmutable) ---
+        ' --- equals/hashCode on: id (immutable record) ---
     }
 
     note right of ResultAudit
-        <b>Business Key:</b> id (inmutable)
+        <b>Business Key:</b> id (immutable)
         <b>Table:</b> result_audits
-        Todos los campos son
-        <b>updatable=false</b> — audit trail
+        All fields are <b>updatable=false</b>
+        Immutable audit trail record
     end note
 
     ' ----------------------------------------------------------
@@ -417,10 +418,10 @@ package "com.league.sportsleague.domain" <<Domain Layer>> {
 }
 
 ' ============================================================
-' RELACIONES
+' RELATIONSHIPS
 ' ============================================================
 
-' --- Aggregate chain (composición — CASCADE ALL + orphanRemoval)
+' --- Aggregate chain (composition — CASCADE ALL + orphanRemoval)
 League       "1" *-down-> "0..*" Season      : seasons >
 Season       "1" *-down-> "0..*" SeasonTeam  : seasonTeams >
 Season       "1" *-down-> "0..*" Round       : rounds >
@@ -428,7 +429,7 @@ Round        "1" *-down-> "0..*" Fixture     : fixtures >
 Fixture      "1" *-down-> "0..*" MatchEvent  : events >
 Fixture      "1" *-down-> "0..*" ResultAudit : audits >
 
-' --- Team: entidad independiente (sin cascade desde Fixture/Round)
+' --- Team: independent entity (no cascade inbound from Fixture/Round)
 Team         "1" *-right-> "0..*" SeasonTeam : seasonTeams >
 Fixture      "0..*" o--> "1" Team : homeTeam >
 Fixture      "0..*" o--> "1" Team : awayTeam >
