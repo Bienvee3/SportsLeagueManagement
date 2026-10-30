@@ -1,0 +1,91 @@
+@startuml 02-aggregate-chain
+' ============================================================
+' P39 Sports League Management
+' Diagrama de Cadena de Agregados
+' Muestra fronteras de cascada, ownership y relaciones externas
+' ============================================================
+
+!theme plain
+skinparam linetype polyline
+skinparam packageBorderColor #2d5f8a
+skinparam packageBorderThickness 2
+skinparam packageFontStyle bold
+skinparam packageFontSize 12
+skinparam ArrowColor #2d5f8a
+skinparam ArrowThickness 2
+skinparam defaultFontSize 12
+skinparam rectangleBorderColor #888888
+skinparam rectangleBackgroundColor #f9f9f9
+
+title Aggregate Ownership & Cascade Chain
+
+' ============================================================
+' AGGREGATE ROOT
+' ============================================================
+package "Aggregate Root" <<Frame>> {
+    rectangle "**League**\n──────────\nslug «business key»\nname · country\nsportType · timestamps" as LEAGUE #4e79a7/e8f0f8
+}
+
+' ============================================================
+' SEASON AGGREGATE
+' ============================================================
+package "Season Aggregate" <<Frame>> {
+    rectangle "**Season**\n──────────\n«business key»: league.slug + name\nyearStart · yearEnd\nstatus: SeasonStatus" as SEASON #59a14f/eaf5ea
+
+    rectangle "**SeasonTeam**\n──────────\n«business key»: season.id + team.id\ninitialSeed · registrationDate\nstatus: SeasonTeamStatus" as SEASON_TEAM #ff9da7/fff0f2
+}
+
+' ============================================================
+' ROUND AGGREGATE
+' ============================================================
+package "Round Aggregate" <<Frame>> {
+    rectangle "**Round**\n──────────\n«business key»: season.id + roundNumber\nname · startDate · endDate\nstatus: RoundStatus" as ROUND #f28e2b/fff4e6
+}
+
+' ============================================================
+' FIXTURE AGGREGATE
+' ============================================================
+package "Fixture Aggregate" <<Frame>> {
+    rectangle "**Fixture**\n──────────\n«business key»: round.id + home.shortCode + away.shortCode\nhomeScore · awayScore\nstatus: FixtureStatus · scheduledTime\npostponementReason" as FIXTURE #e15759/fdeaea
+
+    rectangle "**MatchEvent**\n──────────\n«business key»: fixture.id + team.id\n               + eventType + matchMinute + playerName\nplayerName · assistingPlayer\nnotes · createdAt\nCHECK: match_minute ∈ [1,130]" as MATCH_EVENT #edc948/fffbe6
+
+    rectangle "**ResultAudit**\n──────────\n«business key»: id (inmutable)\noldHomeScore · oldAwayScore\nnewHomeScore · newAwayScore\nreason · correctedBy · correctedAt\n«todos los campos updatable=false»" as RESULT_AUDIT #b07aa1/f5eef8
+}
+
+' ============================================================
+' ENTIDAD INDEPENDIENTE
+' ============================================================
+rectangle "**Team**\n──────────\n«business key»: shortCode\nname · stadiumName\ncity · foundedYear" as TEAM #76b7b2/edf7f6
+
+' ============================================================
+' CASCADE CHAIN (composición — CASCADE ALL + orphanRemoval)
+' ============================================================
+LEAGUE       -down-> SEASON       : "CASCADE ALL\norphanRemoval\n1 ──> 0..*"
+SEASON       -down-> SEASON_TEAM  : "CASCADE ALL\norphanRemoval\n1 ──> 0..*"
+SEASON       -down-> ROUND        : "CASCADE ALL\norphanRemoval\n1 ──> 0..*"
+ROUND        -down-> FIXTURE      : "CASCADE ALL\norphanRemoval\n1 ──> 0..*"
+FIXTURE      -down-> MATCH_EVENT  : "CASCADE ALL\norphanRemoval\n1 ──> 0..*"
+FIXTURE      -down-> RESULT_AUDIT : "CASCADE ALL\norphanRemoval\n1 ──> 0..*"
+
+' ============================================================
+' REFERENCIAS EXTERNAS HACIA TEAM (sin cascade)
+' ============================================================
+SEASON_TEAM  -right[dashed]-> TEAM : "FK team_id\n(sin cascade)"
+FIXTURE      -right[dashed]-> TEAM : "FK home_team_id\nFK away_team_id\n(sin cascade)"
+MATCH_EVENT  -right[dashed]-> TEAM : "FK team_id\n(sin cascade)"
+
+note bottom of TEAM
+    Team es una entidad independiente.
+    Eliminada una League/Season/Fixture,
+    el Team NO se elimina en cascada.
+end note
+
+note bottom of RESULT_AUDIT
+    Registro de auditoría inmutable.
+    Nunca se modifica una vez persistido.
+    Permite reconstruir el historial
+    de correcciones de resultados.
+end note
+
+@enduml

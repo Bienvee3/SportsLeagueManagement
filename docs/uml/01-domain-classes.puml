@@ -1,0 +1,444 @@
+@startuml 01-domain-classes
+' ============================================================
+' P39 Sports League Management
+' Diagrama de Clases — Capa de Dominio (implementado 100%)
+' Generado desde código fuente verificado — 2026-10-30
+' ============================================================
+
+!theme plain
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+skinparam classFontSize 13
+skinparam classFontStyle bold
+skinparam classHeaderBackgroundColor #4e79a7
+skinparam classHeaderFontColor #ffffff
+skinparam classBorderColor #2d5f8a
+skinparam classBackgroundColor #f0f4fa
+skinparam ArrowColor #2d5f8a
+skinparam ArrowThickness 1.5
+skinparam NoteBackgroundColor #fffbe6
+skinparam NoteBorderColor #c4a63a
+skinparam packageBorderColor #aaaaaa
+skinparam packageBackgroundColor #fafafa
+skinparam packageFontStyle bold
+
+' ============================================================
+' PACKAGE: Entidades JPA
+' ============================================================
+package "com.league.sportsleague.domain" <<Domain Layer>> {
+
+    ' ----------------------------------------------------------
+    ' ENTIDAD: League  (Aggregate Root)
+    ' ----------------------------------------------------------
+    class League << (E,#59a14f) @Entity >> {
+        ' --- Fields ---
+        - id : UUID
+        - name : String
+        - slug : String  {unique, updatable=false}
+        - sportType : String = "FOOTBALL"
+        - country : String
+        - createdAt : Instant  {updatable=false}
+        - updatedAt : Instant
+        - seasons : List<Season>  {LAZY, cascade=ALL, orphanRemoval}
+        ' --- Constructors ---
+        + League()
+        + League(name:String, slug:String, sportType:String, country:String)
+        ' --- JPA Callbacks ---
+        # onCreate() : void
+        # onUpdate() : void
+        ' --- Domain Methods ---
+        + updateDetails(name:String, country:String, sportType:String) : void
+        + addSeason(season:Season) : void
+        + removeSeason(season:Season) : void
+        ' --- Accessors ---
+        + getId() : UUID
+        + getName() : String
+        + getSlug() : String
+        + getSportType() : String
+        + getCountry() : String
+        + getCreatedAt() : Instant
+        + getUpdatedAt() : Instant
+        + getSeasons() : List<Season>  {unmodifiable}
+        ' --- equals/hashCode on: slug ---
+    }
+
+    note right of League
+        <b>Business Key:</b> slug
+        <b>Table:</b> leagues
+        <b>Cascade:</b> ALL → Season
+    end note
+
+    ' ----------------------------------------------------------
+    ' ENTIDAD: Season
+    ' ----------------------------------------------------------
+    class Season << (E,#59a14f) @Entity >> {
+        ' --- Fields ---
+        - id : UUID
+        - league : League  {LAZY, FK: league_id, nullable=false}
+        - name : String
+        - yearStart : int
+        - yearEnd : int
+        - status : SeasonStatus = UPCOMING
+        - createdAt : Instant  {updatable=false}
+        - seasonTeams : List<SeasonTeam>  {LAZY, cascade=ALL, orphanRemoval}
+        - rounds : List<Round>  {LAZY, cascade=ALL, orphanRemoval}
+        ' --- Constructors ---
+        + Season()
+        + Season(league:League, name:String, yearStart:int, yearEnd:int, status:SeasonStatus)
+        ' --- JPA Callbacks ---
+        # onCreate() : void
+        ' --- Domain State Transitions ---
+        + activate() : void
+        + complete() : void
+        + updateStatus(status:SeasonStatus) : void
+        ' --- Bidirectional Helpers ---
+        + addSeasonTeam(seasonTeam:SeasonTeam) : void
+        + removeSeasonTeam(seasonTeam:SeasonTeam) : void
+        + addRound(round:Round) : void
+        + removeRound(round:Round) : void
+        ~ setLeague(league:League) : void
+        ' --- Accessors ---
+        + getId() : UUID
+        + getLeague() : League
+        + getName() : String
+        + getYearStart() : int
+        + getYearEnd() : int
+        + getStatus() : SeasonStatus
+        + getCreatedAt() : Instant
+        + getSeasonTeams() : List<SeasonTeam>  {unmodifiable}
+        + getRounds() : List<Round>  {unmodifiable}
+        ' --- equals/hashCode on: league.slug + name ---
+    }
+
+    note right of Season
+        <b>Business Key:</b> league.slug + name
+        <b>Table:</b> seasons
+        <b>UK:</b> (league_id, name)
+    end note
+
+    ' ----------------------------------------------------------
+    ' ENTIDAD: Team
+    ' ----------------------------------------------------------
+    class Team << (E,#59a14f) @Entity >> {
+        ' --- Fields ---
+        - id : UUID
+        - name : String
+        - shortCode : String  {unique, updatable=false}
+        - stadiumName : String
+        - city : String
+        - foundedYear : Integer
+        - createdAt : Instant  {updatable=false}
+        - seasonTeams : List<SeasonTeam>  {LAZY, cascade=ALL, orphanRemoval}
+        ' --- Constructors ---
+        + Team()
+        + Team(name:String, shortCode:String, stadiumName:String, city:String, foundedYear:Integer)
+        ' --- JPA Callbacks ---
+        # onCreate() : void
+        ' --- Domain Methods ---
+        + updateDetails(name:String, stadiumName:String, city:String, foundedYear:Integer) : void
+        ' --- Accessors ---
+        + getId() : UUID
+        + getName() : String
+        + getShortCode() : String
+        + getStadiumName() : String
+        + getCity() : String
+        + getFoundedYear() : Integer
+        + getCreatedAt() : Instant
+        + getSeasonTeams() : List<SeasonTeam>  {unmodifiable}
+        ' --- equals/hashCode on: shortCode ---
+    }
+
+    note right of Team
+        <b>Business Key:</b> shortCode
+        <b>Table:</b> teams
+        Entidad independiente — sin
+        cascade desde Fixture ni Round
+    end note
+
+    ' ----------------------------------------------------------
+    ' ENTIDAD: SeasonTeam  (Asociación many-to-many con atributos)
+    ' ----------------------------------------------------------
+    class SeasonTeam << (E,#ff9da7) @Entity >> {
+        ' --- Fields ---
+        - id : UUID
+        - season : Season  {LAZY, FK: season_id, nullable=false}
+        - team : Team  {LAZY, FK: team_id, nullable=false}
+        - initialSeed : int = 0
+        - registrationDate : Instant  {updatable=false}
+        - status : SeasonTeamStatus = CONFIRMED
+        ' --- Constructors ---
+        + SeasonTeam()
+        + SeasonTeam(season:Season, team:Team, initialSeed:int, status:SeasonTeamStatus)
+        ' --- JPA Callbacks ---
+        # onCreate() : void
+        ' --- Domain Methods ---
+        + updateSeed(seed:int) : void
+        + updateStatus(status:SeasonTeamStatus) : void
+        + withdraw() : void
+        + disqualify() : void
+        ~ setSeason(season:Season) : void
+        ' --- Accessors ---
+        + getId() : UUID
+        + getSeason() : Season
+        + getTeam() : Team
+        + getInitialSeed() : int
+        + getRegistrationDate() : Instant
+        + getStatus() : SeasonTeamStatus
+        ' --- equals/hashCode on: season.id + team.id ---
+    }
+
+    note bottom of SeasonTeam
+        <b>Business Key:</b> season.id + team.id
+        <b>Table:</b> season_teams
+        <b>UK:</b> (season_id, team_id)
+    end note
+
+    ' ----------------------------------------------------------
+    ' ENTIDAD: Round
+    ' ----------------------------------------------------------
+    class Round << (E,#f28e2b) @Entity >> {
+        ' --- Fields ---
+        - id : UUID
+        - season : Season  {LAZY, FK: season_id, nullable=false}
+        - roundNumber : int
+        - name : String
+        - startDate : LocalDate
+        - endDate : LocalDate
+        - status : RoundStatus = SCHEDULED
+        - fixtures : List<Fixture>  {LAZY, cascade=ALL, orphanRemoval}
+        ' --- Constructors ---
+        + Round()
+        + Round(season:Season, roundNumber:int, name:String, startDate:LocalDate, endDate:LocalDate, status:RoundStatus)
+        ' --- JPA Callbacks ---
+        # onCreate() : void
+        ' --- Domain State Transitions ---
+        + startRound() : void
+        + completeRound() : void
+        ' --- Domain Methods ---
+        + updateSchedule(startDate:LocalDate, endDate:LocalDate) : void
+        ' --- Bidirectional Helpers ---
+        + addFixture(fixture:Fixture) : void
+        + removeFixture(fixture:Fixture) : void
+        ~ setSeason(season:Season) : void
+        ' --- Accessors ---
+        + getId() : UUID
+        + getSeason() : Season
+        + getRoundNumber() : int
+        + getName() : String
+        + getStartDate() : LocalDate
+        + getEndDate() : LocalDate
+        + getStatus() : RoundStatus
+        + getFixtures() : List<Fixture>  {unmodifiable}
+        ' --- equals/hashCode on: season.id + roundNumber ---
+    }
+
+    note right of Round
+        <b>Business Key:</b> season.id + roundNumber
+        <b>Table:</b> rounds
+        <b>UK:</b> (season_id, round_number)
+    end note
+
+    ' ----------------------------------------------------------
+    ' ENTIDAD: Fixture
+    ' ----------------------------------------------------------
+    class Fixture << (E,#e15759) @Entity >> {
+        ' --- Fields ---
+        - id : UUID
+        - round : Round  {LAZY, FK: round_id, nullable=false}
+        - homeTeam : Team  {LAZY, FK: home_team_id, nullable=false}
+        - awayTeam : Team  {LAZY, FK: away_team_id, nullable=false}
+        - homeScore : Integer
+        - awayScore : Integer
+        - status : FixtureStatus = SCHEDULED
+        - scheduledTime : Instant
+        - postponementReason : String
+        - events : List<MatchEvent>  {LAZY, cascade=ALL, orphanRemoval}
+        - audits : List<ResultAudit>  {LAZY, cascade=ALL, orphanRemoval}
+        ' --- Constructors ---
+        + Fixture()
+        + Fixture(round:Round, homeTeam:Team, awayTeam:Team, scheduledTime:Instant)
+        ' --- JPA Callbacks ---
+        # onCreate() : void
+        ' --- Domain Business Methods ---
+        + recordResult(homeScore:int, awayScore:int) : void
+        + postpone(reason:String) : void
+        + cancel() : void
+        + reschedule(newTime:Instant) : void
+        ' --- Bidirectional Helpers ---
+        + addMatchEvent(event:MatchEvent) : void
+        + removeMatchEvent(event:MatchEvent) : void
+        + addResultAudit(audit:ResultAudit) : void
+        ~ setRound(round:Round) : void
+        ' --- Accessors ---
+        + getId() : UUID
+        + getRound() : Round
+        + getHomeTeam() : Team
+        + getAwayTeam() : Team
+        + getHomeScore() : Integer
+        + getAwayScore() : Integer
+        + getStatus() : FixtureStatus
+        + getScheduledTime() : Instant
+        + getPostponementReason() : String
+        + getEvents() : List<MatchEvent>  {unmodifiable}
+        + getAudits() : List<ResultAudit>  {unmodifiable}
+        ' --- equals/hashCode on: round.id + homeTeam.shortCode + awayTeam.shortCode ---
+        ' --- CHECK: home_team_id <> away_team_id ---
+    }
+
+    note right of Fixture
+        <b>Business Key:</b>
+        round.id + homeTeam.shortCode
+               + awayTeam.shortCode
+        <b>Table:</b> fixtures
+        <b>CHECK:</b> home_team_id <> away_team_id
+    end note
+
+    ' ----------------------------------------------------------
+    ' ENTIDAD: MatchEvent
+    ' ----------------------------------------------------------
+    class MatchEvent << (E,#edc948) @Entity >> {
+        ' --- Fields ---
+        - id : UUID
+        - fixture : Fixture  {LAZY, FK: fixture_id, nullable=false}
+        - team : Team  {LAZY, FK: team_id, nullable=false}
+        - eventType : MatchEventType
+        - matchMinute : int  {CHECK: 1..130, col: match_minute}
+        - playerName : String
+        - assistingPlayer : String
+        - notes : String
+        - createdAt : Instant  {updatable=false}
+        ' --- Constructors ---
+        + MatchEvent()
+        + MatchEvent(fixture:Fixture, team:Team, eventType:MatchEventType, matchMinute:int, playerName:String)
+        + MatchEvent(fixture:Fixture, team:Team, eventType:MatchEventType, matchMinute:int, playerName:String, assistingPlayer:String, notes:String)
+        ' --- JPA Callbacks ---
+        # onCreate() : void
+        ~ setFixture(fixture:Fixture) : void
+        ' --- Accessors ---
+        + getId() : UUID
+        + getFixture() : Fixture
+        + getTeam() : Team
+        + getEventType() : MatchEventType
+        + getMatchMinute() : int
+        + getPlayerName() : String
+        + getAssistingPlayer() : String
+        + getNotes() : String
+        + getCreatedAt() : Instant
+        ' --- equals/hashCode on: fixture.id + team.id + eventType + matchMinute + playerName ---
+    }
+
+    note bottom of MatchEvent
+        <b>Business Key:</b>
+        fixture.id + team.id + eventType
+                + matchMinute + playerName
+        <b>Table:</b> match_events
+        <b>CHECK:</b> match_minute BETWEEN 1 AND 130
+        Columna: <b>match_minute</b> (no "minute" — reservado en H2)
+    end note
+
+    ' ----------------------------------------------------------
+    ' ENTIDAD: ResultAudit  (inmutable — audit trail)
+    ' ----------------------------------------------------------
+    class ResultAudit << (E,#b07aa1) @Entity >> {
+        ' --- Fields (todos updatable=false) ---
+        - id : UUID
+        - fixture : Fixture  {LAZY, FK: fixture_id, nullable=false}
+        - oldHomeScore : Integer  {updatable=false}
+        - oldAwayScore : Integer  {updatable=false}
+        - newHomeScore : int  {updatable=false}
+        - newAwayScore : int  {updatable=false}
+        - reason : String  {TEXT, updatable=false}
+        - correctedBy : String  {updatable=false}
+        - correctedAt : Instant  {updatable=false}
+        ' --- Constructors ---
+        + ResultAudit()
+        + ResultAudit(fixture:Fixture, oldHomeScore:Integer, oldAwayScore:Integer, newHomeScore:int, newAwayScore:int, reason:String, correctedBy:String)
+        ' --- JPA Callbacks ---
+        # onCreate() : void
+        ~ setFixture(fixture:Fixture) : void
+        ' --- Accessors (sin setters — registro inmutable) ---
+        + getId() : UUID
+        + getFixture() : Fixture
+        + getOldHomeScore() : Integer
+        + getOldAwayScore() : Integer
+        + getNewHomeScore() : int
+        + getNewAwayScore() : int
+        + getReason() : String
+        + getCorrectedBy() : String
+        + getCorrectedAt() : Instant
+        ' --- equals/hashCode on: id (registro inmutable) ---
+    }
+
+    note right of ResultAudit
+        <b>Business Key:</b> id (inmutable)
+        <b>Table:</b> result_audits
+        Todos los campos son
+        <b>updatable=false</b> — audit trail
+    end note
+
+    ' ----------------------------------------------------------
+    ' ENUMS
+    ' ----------------------------------------------------------
+    enum SeasonStatus << (E,#76b7b2) enum >> {
+        UPCOMING
+        ACTIVE
+        COMPLETED
+    }
+
+    enum SeasonTeamStatus << (E,#76b7b2) enum >> {
+        CONFIRMED
+        WITHDRAWN
+        DISQUALIFIED
+    }
+
+    enum RoundStatus << (E,#76b7b2) enum >> {
+        SCHEDULED
+        IN_PROGRESS
+        COMPLETED
+    }
+
+    enum FixtureStatus << (E,#76b7b2) enum >> {
+        SCHEDULED
+        IN_PROGRESS
+        FINISHED
+        POSTPONED
+        CANCELLED
+    }
+
+    enum MatchEventType << (E,#76b7b2) enum >> {
+        GOAL
+        PENALTY
+        YELLOW_CARD
+        RED_CARD
+        OWN_GOAL
+        SUBSTITUTION
+    }
+
+}
+
+' ============================================================
+' RELACIONES
+' ============================================================
+
+' --- Aggregate chain (composición — CASCADE ALL + orphanRemoval)
+League       "1" *-down-> "0..*" Season      : seasons >
+Season       "1" *-down-> "0..*" SeasonTeam  : seasonTeams >
+Season       "1" *-down-> "0..*" Round       : rounds >
+Round        "1" *-down-> "0..*" Fixture     : fixtures >
+Fixture      "1" *-down-> "0..*" MatchEvent  : events >
+Fixture      "1" *-down-> "0..*" ResultAudit : audits >
+
+' --- Team: entidad independiente (sin cascade desde Fixture/Round)
+Team         "1" *-right-> "0..*" SeasonTeam : seasonTeams >
+Fixture      "0..*" o--> "1" Team : homeTeam >
+Fixture      "0..*" o--> "1" Team : awayTeam >
+MatchEvent   "0..*" o--> "1" Team : team >
+
+' --- Enum associations
+Season     ..> SeasonStatus     : uses
+SeasonTeam ..> SeasonTeamStatus : uses
+Round      ..> RoundStatus      : uses
+Fixture    ..> FixtureStatus    : uses
+MatchEvent ..> MatchEventType   : uses
+
+@enduml

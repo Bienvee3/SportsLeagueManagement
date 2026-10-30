@@ -1,0 +1,121 @@
+@startuml 04-infrastructure
+' ============================================================
+' P39 Sports League Management
+' Diagrama de Infraestructura y Perfiles de Configuración
+' ============================================================
+
+!theme plain
+skinparam linetype ortho
+skinparam defaultFontSize 12
+skinparam componentBorderColor #2d5f8a
+skinparam componentBackgroundColor #f0f4fa
+skinparam databaseBorderColor #2d5f8a
+skinparam databaseBackgroundColor #fff4e6
+skinparam nodeBorderColor #666666
+skinparam nodeBackgroundColor #fafafa
+skinparam ArrowColor #2d5f8a
+skinparam ArrowThickness 1.5
+skinparam legendBorderColor #aaaaaa
+
+title Infraestructura & Perfiles Spring Boot — Implementado
+
+' ============================================================
+' PERFIL: dev (activo por defecto)
+' ============================================================
+node "Perfil: dev (default)" #eaf5ea {
+    component "Spring Boot 4.1.1\nJava 25 LTS" as APP_DEV
+
+    component "HikariCP Pool\n─────────────\npool: SportsLeagueHikariCP\nmax-pool-size: 10\nmin-idle: 5\nidle-timeout: 300 000 ms\nconnection-timeout: 20 000 ms\nmax-lifetime: 1 200 000 ms\nleak-detection: 30 000 ms" as HIKARI_DEV
+
+    database "PostgreSQL 17\n─────────────\ncontainer: sports_league_postgres\nimage: postgres:17-alpine\nport: 5432:5432\nDB: sports_league_db\nuser: league_admin\nvolume: postgres_data\nhealthcheck: pg_isready" as PG_DEV
+
+    component "Flyway\n─────────────\nbaseline-on-migrate: true\nlocations: classpath:db/migration\nddl-auto: validate" as FLYWAY_DEV
+
+    component "Hibernate 7.4.5\n─────────────\nbatch_size: 25\norder_inserts: true\norder_updates: true\nformat_sql: true\nFetchType: LAZY (default)" as HIB_DEV
+
+    APP_DEV -down-> HIKARI_DEV   : pooled connections
+    HIKARI_DEV -down-> PG_DEV    : jdbc:postgresql://localhost:5432/sports_league_db
+    APP_DEV -down-> FLYWAY_DEV   : on startup
+    FLYWAY_DEV -down-> PG_DEV    : V1__init_schema.sql\nV2__seed_initial_data.sql
+    APP_DEV -down-> HIB_DEV      : JPA entity mappings
+    HIB_DEV -down-> HIKARI_DEV   : EntityManager
+}
+
+' ============================================================
+' PERFIL: test
+' ============================================================
+node "Perfil: test (src/test/resources)" #e8f0f8 {
+    component "Spring Boot Test\n@SpringBootTest\n@ActiveProfiles(\"test\")" as APP_TEST
+
+    database "H2 In-Memory\n─────────────\njdbc:h2:mem:sports_league_testdb\nMODE=PostgreSQL\nDB_CLOSE_DELAY=-1" as H2_TEST
+
+    component "Flyway (test)\n─────────────\nMismas migraciones V1+V2\nsobre H2 en modo PG" as FLYWAY_TEST
+
+    component "Hibernate (test)\n─────────────\nDialect: H2Dialect\nddl-auto: validate\nopen-in-view: false" as HIB_TEST
+
+    APP_TEST -down-> FLYWAY_TEST  : on context load
+    FLYWAY_TEST -down-> H2_TEST   : V1__init_schema.sql\nV2__seed_initial_data.sql
+    APP_TEST -down-> HIB_TEST
+    HIB_TEST -down-> H2_TEST      : jdbc in-memory
+}
+
+' ============================================================
+' PERFIL: prod  (pendiente deployment M4)
+' ============================================================
+node "Perfil: prod (env vars)" #fdeaea {
+    component "Spring Boot 4.1.1\n(producción)" as APP_PROD
+
+    component "HikariCP Pool\n─────────────\npool: SportsLeagueHikariCP-Prod\nmax-pool-size: 5\nmin-idle: 2" as HIKARI_PROD
+
+    database "PostgreSQL 17\n─────────────\n${SPRING_DATASOURCE_URL}\n${SPRING_DATASOURCE_USERNAME}\n${SPRING_DATASOURCE_PASSWORD}\n(Neon / Render cloud)" as PG_PROD
+
+    APP_PROD -down-> HIKARI_PROD
+    HIKARI_PROD -down-> PG_PROD   : jdbc:postgresql://cloud:5432/...
+}
+
+' ============================================================
+' FLYWAY MIGRATION CHAIN
+' ============================================================
+note as FW_NOTE
+    **Cadena Flyway**
+    ───────────────────────────────
+    [Baseline]
+        │
+        ▼
+    V1__init_schema.sql
+    8 tablas · 10 índices
+    2 CHECK constraints
+    3 UNIQUE constraints
+        │
+        ▼
+    V2__seed_initial_data.sql
+    1 liga (SuperSport HNL)
+    4 equipos croatas
+    1 temporada ACTIVE
+    4 inscripciones CONFIRMED
+    1 jornada COMPLETED
+    2 fixtures FINISHED
+    3 match events
+        │
+        ▼
+    V3__... (pendiente — Milestone 2)
+end note
+
+' ============================================================
+' TEST SUITE (actual)
+' ============================================================
+note as TEST_NOTE
+    **Test Suite (4/4 passing)**
+    ───────────────────────────────
+    DomainModelTest (3 tests)
+    · aggregate chain validation
+    · business key equality
+    · collection immutability
+
+    SportsLeagueManagementApplicationTests (1 test)
+    · Spring context loads
+    · Flyway V1+V2 applied OK
+    · Hibernate schema validated
+end note
+
+@enduml
