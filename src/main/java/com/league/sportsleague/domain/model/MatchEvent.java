@@ -1,6 +1,6 @@
 package com.league.sportsleague.domain.model;
 
-import com.league.sportsleague.domain.model.enums.MatchEventType;
+import com.league.sportsleague.domain.valueobject.MatchMinute;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -11,6 +11,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+
+import com.league.sportsleague.domain.model.enums.MatchEventType;
 
 import java.time.Instant;
 import java.util.Objects;
@@ -35,7 +37,7 @@ public class MatchEvent {
     @Enumerated(EnumType.STRING)
     private MatchEventType eventType;
 
-    private int matchMinute;
+    private MatchMinute matchMinute;
 
     private String playerName;
 
@@ -61,7 +63,7 @@ public class MatchEvent {
         this.fixture = fixture;
         this.team = team;
         this.eventType = eventType;
-        this.matchMinute = matchMinute;
+        this.matchMinute = new MatchMinute(matchMinute);
         this.playerName = playerName;
         this.assistingPlayer = assistingPlayer;
         this.notes = notes;
@@ -98,7 +100,7 @@ public class MatchEvent {
         return eventType;
     }
 
-    public int getMatchMinute() {
+    public MatchMinute getMatchMinute() {
         return matchMinute;
     }
 
@@ -122,7 +124,7 @@ public class MatchEvent {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof MatchEvent other)) return false;
-        return matchMinute == other.matchMinute &&
+        return Objects.equals(matchMinute, other.matchMinute) &&
                 eventType == other.eventType &&
                 Objects.equals(fixture != null ? fixture.getId() : null,
                                other.fixture != null ? other.fixture.getId() : null) &&
