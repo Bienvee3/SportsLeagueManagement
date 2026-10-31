@@ -14,6 +14,8 @@ This directory centralizes the record of verified technical decisions for the **
 | **DEC-004** | 2026-10-15 | **Column Naming: `match_minute` for H2 Test Compatibility** | Accepted | Commit `193bc6d` · `V1__init_schema.sql` · `MatchEvent.java` |
 | **DEC-005** | 2026-10-21 | **Shared AI Agent Memory Architecture (`AGENTS.md` + `CLAUDE.md`)** | Accepted | `AGENTS.md` (master) · `CLAUDE.md` (reference) |
 | **DEC-006** | 2026-10-24 | **Visual Architecture & UML Documentation Standard** | Accepted | [AGENTS.md](../../AGENTS.md) § 9 · [Architecture Doc](../ARCHITECTURE.md) |
+| **DEC-007** | 2026-10-31 | **JPA Annotations on Domain Entities (Pragmatic Concession)** | Accepted | All entity classes in `domain.model` — `@Entity`, `@Table`, `@Column` retained on domain classes |
+| **DEC-008** | 2026-10-31 | **Value Objects as Java Records with JPA AttributeConverter** | Accepted | [ADR 002](../adr/002-value-objects.md) · `domain.valueobject` · `infrastructure.persistence.converter` |
 
 ---
 
