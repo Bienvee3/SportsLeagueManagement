@@ -1,5 +1,6 @@
 package com.league.sportsleague.domain.model;
 
+import com.league.sportsleague.domain.valueobject.Slug;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -28,7 +29,7 @@ public class League {
     private String name;
 
     @Column(unique = true, updatable = false)
-    private String slug;
+    private Slug slug;
 
     private String sportType = "FOOTBALL";
 
@@ -49,7 +50,7 @@ public class League {
     public League(String name, String slug, String sportType, String country) {
         this();
         this.name = name;
-        this.slug = slug;
+        this.slug = new Slug(slug);
         this.sportType = (sportType != null) ? sportType : "FOOTBALL";
         this.country = country;
     }
@@ -100,7 +101,7 @@ public class League {
         return name;
     }
 
-    public String getSlug() {
+    public Slug getSlug() {
         return slug;
     }
 

@@ -17,7 +17,7 @@ class DomainModelTest {
     void shouldConstructAggregateHierarchy() {
         // 1. League
         League league = new League("SuperSport HNL", "supersport-hnl", "FOOTBALL", "Croatia");
-        assertEquals("supersport-hnl", league.getSlug());
+        assertEquals("supersport-hnl", league.getSlug().value());
 
         // 2. Teams
         Team dinamo = new Team("GNK Dinamo Zagreb", "DIN", "Maksimir", "Zagreb", 1911);
