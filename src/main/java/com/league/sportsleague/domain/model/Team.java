@@ -48,6 +48,9 @@ public class Team {
 
     public Team(String name, String shortCode, String stadiumName, String city, Integer foundedYear) {
         this();
+        if (name == null || name.isBlank())
+            throw new IllegalArgumentException("Team name must not be blank");
+        Objects.requireNonNull(shortCode, "Short code must not be null");
         this.name = name;
         this.shortCode = new TeamCode(shortCode);
         this.stadiumName = stadiumName;

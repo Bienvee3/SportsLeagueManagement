@@ -49,6 +49,11 @@ public class League {
 
     public League(String name, String slug, String sportType, String country) {
         this();
+        if (name == null || name.isBlank())
+            throw new IllegalArgumentException("League name must not be blank");
+        Objects.requireNonNull(country, "Country must not be null");
+        if (country.isBlank())
+            throw new IllegalArgumentException("Country must not be blank");
         this.name = name;
         this.slug = new Slug(slug);
         this.sportType = (sportType != null) ? sportType : "FOOTBALL";

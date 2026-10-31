@@ -1,6 +1,9 @@
 package com.league.sportsleague.domain.model;
 
+import com.league.sportsleague.domain.exception.DuplicateTeamException;
+import com.league.sportsleague.domain.exception.InvalidStateTransitionException;
 import com.league.sportsleague.domain.model.enums.FixtureStatus;
+import com.league.sportsleague.domain.valueobject.Score;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -65,6 +68,14 @@ public class Fixture {
 
     public Fixture(Round round, Team homeTeam, Team awayTeam, Instant scheduledTime) {
         this();
+        Objects.requireNonNull(round, "Round must not be null");
+        Objects.requireNonNull(homeTeam, "Home team must not be null");
+        Objects.requireNonNull(awayTeam, "Away team must not be null");
+        Objects.requireNonNull(scheduledTime, "Scheduled time must not be null");
+        if (homeTeam.equals(awayTeam)) {
+            throw new DuplicateTeamException(
+                homeTeam.getShortCode().value(), "both home and away in the same fixture");
+        }
         this.round = round;
         this.homeTeam = homeTeam;
         this.awayTeam = awayTeam;
@@ -80,28 +91,44 @@ public class Fixture {
     }
 
     // Domain Business Methods
-    public void recordResult(int homeScore, int awayScore) {
-        this.homeScore = homeScore;
-        this.awayScore = awayScore;
+
+    /** Records the final result. Fixture must be SCHEDULED or IN_PROGRESS. */
+    public void recordResult(Score score) {
+        Objects.requireNonNull(score, "Score must not be null");
+        if (this.status != FixtureStatus.SCHEDULED && this.status != FixtureStatus.IN_PROGRESS) {
+            throw new InvalidStateTransitionException("Fixture", status.name(), "recordResult");
+        }
+        this.homeScore = score.home();
+        this.awayScore = score.away();
         this.status = FixtureStatus.FINISHED;
         this.postponementReason = null;
     }
 
+    /** Postpones a SCHEDULED or IN_PROGRESS fixture. */
     public void postpone(String reason) {
+        if (this.status != FixtureStatus.SCHEDULED && this.status != FixtureStatus.IN_PROGRESS) {
+            throw new InvalidStateTransitionException("Fixture", status.name(), "postpone");
+        }
         this.status = FixtureStatus.POSTPONED;
         this.postponementReason = reason;
     }
 
+    /** Cancels the fixture. Cannot cancel a FINISHED or already CANCELLED fixture. */
     public void cancel() {
+        if (this.status == FixtureStatus.FINISHED || this.status == FixtureStatus.CANCELLED) {
+            throw new InvalidStateTransitionException("Fixture", status.name(), "cancel");
+        }
         this.status = FixtureStatus.CANCELLED;
     }
 
+    /** Reschedules a POSTPONED fixture back to SCHEDULED. */
     public void reschedule(Instant newTime) {
-        this.scheduledTime = newTime;
-        if (this.status == FixtureStatus.POSTPONED) {
-            this.status = FixtureStatus.SCHEDULED;
-            this.postponementReason = null;
+        if (this.status != FixtureStatus.POSTPONED) {
+            throw new InvalidStateTransitionException("Fixture", status.name(), "reschedule");
         }
+        this.scheduledTime = newTime;
+        this.status = FixtureStatus.SCHEDULED;
+        this.postponementReason = null;
     }
 
     // Bidirectional helper methods

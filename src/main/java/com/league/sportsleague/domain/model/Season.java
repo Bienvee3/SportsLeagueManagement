@@ -1,5 +1,7 @@
 package com.league.sportsleague.domain.model;
 
+import com.league.sportsleague.domain.exception.DuplicateTeamException;
+import com.league.sportsleague.domain.exception.InvalidStateTransitionException;
 import com.league.sportsleague.domain.model.enums.SeasonStatus;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -61,6 +63,12 @@ public class Season {
 
     public Season(League league, String name, int yearStart, int yearEnd, SeasonStatus status) {
         this();
+        Objects.requireNonNull(league, "League must not be null");
+        Objects.requireNonNull(name, "Season name must not be null");
+        if (name.isBlank()) throw new IllegalArgumentException("Season name must not be blank");
+        if (yearStart >= yearEnd)
+            throw new IllegalArgumentException(
+                "yearStart (%d) must be less than yearEnd (%d)".formatted(yearStart, yearEnd));
         this.league = league;
         this.name = name;
         this.yearStart = yearStart;
@@ -78,23 +86,29 @@ public class Season {
         }
     }
 
-    // Domain State Transition
+    // Domain State Transitions
     public void activate() {
+        if (this.status != SeasonStatus.UPCOMING) {
+            throw new InvalidStateTransitionException("Season", status.name(), "activate");
+        }
         this.status = SeasonStatus.ACTIVE;
     }
 
     public void complete() {
-        this.status = SeasonStatus.COMPLETED;
-    }
-
-    public void updateStatus(SeasonStatus status) {
-        if (status != null) {
-            this.status = status;
+        if (this.status != SeasonStatus.ACTIVE) {
+            throw new InvalidStateTransitionException("Season", status.name(), "complete");
         }
+        this.status = SeasonStatus.COMPLETED;
     }
 
     // Bidirectional helper methods
     public void addSeasonTeam(SeasonTeam seasonTeam) {
+        boolean alreadyEnrolled = seasonTeams.stream()
+            .anyMatch(st -> st.getTeam().equals(seasonTeam.getTeam()));
+        if (alreadyEnrolled) {
+            throw new DuplicateTeamException(
+                seasonTeam.getTeam().getShortCode().value(), "enrolled in this season");
+        }
         seasonTeams.add(seasonTeam);
         seasonTeam.setSeason(this);
     }

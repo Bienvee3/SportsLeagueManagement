@@ -1,5 +1,6 @@
 package com.league.sportsleague.domain.model;
 
+import com.league.sportsleague.domain.exception.InvalidStateTransitionException;
 import com.league.sportsleague.domain.model.enums.RoundStatus;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -57,6 +58,9 @@ public class Round {
 
     public Round(Season season, int roundNumber, String name, LocalDate startDate, LocalDate endDate, RoundStatus status) {
         this();
+        Objects.requireNonNull(season, "Season must not be null");
+        if (roundNumber < 1)
+            throw new IllegalArgumentException("Round number must be >= 1, got: " + roundNumber);
         this.season = season;
         this.roundNumber = roundNumber;
         this.name = name;
@@ -74,10 +78,16 @@ public class Round {
 
     // Domain Mutators
     public void startRound() {
+        if (this.status != RoundStatus.SCHEDULED) {
+            throw new InvalidStateTransitionException("Round", status.name(), "startRound");
+        }
         this.status = RoundStatus.IN_PROGRESS;
     }
 
     public void completeRound() {
+        if (this.status != RoundStatus.IN_PROGRESS) {
+            throw new InvalidStateTransitionException("Round", status.name(), "completeRound");
+        }
         this.status = RoundStatus.COMPLETED;
     }
 

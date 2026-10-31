@@ -2,6 +2,7 @@ package com.league.sportsleague.domain;
 
 import com.league.sportsleague.domain.model.*;
 import com.league.sportsleague.domain.model.enums.*;
+import com.league.sportsleague.domain.valueobject.Score;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -49,7 +50,7 @@ class DomainModelTest {
         assertEquals(round1, derby.getRound());
 
         // 7. Record result & Match events
-        derby.recordResult(2, 1);
+        derby.recordResult(new Score(2, 1));
         assertEquals(FixtureStatus.FINISHED, derby.getStatus());
         assertEquals(2, derby.getHomeScore());
         assertEquals(1, derby.getAwayScore());

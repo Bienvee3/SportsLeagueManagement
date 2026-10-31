@@ -1,5 +1,6 @@
 package com.league.sportsleague.domain.model;
 
+import com.league.sportsleague.domain.exception.InvalidStateTransitionException;
 import com.league.sportsleague.domain.model.enums.SeasonTeamStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -50,6 +51,8 @@ public class SeasonTeam {
 
     public SeasonTeam(Season season, Team team, int initialSeed, SeasonTeamStatus status) {
         this();
+        Objects.requireNonNull(season, "Season must not be null");
+        Objects.requireNonNull(team, "Team must not be null");
         this.season = season;
         this.team = team;
         this.initialSeed = initialSeed;
@@ -71,18 +74,25 @@ public class SeasonTeam {
         this.initialSeed = seed;
     }
 
-    public void updateStatus(SeasonTeamStatus status) {
-        if (status != null) {
-            this.status = status;
-        }
-    }
-
     public void withdraw() {
+        if (this.status != SeasonTeamStatus.CONFIRMED) {
+            throw new InvalidStateTransitionException("SeasonTeam", status.name(), "withdraw");
+        }
         this.status = SeasonTeamStatus.WITHDRAWN;
     }
 
     public void disqualify() {
+        if (this.status != SeasonTeamStatus.CONFIRMED) {
+            throw new InvalidStateTransitionException("SeasonTeam", status.name(), "disqualify");
+        }
         this.status = SeasonTeamStatus.DISQUALIFIED;
+    }
+
+    public void reinstate() {
+        if (this.status != SeasonTeamStatus.WITHDRAWN) {
+            throw new InvalidStateTransitionException("SeasonTeam", status.name(), "reinstate");
+        }
+        this.status = SeasonTeamStatus.CONFIRMED;
     }
 
     void setSeason(Season season) {
