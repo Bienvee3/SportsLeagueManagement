@@ -132,6 +132,11 @@ public class Season {
         this.league = league;
     }
 
+    // Domain Queries
+    public boolean isActive() { return this.status == SeasonStatus.ACTIVE; }
+
+    public int teamCount() { return seasonTeams.size(); }
+
     // Read-only Accessors
     public UUID getId() {
         return id;

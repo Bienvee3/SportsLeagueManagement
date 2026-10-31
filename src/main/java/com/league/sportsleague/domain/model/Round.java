@@ -111,6 +111,11 @@ public class Round {
         this.season = season;
     }
 
+    // Domain Queries
+    public boolean allFixturesFinished() {
+        return !fixtures.isEmpty() && fixtures.stream().allMatch(Fixture::isFinished);
+    }
+
     // Read-only Accessors
     public UUID getId() {
         return id;

@@ -60,11 +60,14 @@ class DomainModelTest {
         assertEquals(1, derby.getEvents().size());
         assertEquals(derby, goal1.getFixture());
 
-        // 8. Result correction with audit
-        ResultAudit audit = new ResultAudit(derby, 2, 1, 2, 2, "VAR review validated goal after final whistle", "Referee Official");
-        derby.addResultAudit(audit);
+        // 8. Result correction with audit — uses domain method correctResult()
+        derby.correctResult(new Score(2, 2), "VAR review validated goal after final whistle", "Referee Official");
         assertEquals(1, derby.getAudits().size());
         assertEquals("Referee Official", derby.getAudits().get(0).getCorrectedBy());
+        assertEquals(2, derby.getAudits().get(0).getOldHomeScore());
+        assertEquals(1, derby.getAudits().get(0).getOldAwayScore());
+        assertEquals(2, derby.getHomeScore());
+        assertEquals(2, derby.getAwayScore());
     }
 
     @Test

@@ -104,6 +104,34 @@ public class Fixture {
         this.postponementReason = null;
     }
 
+    /**
+     * Corrects the result of a FINISHED fixture. Creates an immutable ResultAudit
+     * capturing the old and new scores, then updates this fixture's score.
+     * The audit is persisted via cascade when this fixture is saved.
+     */
+    public void correctResult(Score newScore, String reason, String correctedBy) {
+        Objects.requireNonNull(newScore, "New score must not be null");
+        Objects.requireNonNull(reason, "Correction reason must not be null");
+        Objects.requireNonNull(correctedBy, "Corrected-by must not be null");
+        if (this.status != FixtureStatus.FINISHED) {
+            throw new InvalidStateTransitionException("Fixture", status.name(), "correctResult");
+        }
+        ResultAudit audit = new ResultAudit(this, this.homeScore, this.awayScore,
+                                            newScore.home(), newScore.away(), reason, correctedBy);
+        this.audits.add(audit);
+        audit.setFixture(this);
+        this.homeScore = newScore.home();
+        this.awayScore = newScore.away();
+    }
+
+    // Domain Queries
+    public boolean isFinished() { return this.status == FixtureStatus.FINISHED; }
+
+    public boolean isDraw() {
+        return isFinished() && this.homeScore != null && this.awayScore != null
+               && this.homeScore.equals(this.awayScore);
+    }
+
     /** Postpones a SCHEDULED or IN_PROGRESS fixture. */
     public void postpone(String reason) {
         if (this.status != FixtureStatus.SCHEDULED && this.status != FixtureStatus.IN_PROGRESS) {

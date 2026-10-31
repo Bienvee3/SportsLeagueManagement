@@ -78,7 +78,9 @@ public class League {
     }
 
     // Domain Mutators
-    public void updateDetails(String name, String country, String sportType) {
+    public void rename(String name, String country, String sportType) {
+        if (name == null || name.isBlank())
+            throw new IllegalArgumentException("League name must not be blank");
         this.name = name;
         this.country = country;
         if (sportType != null) {

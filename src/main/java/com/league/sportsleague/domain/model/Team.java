@@ -69,7 +69,9 @@ public class Team {
     }
 
     // Domain Mutator
-    public void updateDetails(String name, String stadiumName, String city, Integer foundedYear) {
+    public void updateProfile(String name, String stadiumName, String city, Integer foundedYear) {
+        if (name == null || name.isBlank())
+            throw new IllegalArgumentException("Team name must not be blank");
         this.name = name;
         this.stadiumName = stadiumName;
         this.city = city;
