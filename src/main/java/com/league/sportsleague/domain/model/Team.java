@@ -1,5 +1,6 @@
 package com.league.sportsleague.domain.model;
 
+import com.league.sportsleague.domain.valueobject.TeamCode;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -27,7 +28,7 @@ public class Team {
     private String name;
 
     @Column(unique = true, updatable = false)
-    private String shortCode;
+    private TeamCode shortCode;
 
     private String stadiumName;
 
@@ -48,7 +49,7 @@ public class Team {
     public Team(String name, String shortCode, String stadiumName, String city, Integer foundedYear) {
         this();
         this.name = name;
-        this.shortCode = shortCode;
+        this.shortCode = new TeamCode(shortCode);
         this.stadiumName = stadiumName;
         this.city = city;
         this.foundedYear = foundedYear;
@@ -81,7 +82,7 @@ public class Team {
         return name;
     }
 
-    public String getShortCode() {
+    public TeamCode getShortCode() {
         return shortCode;
     }
 
