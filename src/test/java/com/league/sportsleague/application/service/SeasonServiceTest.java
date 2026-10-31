@@ -1,0 +1,226 @@
+package com.league.sportsleague.application.service;
+
+import com.league.sportsleague.application.dto.CreateSeasonRequest;
+import com.league.sportsleague.application.dto.SeasonResponse;
+import com.league.sportsleague.domain.exception.EntityNotFoundException;
+import com.league.sportsleague.domain.exception.InvalidStateTransitionException;
+import com.league.sportsleague.domain.model.*;
+import com.league.sportsleague.domain.model.enums.*;
+import com.league.sportsleague.domain.repository.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class SeasonServiceTest {
+
+    @Mock LeagueRepository leagueRepository;
+    @Mock TeamRepository teamRepository;
+    @Mock SeasonRepository seasonRepository;
+    @Mock RoundRepository roundRepository;
+
+    @InjectMocks SeasonService seasonService;
+
+    private League league;
+    private Season season;
+    private Team team;
+
+    @BeforeEach
+    void setUp() {
+        league = new League("SuperSport HNL", "supersport-hnl", "FOOTBALL", "Croatia");
+        season = new Season(league, "2026/2027", 2026, 2027, SeasonStatus.UPCOMING);
+        team = new Team("Dinamo", "DIN", "Maksimir", "Zagreb", 1911);
+    }
+
+    // ── createSeason ──────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("createSeason saves a Season under the given league and returns its UUID")
+    void createSeasonSavesAndReturnsId() {
+        UUID leagueId = league.getId();
+        when(leagueRepository.findById(leagueId)).thenReturn(Optional.of(league));
+        when(seasonRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        UUID id = seasonService.createSeason(leagueId, new CreateSeasonRequest("2026/2027", 2026, 2027));
+
+        assertNotNull(id);
+        ArgumentCaptor<Season> captor = ArgumentCaptor.forClass(Season.class);
+        verify(seasonRepository).save(captor.capture());
+        assertEquals("2026/2027", captor.getValue().getName());
+        assertEquals(league, captor.getValue().getLeague());
+    }
+
+    @Test
+    @DisplayName("createSeason throws EntityNotFoundException when league not found")
+    void createSeasonThrowsWhenLeagueNotFound() {
+        when(leagueRepository.findById(any())).thenReturn(Optional.empty());
+        assertThrows(EntityNotFoundException.class,
+                () -> seasonService.createSeason(UUID.randomUUID(), new CreateSeasonRequest("S", 2026, 2027)));
+    }
+
+    // ── activateSeason ────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("activateSeason calls season.activate() and saves")
+    void activateSeasonCallsDomainMethodAndSaves() {
+        UUID id = season.getId();
+        when(seasonRepository.findById(id)).thenReturn(Optional.of(season));
+        when(seasonRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        seasonService.activateSeason(id);
+
+        assertEquals(SeasonStatus.ACTIVE, season.getStatus());
+        verify(seasonRepository).save(season);
+    }
+
+    @Test
+    @DisplayName("activateSeason throws EntityNotFoundException when season not found")
+    void activateSeasonThrowsWhenNotFound() {
+        when(seasonRepository.findById(any())).thenReturn(Optional.empty());
+        assertThrows(EntityNotFoundException.class, () -> seasonService.activateSeason(UUID.randomUUID()));
+    }
+
+    @Test
+    @DisplayName("activateSeason propagates domain guard (ACTIVE -> activate throws)")
+    void activateSeasonPropagatesDomainGuard() {
+        season.activate(); // now ACTIVE
+        UUID id = season.getId();
+        when(seasonRepository.findById(id)).thenReturn(Optional.of(season));
+
+        assertThrows(InvalidStateTransitionException.class, () -> seasonService.activateSeason(id));
+    }
+
+    // ── completeSeason ────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("completeSeason calls season.complete() after activating")
+    void completeSeasonCallsDomainMethod() {
+        season.activate();
+        UUID id = season.getId();
+        when(seasonRepository.findById(id)).thenReturn(Optional.of(season));
+        when(seasonRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        seasonService.completeSeason(id);
+
+        assertEquals(SeasonStatus.COMPLETED, season.getStatus());
+        verify(seasonRepository).save(season);
+    }
+
+    // ── registerTeam ──────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("registerTeam adds SeasonTeam to season and saves")
+    void registerTeamAddsToseasonAndSaves() {
+        UUID seasonId = season.getId();
+        UUID teamId = team.getId();
+        when(seasonRepository.findById(seasonId)).thenReturn(Optional.of(season));
+        when(teamRepository.findById(teamId)).thenReturn(Optional.of(team));
+        when(seasonRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        seasonService.registerTeam(seasonId, teamId, 1);
+
+        assertEquals(1, season.getSeasonTeams().size());
+        assertEquals(team, season.getSeasonTeams().get(0).getTeam());
+        verify(seasonRepository).save(season);
+    }
+
+    @Test
+    @DisplayName("registerTeam throws EntityNotFoundException when season not found")
+    void registerTeamThrowsWhenSeasonNotFound() {
+        when(seasonRepository.findById(any())).thenReturn(Optional.empty());
+        assertThrows(EntityNotFoundException.class,
+                () -> seasonService.registerTeam(UUID.randomUUID(), UUID.randomUUID(), 0));
+    }
+
+    @Test
+    @DisplayName("registerTeam throws EntityNotFoundException when team not found")
+    void registerTeamThrowsWhenTeamNotFound() {
+        when(seasonRepository.findById(season.getId())).thenReturn(Optional.of(season));
+        when(teamRepository.findById(any())).thenReturn(Optional.empty());
+        assertThrows(EntityNotFoundException.class,
+                () -> seasonService.registerTeam(season.getId(), UUID.randomUUID(), 0));
+    }
+
+    // ── withdrawTeam ──────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("withdrawTeam calls seasonTeam.withdraw() and saves")
+    void withdrawTeamCallsWithdrawAndSaves() {
+        SeasonTeam st = new SeasonTeam(season, team, 1, SeasonTeamStatus.CONFIRMED);
+        season.addSeasonTeam(st);
+        UUID seasonId = season.getId();
+        UUID teamId = team.getId();
+        when(seasonRepository.findById(seasonId)).thenReturn(Optional.of(season));
+        when(seasonRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        seasonService.withdrawTeam(seasonId, teamId);
+
+        assertEquals(SeasonTeamStatus.WITHDRAWN, st.getStatus());
+        verify(seasonRepository).save(season);
+    }
+
+    @Test
+    @DisplayName("withdrawTeam throws EntityNotFoundException when team not enrolled")
+    void withdrawTeamThrowsWhenTeamNotEnrolled() {
+        when(seasonRepository.findById(season.getId())).thenReturn(Optional.of(season));
+        assertThrows(EntityNotFoundException.class,
+                () -> seasonService.withdrawTeam(season.getId(), UUID.randomUUID()));
+    }
+
+    // ── completeRound ─────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("completeRound calls round.completeRound() and saves")
+    void completeRoundCallsDomainMethodAndSaves() {
+        Round round = new Round(season, 1, "Round 1", LocalDate.now(), LocalDate.now().plusDays(3),
+                RoundStatus.SCHEDULED);
+        round.startRound();
+        UUID roundId = round.getId();
+        when(roundRepository.findById(roundId)).thenReturn(Optional.of(round));
+        when(roundRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        seasonService.completeRound(roundId);
+
+        assertEquals(RoundStatus.COMPLETED, round.getStatus());
+        verify(roundRepository).save(round);
+    }
+
+    // ── findById ──────────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("findById returns mapped SeasonResponse")
+    void findByIdReturnsResponse() {
+        UUID id = season.getId();
+        when(seasonRepository.findById(id)).thenReturn(Optional.of(season));
+
+        SeasonResponse response = seasonService.findById(id);
+        assertEquals("2026/2027", response.name());
+        assertEquals("UPCOMING", response.status());
+    }
+
+    // ── findByLeague ──────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("findByLeague returns list of SeasonResponse for that league")
+    void findByLeagueReturnsResponses() {
+        when(seasonRepository.findByLeagueId(league.getId())).thenReturn(List.of(season));
+
+        List<SeasonResponse> results = seasonService.findByLeague(league.getId());
+        assertEquals(1, results.size());
+        assertEquals("2026/2027", results.get(0).name());
+    }
+}
