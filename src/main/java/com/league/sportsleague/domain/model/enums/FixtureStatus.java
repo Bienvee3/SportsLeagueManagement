@@ -1,4 +1,4 @@
-package com.league.sportsleague.domain;
+package com.league.sportsleague.domain.model.enums;
 
 public enum FixtureStatus {
     SCHEDULED,
@@ -7,4 +7,3 @@ public enum FixtureStatus {
     POSTPONED,
     CANCELLED
 }
-

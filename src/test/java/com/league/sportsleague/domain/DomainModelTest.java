@@ -1,5 +1,7 @@
 package com.league.sportsleague.domain;
 
+import com.league.sportsleague.domain.model.*;
+import com.league.sportsleague.domain.model.enums.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -92,4 +94,3 @@ class DomainModelTest {
         assertEquals(1, league.getSeasons().size());
     }
 }
-

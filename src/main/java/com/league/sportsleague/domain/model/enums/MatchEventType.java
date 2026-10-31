@@ -1,4 +1,4 @@
-package com.league.sportsleague.domain;
+package com.league.sportsleague.domain.model.enums;
 
 public enum MatchEventType {
     GOAL,
@@ -8,4 +8,3 @@ public enum MatchEventType {
     OWN_GOAL,
     SUBSTITUTION
 }
-

@@ -1,4 +1,4 @@
-package com.league.sportsleague.domain;
+package com.league.sportsleague.domain.model;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;

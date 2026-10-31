@@ -1,5 +1,6 @@
-package com.league.sportsleague.domain;
+package com.league.sportsleague.domain.model;
 
+import com.league.sportsleague.domain.model.enums.SeasonTeamStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
