@@ -1,8 +1,8 @@
 # Current Project Status — Sports League Management
 
 **Last Updated**: 2026-10-31  
-**Active Branch**: `review/phase-4`  
-**Latest Local Commit**: `d5131c2 feat(repo): define domain repository contracts and Spring Data JPA implementations`  
+**Active Branch**: `review/phase-5`  
+**Latest Local Commit**: `f3c8c1f feat(service): add FixtureService with result recording and correction`  
 **Git Working Tree**: Clean.  
 **Push to origin**: Not yet — awaiting explicit user authorization per AGENTS.md §6.4.
 
@@ -10,13 +10,14 @@
 
 ## 1. Executive Summary
 
-Milestone 1 is 100% complete. Architecture restructuring Phases 1–4 are complete on stacked `review/*` branches:
+Milestone 1 is 100% complete. Architecture restructuring Phases 1–5 are complete on `review/phase-5`:
 
-- **`review/phase-1`**: Package reorganization ✅
-- **`review/phase-2`**: Value Objects (Slug, TeamCode, MatchMinute, Score) ✅
-- **`review/phase-3`**: Domain exceptions + state-transition guards + CQS methods ✅
-- **`review/phase-4`**: JPA Repository contracts + Spring Data implementations ✅
-- **`review/phase-5`**: Application services + DTOs — **NEXT**
+- **Phase 1**: Package reorganization ✅
+- **Phase 2**: Value Objects ✅
+- **Phase 3**: Domain exceptions + guards + CQS ✅
+- **Phase 4**: JPA Repository contracts + Spring Data implementations ✅
+- **Phase 5**: Application Services + DTOs ✅
+- **Phase 6**: Spring Security 7 + V3 migration — **NEXT (M3)**
 
 ---
 
@@ -24,70 +25,59 @@ Milestone 1 is 100% complete. Architecture restructuring Phases 1–4 are comple
 
 | Milestone | Scope | Status | Progress |
 | :---: | :--- | :---: | :---: |
-| **M1** | JPA Domain Model, Flyway DDL v1/v2, Docker Compose, ADR 001, Context & Model Tests | **COMPLETED** | 100% |
-| **M2** | Package restructuring, Domain hardening, JPA Repositories, Services, DTOs, Round-Robin, Thymeleaf | **IN PROGRESS** | ~40% |
-| **M3** | Spring Security 7, REST API + OpenAPI, AI Match Chronicle | ⏳ Pending | 0% |
+| **M1** | JPA Domain Model, Flyway V1+V2, Docker Compose, ADR 001, Tests | **COMPLETED** | 100% |
+| **M2** | Restructuring, Repos, Services, DTOs, Round-Robin, Thymeleaf | **IN PROGRESS** | ~65% |
+| **M3** | Spring Security 7, REST API + OpenAPI, AI Chronicle | ⏳ Pending | 0% |
 | **M4** | JaCoCo ≥80%, i18n, Quartz, Deployment | ⏳ Pending | 0% |
 
 ---
 
 ## 3. Completed Restructuring Phases
 
-### Phase 1 — Package Reorganization (`review/phase-1`)
-Commit: `refactor(domain): reorganize domain layer into model, enums, and sub-package structure`
-- **Tests**: 4/4 ✅
+### Phase 5 — Application Services + DTOs (`review/phase-5`)
+**5 atomic commits**:
 
-### Phase 2 — Value Objects (`review/phase-2`)
-4 atomic commits. Slug, TeamCode, MatchMinute with `AttributeConverter(autoApply=true)`. Score as parameter record.
-- **Tests**: 68/68 ✅
+| Commit | Hash | Content |
+|---|---|---|
+| `feat(service): add DTOs` | `ac67eb2` | 12 Java Records with Bean Validation |
+| `feat(service): add LeagueService` | `7a81df8` | createLeague, rename, delete, find* |
+| `feat(service): add TeamService` | `698b8eb` | createTeam, updateProfile, find* |
+| `feat(service): add SeasonService` | `202ccef` | createSeason, activate, complete, register/withdrawTeam, completeRound, find* |
+| `feat(service): add FixtureService` | `f3c8c1f` | recordResult, correctResult, postpone, cancel, reschedule, recordMatchEvent, find* |
 
-### Phase 3 — Domain Exceptions + Guards + CQS (`review/phase-3`)
-3 atomic commits. 3 domain exceptions, state guards on all entities, `correctResult()`, `rename()`/`updateProfile()`, query methods.
-- **Tests**: 126/126 ✅
+**Service pattern applied in all 4**:
+- `@Service`, `@Transactional` class-level (commands), `@Transactional(readOnly=true)` per query method
+- Constructor injection of domain repository interfaces only — no Spring Data imports in services
+- `EntityNotFoundException` when `findById` returns `Optional.empty()`
+- Static `from(Entity)` mapper methods on response DTOs — no separate mapper class
 
-### Phase 4 — Repository Contracts + Spring Data JPA (`review/phase-4`)
-1 atomic commit: `d5131c2`
-
-**5 domain interfaces** (`domain.repository` — no Spring imports):
-
-| Interface | Key methods |
-|---|---|
-| `LeagueRepository` | `findById`, `findBySlug(Slug)`, `findAll`, `save`, `delete` |
-| `TeamRepository` | `findById`, `findByShortCode(TeamCode)`, `findAll`, `save` |
-| `SeasonRepository` | `findById`, `findByLeagueId(UUID)`, `save` |
-| `RoundRepository` | `findById`, `findBySeasonIdOrderByRoundNumber(UUID)`, `save` |
-| `FixtureRepository` | `findById`, `findByRoundId(UUID)`, `findFinishedBySeasonWithTeams(UUID)`, `save` |
-
-**5 Spring Data JPA implementations** (`infrastructure.persistence`):
-- Dual inheritance: `JpaXxxRepository extends JpaRepository<E, UUID>, XxxRepository`
-- Derived queries for VO-typed params (Slug, TeamCode) — Hibernate uses `autoApply=true` converters
-- `JpaFixtureRepository`: `@Query JOIN FETCH` via `default` method satisfying domain contract signature
-- **Tests**: 147/147 ✅ (+21 `@DataJpaTest` slice tests)
-
-**Key technical discovery**: Spring Boot 4.1.1 relocated test-slice packages:
-- `@DataJpaTest` → `org.springframework.boot.data.jpa.test.autoconfigure`
-- `TestEntityManager` → `org.springframework.boot.jpa.test.autoconfigure`
-- `@AutoConfigureTestDatabase` → `org.springframework.boot.jdbc.test.autoconfigure`
+**Tests**: 190/190 ✅ (+43 Mockito unit tests: 11 League + 6 Team + 14 Season + 12 Fixture)
 
 ---
 
-## 4. Test Suite Execution & Verification
+## 4. Test Suite — 190/190
 
-- **Command**: `cmd.exe /c "cd /d C:\Users\Bienve\dev\Java\SportsLeagueManagement && mvnw.cmd test"`
-- **Result**: `Tests run: 147, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS`
+```
+cmd.exe /c "cd /d C:\Users\Bienve\dev\Java\SportsLeagueManagement && mvnw.cmd test"
+Tests run: 190, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS
+```
 
-| Test Class | Count | Scope |
+| Test Class | Count | Type |
 |---|---|---|
-| `SlugTest` | 23 | Slug VO |
-| `StateTransitionGuardTest` | 37 | Entity state guards |
-| `TeamCodeTest` | 19 | TeamCode VO |
-| `DomainMethodsTest` | 17 | correctResult(), rename(), updateProfile(), query methods |
-| `RepositorySliceTest` | 21 | 5 repositories: derived queries, Slug/TeamCode converters, JOIN FETCH |
-| `MatchMinuteTest` | 13 | MatchMinute VO |
-| `DomainModelTest` | 3 | Aggregate chain, business keys, collection immutability |
-| `DomainExceptionsTest` | 4 | Exception messages |
-| `ScoreTest` | 9 | Score VO |
-| `SportsLeagueManagementApplicationTests` | 1 | Spring context + Flyway |
+| `FixtureServiceTest` | 12 | Mockito unit |
+| `SeasonServiceTest` | 14 | Mockito unit |
+| `LeagueServiceTest` | 11 | Mockito unit |
+| `TeamServiceTest` | 6 | Mockito unit |
+| `SlugTest` | 23 | Pure unit |
+| `StateTransitionGuardTest` | 37 | Pure unit |
+| `TeamCodeTest` | 19 | Pure unit |
+| `DomainMethodsTest` | 17 | Pure unit |
+| `RepositorySliceTest` | 21 | @DataJpaTest |
+| `MatchMinuteTest` | 13 | Pure unit |
+| `DomainModelTest` | 3 | Pure unit |
+| `DomainExceptionsTest` | 4 | Pure unit |
+| `ScoreTest` | 9 | Pure unit |
+| `SportsLeagueManagementApplicationTests` | 1 | @SpringBootTest |
 
 ---
 
@@ -95,37 +85,33 @@ Commit: `refactor(domain): reorganize domain layer into model, enums, and sub-pa
 
 ```
 com.league.sportsleague/
+├── application/
+│   ├── dto/        ← 12 Java Records (request + response)  ✅
+│   └── service/    ← LeagueService, TeamService, SeasonService, FixtureService  ✅
 ├── domain/
-│   ├── model/              ← 8 JPA entities
-│   │   └── enums/          ← 5 enumerations
-│   ├── valueobject/        ← Slug, TeamCode, MatchMinute, Score  ✅
-│   ├── exception/          ← InvalidStateTransitionException, DuplicateTeamException, EntityNotFoundException  ✅
-│   └── repository/         ← 5 domain interfaces (no Spring imports)  ✅
+│   ├── model/      ← 8 entities + enums
+│   ├── valueobject/← Slug, TeamCode, MatchMinute, Score
+│   ├── exception/  ← InvalidStateTransition, DuplicateTeam, EntityNotFound
+│   └── repository/ ← 5 domain interfaces
 └── infrastructure/
     └── persistence/
-        ├── converter/      ← SlugConverter, TeamCodeConverter, MatchMinuteConverter  ✅
-        └── Jpa*Repository  ← 5 Spring Data JPA implementations  ✅
+        ├── converter/     ← 3 AttributeConverters
+        └── Jpa*Repository ← 5 Spring Data implementations
 ```
 
 ---
 
-## 6. Known Constraints & Notices
+## 6. Immediate Next Steps — Phase 6 (M3 starts)
 
-1. **Docker Desktop not installed**: H2 in-memory for all tests.
-2. **Mockito self-attaching warning on Java 25**: Benign. Resolved in M4.
-3. **Stacked branches**: review/phase-1 → ... → review/phase-4. All await user authorization before merging to `main`.
-
----
-
-## 7. Immediate Next Steps — Phase 5
-
-**Target**: Application services + DTOs
+**Target**: Spring Security 7 configuration + user table migration
 
 **Deliverables:**
-1. `application.dto.*` — Java Records: `CreateLeagueRequest`, `LeagueResponse`, `CreateTeamRequest`, `TeamResponse`, `CreateSeasonRequest`, `SeasonResponse`, `RecordResultRequest`, `CorrectResultRequest`, `FixtureResponse`, `RegisterTeamRequest`
-2. `application.service.LeagueService` — createLeague, updateProfile (→`rename`), findById, findBySlug, findAll
-3. `application.service.TeamService` — createTeam, updateProfile, findById, findAll
-4. `application.service.SeasonService` — createSeason, activateSeason, completeSeason, registerTeam, withdrawTeam, completeRound, findById, findByLeague
-5. `application.service.FixtureService` — recordResult, correctResult, postpone, cancel, reschedule, recordMatchEvent, findById, findByRound, findBySeasonWithTeams
+1. Flyway `V3__add_users_table.sql` — `users` + `authorities` tables (Spring Security standard schema)
+2. `infrastructure.security.SecurityConfig` — `SecurityFilterChain` with form login, BCrypt, 3 role rules
+3. `infrastructure.config.InitialUserSeeder` — `ApplicationRunner` reading `ADMIN_USERNAME`/`ADMIN_PASSWORD` from env, fail-fast if missing, idempotent
+4. `.env.example` at repo root documenting required env vars
+5. `web.view.LoginController` + `login.html` template
+6. Security slice tests (`@WebMvcTest`)
 
-**Verification**: Mockito unit tests per service + `mvnw.cmd test` → BUILD SUCCESS
+**Pending decisions before Phase 6:**
+- Confirm `thymeleaf-extras-springsecurity6` compatibility with Spring Security 7 (may need `-springsecurity7` artifact)
