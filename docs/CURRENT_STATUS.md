@@ -1,8 +1,8 @@
 # Current Project Status — Sports League Management
 
 **Last Updated**: 2026-10-31  
-**Active Branch**: `review/phase-2`  
-**Latest Local Commit**: `6634949 feat(domain): introduce Score value object for result pair validation`  
+**Active Branch**: `review/phase-3`  
+**Latest Local Commit**: `a0cc1c5 refactor(domain): apply CQS naming, add query methods, encapsulate result correction in Fixture`  
 **Git Working Tree**: Clean.  
 **Push to origin**: Not yet — awaiting explicit user authorization per AGENTS.md §6.4.
 
@@ -10,11 +10,12 @@
 
 ## 1. Executive Summary
 
-Milestone 1 is 100% complete. The architecture restructuring is in progress on stacked `review/*` branches:
+Milestone 1 is 100% complete. Architecture restructuring Phases 1–3 are complete on stacked `review/*` branches:
 
-- **`review/phase-1`**: Package reorganization — DONE ✅
-- **`review/phase-2`**: Value Objects (Slug, TeamCode, MatchMinute, Score) — DONE ✅
-- **`review/phase-3`**: Domain exceptions + state-transition guards — **NEXT**
+- **`review/phase-1`**: Package reorganization ✅
+- **`review/phase-2`**: Value Objects (Slug, TeamCode, MatchMinute, Score) ✅
+- **`review/phase-3`**: Domain exceptions + state-transition guards + CQS methods ✅
+- **`review/phase-4`**: JPA Repository contracts — **NEXT**
 
 ---
 
@@ -23,51 +24,56 @@ Milestone 1 is 100% complete. The architecture restructuring is in progress on s
 | Milestone | Scope | Status | Progress |
 | :---: | :--- | :---: | :---: |
 | **M1** | JPA Domain Model, Flyway DDL v1/v2, Docker Compose, ADR 001, Context & Model Tests | **COMPLETED** | 100% |
-| **M2** | Package restructuring, Value Objects, Domain hardening, JPA Repositories, Services, DTOs, Round-Robin, Thymeleaf CRUD | **IN PROGRESS** | ~15% |
-| **M3** | Spring Security 7 (3 roles), REST API with OpenAPI 3.x, AI Match Chronicle (Ports & Adapters) | ⏳ Pending | 0% |
-| **M4** | JaCoCo line coverage ≥80%, i18n (EN/HR), Quartz Scheduled Jobs, Production Deployment | ⏳ Pending | 0% |
+| **M2** | Package restructuring, Domain hardening, JPA Repositories, Services, DTOs, Round-Robin, Thymeleaf | **IN PROGRESS** | ~25% |
+| **M3** | Spring Security 7, REST API + OpenAPI, AI Match Chronicle | ⏳ Pending | 0% |
+| **M4** | JaCoCo ≥80%, i18n, Quartz, Deployment | ⏳ Pending | 0% |
 
 ---
 
 ## 3. Completed Restructuring Phases
 
 ### Phase 1 — Package Reorganization (`review/phase-1`)
-**Commit**: `refactor(domain): reorganize domain layer into model, enums, and sub-package structure`
-
-- Moved 8 entity classes → `domain.model`
-- Moved 5 enum classes → `domain.model.enums`
-- Created placeholder `package-info.java` in `domain.valueobject`, `domain.exception`, `domain.repository`
-- Updated `DomainModelTest.java` imports
-- Tests: **4/4 ✅** — `DomainModelTest` (3) + `contextLoads()` (1)
+Commit: `refactor(domain): reorganize domain layer into model, enums, and sub-package structure`
+- 8 entities → `domain.model`, 5 enums → `domain.model.enums`
+- Placeholder packages: `domain.valueobject`, `domain.exception`, `domain.repository`
+- **Tests**: 4/4 ✅
 
 ### Phase 2 — Value Objects (`review/phase-2`)
-**4 atomic commits** (one per Value Object):
+4 atomic commits (Slug, TeamCode, MatchMinute, Score)
+- `Slug`, `TeamCode`, `MatchMinute` — persisted via `AttributeConverter` with `autoApply = true`
+- `Score` — parameter record (non-persisted), validates home ≥ 0, away ≥ 0
+- ADR-002 added, DEC-007 + DEC-008 registered
+- **Tests**: 68/68 ✅
 
-| VO | Field | Invariant | Persisted via |
-|---|---|---|---|
-| `Slug` | `League.slug` | `[a-z0-9]+(-[a-z0-9]+)*`, ≤100 chars | `SlugConverter` |
-| `TeamCode` | `Team.shortCode` | `[A-Z]{2,10}` uppercase alpha | `TeamCodeConverter` |
-| `MatchMinute` | `MatchEvent.matchMinute` | 1–130 | `MatchMinuteConverter` |
-| `Score` | parameter type only | home ≥ 0, away ≥ 0 | no persistence |
+### Phase 3 — Domain Exceptions + State Guards + CQS (`review/phase-3`)
+3 atomic commits:
 
-All converters in `infrastructure.persistence.converter`, `autoApply = true`.
-- Tests: **68/68 ✅** (23 Slug + 19 TeamCode + 13 MatchMinute + 9 Score + 4 original)
+| Commit | Hash | What |
+|---|---|---|
+| `feat(domain): add domain exceptions` | `2506e84` | InvalidStateTransitionException, DuplicateTeamException, EntityNotFoundException |
+| `feat(domain): enforce state-transition guards and constructor validation` | `e8de8bf` | Guards on Season/Round/Fixture/SeasonTeam, SeasonTeam.reinstate(), duplicate guard on Season.addSeasonTeam(), constructor validations, recordResult(Score) |
+| `refactor(domain): apply CQS naming, add query methods, encapsulate result correction` | `a0cc1c5` | League.rename(), Team.updateProfile(), Fixture.correctResult(), Season.isActive()/teamCount(), Fixture.isFinished()/isDraw(), Round.allFixturesFinished() |
+
+**Tests**: 126/126 ✅
 
 ---
 
 ## 4. Test Suite Execution & Verification
 
 - **Command**: `cmd.exe /c "cd /d C:\Users\Bienve\dev\Java\SportsLeagueManagement && mvnw.cmd test"`
-- **Result**: `Tests run: 68, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS`
+- **Result**: `Tests run: 126, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS`
 
 | Test Class | Count | Scope |
 |---|---|---|
-| `SlugTest` | 23 | Valid/invalid slugs, equality, compareTo |
-| `TeamCodeTest` | 19 | Valid/invalid codes, equality |
-| `MatchMinuteTest` | 13 | Range 1–130, boundary cases |
-| `ScoreTest` | 9 | Non-negative, toString, equality |
-| `DomainModelTest` | 3 | Aggregate hierarchy, business key equality, collection immutability |
-| `SportsLeagueManagementApplicationTests` | 1 | Spring context loads, Flyway migrations, Hibernate entity scan |
+| `SlugTest` | 23 | Slug VO validation and equality |
+| `StateTransitionGuardTest` (nested) | 37 | All entity state-transition guards |
+| `TeamCodeTest` | 19 | TeamCode VO |
+| `DomainMethodsTest` (nested) | 17 | correctResult(), rename(), updateProfile(), query methods |
+| `MatchMinuteTest` | 13 | MatchMinute VO |
+| `DomainModelTest` | 3 | Aggregate chain, business keys, collection immutability |
+| `DomainExceptionsTest` | 4 | Exception messages and unchecked hierarchy |
+| `ScoreTest` | 9 | Score VO |
+| `SportsLeagueManagementApplicationTests` | 1 | Spring context loads with H2 + Flyway |
 
 ---
 
@@ -76,10 +82,10 @@ All converters in `infrastructure.persistence.converter`, `autoApply = true`.
 ```
 com.league.sportsleague/
 ├── domain/
-│   ├── model/              ← 8 JPA entities
+│   ├── model/              ← 8 JPA entities (with guards, CQS methods, query methods)
 │   │   └── enums/          ← 5 enumerations
 │   ├── valueobject/        ← Slug, TeamCode, MatchMinute, Score  ✅
-│   ├── exception/          ← (package-info only — populated in Phase 3)
+│   ├── exception/          ← InvalidStateTransitionException, DuplicateTeamException, EntityNotFoundException  ✅
 │   └── repository/         ← (package-info only — populated in Phase 4)
 └── infrastructure/
     └── persistence/
@@ -88,35 +94,40 @@ com.league.sportsleague/
 
 ---
 
-## 6. Known Constraints & Notices
+## 6. Key Domain Rules Now Enforced
 
-1. **Docker Desktop not installed locally**: H2 in-memory used for all tests. Required for Testcontainers integration tests (Milestone 4).
-2. **Mockito self-attaching warning on Java 25**: Benign. Will be resolved in Milestone 4 via Surefire argLine configuration.
-3. **Stacked branches**: `review/phase-2` builds on `review/phase-1`. Both must be reviewed before merging to `main`.
+| Rule | Where | How |
+|---|---|---|
+| Season: UPCOMING→ACTIVE→COMPLETED only | `Season.activate/complete()` | `InvalidStateTransitionException` |
+| Round: SCHEDULED→IN_PROGRESS→COMPLETED only | `Round.startRound/completeRound()` | `InvalidStateTransitionException` |
+| Fixture: recordResult only from SCHEDULED/IN_PROGRESS | `Fixture.recordResult()` | `InvalidStateTransitionException` |
+| Fixture: reschedule only from POSTPONED | `Fixture.reschedule()` | `InvalidStateTransitionException` |
+| SeasonTeam: reinstate only from WITHDRAWN | `SeasonTeam.reinstate()` | `InvalidStateTransitionException` |
+| Home ≠ Away | `Fixture()` constructor | `DuplicateTeamException` |
+| No duplicate team in season | `Season.addSeasonTeam()` | `DuplicateTeamException` |
+| Result correction is atomic | `Fixture.correctResult()` | Creates ResultAudit + updates score atomically |
 
 ---
 
-## 7. Immediate Next Steps — Phase 3
+## 7. Known Constraints & Notices
 
-**Target**: Domain exceptions + state-transition guards (Plan 1 Steps 3 & 4)
+1. **Docker Desktop not installed**: H2 in-memory for all tests. Required for M4 Testcontainers.
+2. **Mockito self-attaching warning on Java 25**: Benign. Will be fixed in M4 Surefire config.
+3. **Stacked branches**: review/phase-1 → review/phase-2 → review/phase-3. All must be reviewed before merging to `main`.
+
+---
+
+## 8. Immediate Next Steps — Phase 4
+
+**Target**: JPA Repository contracts + Spring Data implementations
 
 **Deliverables:**
-1. `domain.exception.InvalidStateTransitionException`
-2. `domain.exception.DuplicateTeamException`
-3. `domain.exception.EntityNotFoundException`
-4. Guard clauses on all state-transition methods (Season, Round, Fixture, SeasonTeam)
-5. `Fixture.correctResult(Score, String, String)` — encapsulates audit creation
-6. Remove unconstrained `Season.updateStatus()` and `SeasonTeam.updateStatus()`
-7. Add `SeasonTeam.reinstate()` for WITHDRAWN → CONFIRMED
-8. CQS method renames (`updateDetails` → `rename`/`updateProfile`)
-9. Domain query methods (`isActive()`, `isFinished()`, `allFixturesFinished()`)
-10. Update `DomainModelTest` to use `correctResult()` instead of manual audit creation
+1. `domain.repository.LeagueRepository` interface
+2. `domain.repository.TeamRepository` interface
+3. `domain.repository.SeasonRepository` interface
+4. `domain.repository.RoundRepository` interface
+5. `domain.repository.FixtureRepository` interface (with `@Query` JOIN FETCH for season fixtures)
+6. Corresponding `JpaLeagueRepository`, etc. in `infrastructure.persistence` (extends JpaRepository + domain interface)
+7. `@DataJpaTest` slice tests proving: save/findById round-trip, Slug converter, `findBySlug()`, `findFinishedBySeasonWithTeams()` without LazyInitializationException
 
-**Verification**: `mvnw.cmd test` → ≥90 tests (68 current + ~25 new guard/exception tests) — BUILD SUCCESS
-
----
-
-## 8. Decisions Recorded This Session
-
-- **DEC-007**: JPA annotations remain on domain entities (pragmatic concession over strict separation). Documented in `docs/DECISIONS/README.md`.
-- **DEC-008**: Value Objects as Java Records with JPA `AttributeConverter` (`autoApply = true`). See `docs/adr/002-value-objects.md`.
+**Verification**: `mvnw.cmd test` → ≥132 tests (126 + ~6 @DataJpaTest) — BUILD SUCCESS
