@@ -1,8 +1,8 @@
 # Current Project Status — Sports League Management
 
-**Last Updated**: 2026-10-31  
-**Active Branch**: `review/phase-5`  
-**Latest Local Commit**: `f3c8c1f feat(service): add FixtureService with result recording and correction`  
+**Last Updated**: 2026-11-02  
+**Active Branch**: `review/phase-6` (local, unpushed)  
+**Latest Local Commit**: `13dd98a feat(service): add generateSchedule to SeasonService`  
 **Git Working Tree**: Clean.  
 **Push to origin**: Not yet — awaiting explicit user authorization per AGENTS.md §6.4.
 
@@ -17,7 +17,8 @@ Milestone 1 is 100% complete. Architecture restructuring Phases 1–5 are comple
 - **Phase 3**: Domain exceptions + guards + CQS ✅
 - **Phase 4**: JPA Repository contracts + Spring Data implementations ✅
 - **Phase 5**: Application Services + DTOs ✅
-- **Phase 6**: Spring Security 7 + V3 migration — **NEXT (M3)**
+- **Phase 6**: Round-Robin Scheduler (domain + SeasonService) ✅
+- **Phase 7**: Spring Security 7 + V3 migration — **NEXT (M3)**
 
 ---
 
@@ -33,6 +34,18 @@ Milestone 1 is 100% complete. Architecture restructuring Phases 1–5 are comple
 ---
 
 ## 3. Completed Restructuring Phases
+
+### Phase 6 — Round-Robin Scheduler (`review/phase-6`)
+**2 atomic commits**:
+
+| Commit | Hash | Content |
+|---|---|---|
+| `feat(domain): implement round-robin schedule generation with greedy home-away balance` | `85fdeab` | `RoundRobinScheduler` (circle method, single round-robin), 44 tests |
+| `feat(service): add generateSchedule to SeasonService` | `13dd98a` | `generateSchedule(seasonId, firstMatchTime)`: CONFIRMED teams only, `season.addRound`, cascade save; 3 tests |
+
+**Scheduler rules**: N-1 circle rounds (odd N adds BYE); each pair plays once; no team plays twice per round; home/away diff ≤ 1 via greedy tracker; round dates weekly (+7 days); all fixtures in a round share the round time.
+
+**Known gap**: `generateSchedule` does not reject a season that already has rounds; calling it twice duplicates fixtures. Guard not yet decided.
 
 ### Phase 5 — Application Services + DTOs (`review/phase-5`)
 **5 atomic commits**:
@@ -51,21 +64,21 @@ Milestone 1 is 100% complete. Architecture restructuring Phases 1–5 are comple
 - `EntityNotFoundException` when `findById` returns `Optional.empty()`
 - Static `from(Entity)` mapper methods on response DTOs — no separate mapper class
 
-**Tests**: 190/190 ✅ (+43 Mockito unit tests: 11 League + 6 Team + 14 Season + 12 Fixture)
+**Tests**: 237/237 ✅ (Phase 6 adds RoundRobinSchedulerTest 44 + 3 SeasonService schedule tests)
 
 ---
 
-## 4. Test Suite — 190/190
+## 4. Test Suite — 237/237
 
 ```
 cmd.exe /c "cd /d C:\Users\Bienve\dev\Java\SportsLeagueManagement && mvnw.cmd test"
-Tests run: 190, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS
+Tests run: 237, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS
 ```
 
 | Test Class | Count | Type |
 |---|---|---|
 | `FixtureServiceTest` | 12 | Mockito unit |
-| `SeasonServiceTest` | 14 | Mockito unit |
+| `SeasonServiceTest` | 17 | Mockito unit |
 | `LeagueServiceTest` | 11 | Mockito unit |
 | `TeamServiceTest` | 6 | Mockito unit |
 | `SlugTest` | 23 | Pure unit |
@@ -101,7 +114,9 @@ com.league.sportsleague/
 
 ---
 
-## 6. Immediate Next Steps — Phase 6 (M3 starts)
+## 6. Immediate Next Steps — Phase 7 (M3 starts)
+
+**Open Phase 6 items**: decide the regeneration guard for `generateSchedule`; decide whether round dates should vary kickoff times per fixture.
 
 **Target**: Spring Security 7 configuration + user table migration
 
