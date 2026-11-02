@@ -1,8 +1,8 @@
 # Current Project Status — Sports League Management
 
 **Last Updated**: 2026-11-02  
-**Active Branch**: `review/phase-8` (local, unpushed)  
-**Latest Local Commit**: `6f116c3 feat(web): add REST API controllers, OpenAPI/Swagger UI, and ProblemDetail error handler`  
+**Active Branch**: `review/phase-9` (local, unpushed)  
+**Latest Local Commit**: `199730b feat(domain): implement standings calculation engine with 5-level tie-break cascade`  
 **Git Working Tree**: Clean.  
 **Push to origin**: Not yet — awaiting explicit user authorization per AGENTS.md §6.4.
 
@@ -20,6 +20,7 @@ Milestone 1 is 100% complete. Architecture restructuring Phases 1–5 are comple
 - **Phase 6**: Round-Robin Scheduler (domain + SeasonService) ✅
 - **Phase 7**: Spring Security 7 + V3 migration (users/authorities) + JDBC user store + InitialUserSeeder + login page ✅
 - **Phase 8**: REST API controllers (Leagues, Teams, Seasons, Fixtures) + springdoc OpenAPI + ProblemDetail RFC 7807 ✅
+- **Phase 9**: Standings engine (5-level tie-break) + `StandingsCalculator` + `SeasonService.getStandings` + REST endpoint ✅
 
 ---
 
@@ -29,7 +30,7 @@ Milestone 1 is 100% complete. Architecture restructuring Phases 1–5 are comple
 | :---: | :--- | :---: | :---: |
 | **M1** | JPA Domain Model, Flyway V1+V2, Docker Compose, ADR 001, Tests | **COMPLETED** | 100% |
 | **M2** | Restructuring, Repos, Services, DTOs, Round-Robin, Thymeleaf | **IN PROGRESS** | ~70% |
-| **M3** | Spring Security 7, REST API + OpenAPI, AI Chronicle | **IN PROGRESS** | ~60% |
+| **M3** | Spring Security 7, REST API + OpenAPI, AI Chronicle | **IN PROGRESS** | ~80% |
 | **M4** | JaCoCo ≥80%, i18n, Quartz, Deployment | ⏳ Pending | 0% |
 
 ---
@@ -87,15 +88,15 @@ Milestone 1 is 100% complete. Architecture restructuring Phases 1–5 are comple
 - `EntityNotFoundException` when `findById` returns `Optional.empty()`
 - Static `from(Entity)` mapper methods on response DTOs — no separate mapper class
 
-**Tests**: 282/282 ✅ (Phase 8 adds 34 `@WebMvcTest` REST controller tests)
+**Tests**: 300/300 ✅ (Phase 9 adds StandingsCalculatorTest 18 + 2 SeasonService getStandings tests)
 
 ---
 
-## 4. Test Suite — 282/282
+## 4. Test Suite — 300/300
 
 ```
 cmd.exe /c "cd /d C:\Users\Bienve\dev\Java\SportsLeagueManagement && mvnw.cmd test"
-Tests run: 282, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS (2026-11-02)
+Tests run: 300, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS (2026-11-02)
 ```
 
 | Test Class | Count | Type |
@@ -121,6 +122,7 @@ Tests run: 282, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS (2026-11-02
 | `TeamRestControllerTest` | 8 | `@WebMvcTest` |
 | `SeasonRestControllerTest` | 8 | `@WebMvcTest` |
 | `FixtureRestControllerTest` | 8 | `@WebMvcTest` |
+| `StandingsCalculatorTest` | 18 | Pure unit |
 
 ---
 
@@ -129,9 +131,15 @@ Tests run: 282, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS (2026-11-02
 ```
 com.league.sportsleague/
 ├── application/
-│   ├── dto/        ← 12 Java Records (request + response)  ✅
+│   ├── dto/        ← 13 Java Records (request + response + StandingsResponse)  ✅
 │   └── service/    ← LeagueService, TeamService, SeasonService, FixtureService  ✅
 ├── domain/
+│   ├── model/      ← 8 entities + enums
+│   ├── valueobject/← Slug, TeamCode, MatchMinute, Score
+│   ├── exception/  ← InvalidStateTransition, DuplicateTeam, EntityNotFound
+│   ├── repository/ ← 5 domain interfaces
+│   ├── StandingsEntry.java  ← immutable standings row record  ✅
+│   └── StandingsCalculator.java  ← pure domain service, 5-level tie-break  ✅
 │   ├── model/      ← 8 entities + enums
 │   ├── valueobject/← Slug, TeamCode, MatchMinute, Score
 │   ├── exception/  ← InvalidStateTransition, DuplicateTeam, EntityNotFound
@@ -149,12 +157,13 @@ com.league.sportsleague/
 
 ---
 
-## 6. Immediate Next Steps — Phase 9 (Standings Engine)
+## 6. Immediate Next Steps — Phase 10 (AI Chronicle)
 
-Phase 8 complete. Next: dynamic standings calculation engine with 5-level tie-break cascade (Advanced Requirement 2).
+Phase 9 complete. Next: AI match chronicle generation (Advanced Requirement 4) via Hexagonal Ports & Adapters.
 
-**Phase 9 target deliverables:**
-1. `StandingsEntry` record (teamId, played, wins, draws, losses, GF, GA, GD, points)
-2. `StandingsCalculator` (pure domain service, no JPA) — 5-level tie-break cascade
-3. `SeasonService.getStandings(UUID seasonId)` + `GET /api/leagues/{id}/seasons/{id}/standings`
-4. ~25 unit tests + 1 service test
+**Phase 10 target deliverables:**
+1. `ChroniclePort` interface (domain port) + `ChronicleRequest`/`ChronicleResult` records
+2. `StubChronicleAdapter` — deterministic stub (`@Profile("!prod")`), no external calls, CI safe
+3. `ChronicleService` + `POST /api/fixtures/{id}/chronicle` (OFFICIAL/ADMIN)
+4. ~10 tests
+5. **Blocked**: real adapter awaits provider decision (Gemini / OpenAI / Spring AI / HTTP)
