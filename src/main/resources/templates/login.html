@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Sign in - Sports League Management</title>
+</head>
+<body>
+<h1>Sports League Management</h1>
+
+<p th:if="${param.error}">Invalid username or password.</p>
+<p th:if="${param.logout}">You have been signed out.</p>
+
+<form th:action="@{/login}" method="post">
+    <label for="username">Username</label>
+    <input type="text" id="username" name="username" required autofocus>
+
+    <label for="password">Password</label>
+    <input type="password" id="password" name="password" required>
+
+    <button type="submit">Sign in</button>
+</form>
+</body>
+</html>
