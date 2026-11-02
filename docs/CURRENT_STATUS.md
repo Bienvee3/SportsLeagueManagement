@@ -1,9 +1,9 @@
 # Current Project Status — Sports League Management
 
 **Last Updated**: 2026-11-02  
-**Active Branch**: `review/phase-6` (local, unpushed)  
-**Latest Local Commit**: `7863aa5 docs(status): record Phase 6 round-robin scheduler progress`  
-**Git Working Tree**: Phase 7 changes uncommitted (security, V3, seeder, login page).  
+**Active Branch**: `review/phase-8` (local, unpushed)  
+**Latest Local Commit**: `6f116c3 feat(web): add REST API controllers, OpenAPI/Swagger UI, and ProblemDetail error handler`  
+**Git Working Tree**: Clean.  
 **Push to origin**: Not yet — awaiting explicit user authorization per AGENTS.md §6.4.
 
 ---
@@ -19,6 +19,7 @@ Milestone 1 is 100% complete. Architecture restructuring Phases 1–5 are comple
 - **Phase 5**: Application Services + DTOs ✅
 - **Phase 6**: Round-Robin Scheduler (domain + SeasonService) ✅
 - **Phase 7**: Spring Security 7 + V3 migration (users/authorities) + JDBC user store + InitialUserSeeder + login page ✅
+- **Phase 8**: REST API controllers (Leagues, Teams, Seasons, Fixtures) + springdoc OpenAPI + ProblemDetail RFC 7807 ✅
 
 ---
 
@@ -28,14 +29,32 @@ Milestone 1 is 100% complete. Architecture restructuring Phases 1–5 are comple
 | :---: | :--- | :---: | :---: |
 | **M1** | JPA Domain Model, Flyway V1+V2, Docker Compose, ADR 001, Tests | **COMPLETED** | 100% |
 | **M2** | Restructuring, Repos, Services, DTOs, Round-Robin, Thymeleaf | **IN PROGRESS** | ~70% |
-| **M3** | Spring Security 7, REST API + OpenAPI, AI Chronicle | **IN PROGRESS** | ~15% |
+| **M3** | Spring Security 7, REST API + OpenAPI, AI Chronicle | **IN PROGRESS** | ~60% |
 | **M4** | JaCoCo ≥80%, i18n, Quartz, Deployment | ⏳ Pending | 0% |
 
 ---
 
 ## 3. Completed Restructuring Phases
 
-### Phase 7 — Spring Security 7 + V3 Migration (`review/phase-6`, pending commit)
+### Phase 8 — REST API + OpenAPI + ProblemDetail (`review/phase-8`)
+**Commit**: `6f116c3 feat(web): add REST API controllers, OpenAPI/Swagger UI, and ProblemDetail error handler`
+
+| File | Description |
+|---|---|
+| `pom.xml` | Added `springdoc-openapi-starter-webmvc-ui:3.1.1` |
+| `OpenApiConfig` | `OpenAPI` bean with project title/version |
+| `MethodSecurityConfig` | `@EnableMethodSecurity` (separated from SecurityConfig to avoid bean init cycle) |
+| `SecurityConfig` | Extended with Swagger UI public paths |
+| `LeagueRestController` | GET list/by-id/by-slug, POST, PUT, DELETE |
+| `TeamRestController` | GET list/by-id, POST, PUT |
+| `SeasonRestController` | GET list/by-id, POST create/activate/complete/register-team/withdraw-team/schedule |
+| `FixtureRestController` | GET by-id/by-round/by-season, POST result/correct-result/postpone/cancel/reschedule/events |
+| `RestExceptionHandler` | `@RestControllerAdvice` with ProblemDetail for 400/404/409/500; re-throws `AccessDeniedException` |
+| `*RestControllerTest` ×4 | `@WebMvcTest` slices — 34 tests covering 200/201/204/400/401/403/404/409 |
+
+**Swagger UI**: `/swagger-ui` (public), OpenAPI spec: `/api-docs` (public).  
+**Role enforcement**: `@PreAuthorize` on all mutation endpoints (ADMIN for leagues/teams/seasons, ADMIN+OFFICIAL for fixtures).
+
 **Deliverables completed**:
 
 | File | Description |
@@ -68,15 +87,15 @@ Milestone 1 is 100% complete. Architecture restructuring Phases 1–5 are comple
 - `EntityNotFoundException` when `findById` returns `Optional.empty()`
 - Static `from(Entity)` mapper methods on response DTOs — no separate mapper class
 
-**Tests**: 248/248 ✅ (Phase 7 adds InitialUserSeederTest 4 + SecurityAccessTest 7)
+**Tests**: 282/282 ✅ (Phase 8 adds 34 `@WebMvcTest` REST controller tests)
 
 ---
 
-## 4. Test Suite — 248/248
+## 4. Test Suite — 282/282
 
 ```
 cmd.exe /c "cd /d C:\Users\Bienve\dev\Java\SportsLeagueManagement && mvnw.cmd test"
-Tests run: 248, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS (2026-11-02)
+Tests run: 282, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS (2026-11-02)
 ```
 
 | Test Class | Count | Type |
@@ -98,6 +117,11 @@ Tests run: 248, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS (2026-11-02
 | `SecurityAccessTest` | 7 | `@SpringBootTest` + MockMvc |
 | `SportsLeagueManagementApplicationTests` | 1 | `@SpringBootTest` |
 | `RoundRobinSchedulerTest` | 44 | Pure unit |
+| `LeagueRestControllerTest` | 10 | `@WebMvcTest` |
+| `TeamRestControllerTest` | 8 | `@WebMvcTest` |
+| `SeasonRestControllerTest` | 8 | `@WebMvcTest` |
+| `FixtureRestControllerTest` | 8 | `@WebMvcTest` |
+
 ---
 
 ## 5. Current Package Structure
@@ -113,23 +137,24 @@ com.league.sportsleague/
 │   ├── exception/  ← InvalidStateTransition, DuplicateTeam, EntityNotFound
 │   └── repository/ ← 5 domain interfaces
 ├── infrastructure/
-│   ├── config/     ← InitialUserSeeder  ✅
-│   ├── security/   ← SecurityConfig  ✅
+│   ├── config/     ← InitialUserSeeder, OpenApiConfig  ✅
+│   ├── security/   ← SecurityConfig, MethodSecurityConfig  ✅
 │   └── persistence/
 │       ├── converter/     ← 3 AttributeConverters
 │       └── Jpa*Repository ← 5 Spring Data implementations
 └── web/
+    ├── api/        ← LeagueRestController, TeamRestController, SeasonRestController, FixtureRestController, RestExceptionHandler  ✅
     └── view/       ← LoginController  ✅
 ```
 
 ---
 
-## 6. Immediate Next Steps — Phase 8 (Thymeleaf CRUD Views)
+## 6. Immediate Next Steps — Phase 9 (Standings Engine)
 
-Phase 7 complete. Next: Thymeleaf CRUD views with layout dialect and `sec:` attributes.
+Phase 8 complete. Next: dynamic standings calculation engine with 5-level tie-break cascade (Advanced Requirement 2).
 
-**Phase 8 target deliverables:**
-1. `layout.html` base template with nav bar using `sec:authorize` role checks
-2. `LeagueController` (list + detail + ADMIN create/edit/delete) under `/leagues` and `/admin/leagues`
-3. Slice tests: `@WebMvcTest` per controller with `@WithMockUser`
-
+**Phase 9 target deliverables:**
+1. `StandingsEntry` record (teamId, played, wins, draws, losses, GF, GA, GD, points)
+2. `StandingsCalculator` (pure domain service, no JPA) — 5-level tie-break cascade
+3. `SeasonService.getStandings(UUID seasonId)` + `GET /api/leagues/{id}/seasons/{id}/standings`
+4. ~25 unit tests + 1 service test
