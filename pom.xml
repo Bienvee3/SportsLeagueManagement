@@ -29,6 +29,10 @@
 	<properties>
 		<java.version>25</java.version>
 		<spring-ai.version>2.0.2</spring-ai.version>
+		<!-- Default empty; overwritten by jacoco:prepare-agent at runtime -->
+		<argLine></argLine>
+		<!-- Keep in sync with version managed by spring-boot-starter-parent -->
+		<mockito.agent.version>5.23.0</mockito.agent.version>
 	</properties>
 
 	<dependencyManagement>
@@ -148,7 +152,77 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+
+			<!-- Surefire: Java 25 Mockito agent fix + JaCoCo argLine late-binding -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<argLine>@{argLine} -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.agent.version}/mockito-core-${mockito.agent.version}.jar -XX:+EnableDynamicAgentLoading</argLine>
+					<excludedGroups>integration</excludedGroups>
+				</configuration>
+			</plugin>
+
+			<!-- JaCoCo: instrument tests and enforce ≥80% line coverage on service layer -->
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.8.13</version>
+				<executions>
+					<execution>
+						<id>prepare-agent</id>
+						<goals><goal>prepare-agent</goal></goals>
+					</execution>
+					<execution>
+						<id>report</id>
+						<phase>verify</phase>
+						<goals><goal>report</goal></goals>
+					</execution>
+					<execution>
+						<id>check</id>
+						<phase>verify</phase>
+						<goals><goal>check</goal></goals>
+						<configuration>
+							<rules>
+								<rule>
+									<element>PACKAGE</element>
+									<includes>
+										<include>com.league.sportsleague.application.service</include>
+									</includes>
+									<limits>
+										<limit>
+											<counter>LINE</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.80</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
+
+	<!-- Integration test profile: runs @Tag("integration") tests with a real PostgreSQL container -->
+	<profiles>
+		<profile>
+			<id>integration</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-surefire-plugin</artifactId>
+						<configuration>
+							<argLine>@{argLine} -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.agent.version}/mockito-core-${mockito.agent.version}.jar -XX:+EnableDynamicAgentLoading</argLine>
+							<groups>integration</groups>
+							<excludedGroups></excludedGroups>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 
 </project>
