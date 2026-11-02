@@ -3,6 +3,7 @@ package com.league.sportsleague.web.api;
 import com.league.sportsleague.application.dto.CreateSeasonRequest;
 import com.league.sportsleague.application.dto.RegisterTeamRequest;
 import com.league.sportsleague.application.dto.SeasonResponse;
+import com.league.sportsleague.application.dto.StandingsResponse;
 import com.league.sportsleague.application.service.SeasonService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -44,6 +45,12 @@ public class SeasonRestController {
     @Operation(summary = "Get season by ID")
     public SeasonResponse getById(@PathVariable UUID leagueId, @PathVariable UUID id) {
         return seasonService.findById(id);
+    }
+
+    @GetMapping("/{id}/standings")
+    @Operation(summary = "Get standings for a season")
+    public StandingsResponse getStandings(@PathVariable UUID leagueId, @PathVariable UUID id) {
+        return seasonService.getStandings(id);
     }
 
     @PostMapping

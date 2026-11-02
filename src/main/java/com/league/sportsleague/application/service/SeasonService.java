@@ -2,6 +2,8 @@ package com.league.sportsleague.application.service;
 
 import com.league.sportsleague.application.dto.CreateSeasonRequest;
 import com.league.sportsleague.application.dto.SeasonResponse;
+import com.league.sportsleague.application.dto.StandingsResponse;
+import com.league.sportsleague.domain.StandingsCalculator;
 import com.league.sportsleague.domain.exception.EntityNotFoundException;
 import com.league.sportsleague.domain.RoundRobinScheduler;
 import com.league.sportsleague.domain.model.*;
@@ -22,15 +24,18 @@ public class SeasonService {
     private final LeagueRepository leagueRepository;
     private final TeamRepository teamRepository;
     private final RoundRepository roundRepository;
+    private final FixtureRepository fixtureRepository;
 
     public SeasonService(SeasonRepository seasonRepository,
                          LeagueRepository leagueRepository,
                          TeamRepository teamRepository,
-                         RoundRepository roundRepository) {
+                         RoundRepository roundRepository,
+                         FixtureRepository fixtureRepository) {
         this.seasonRepository = seasonRepository;
         this.leagueRepository = leagueRepository;
         this.teamRepository = teamRepository;
         this.roundRepository = roundRepository;
+        this.fixtureRepository = fixtureRepository;
     }
 
     // ── Commands ──────────────────────────────────────────────────────────────
@@ -106,6 +111,14 @@ public class SeasonService {
         return seasonRepository.findByLeagueId(leagueId).stream()
                 .map(SeasonResponse::from)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public StandingsResponse getStandings(UUID seasonId) {
+        Season season = requireSeason(seasonId);
+        var fixtures = fixtureRepository.findFinishedBySeasonWithTeams(seasonId);
+        var entries  = StandingsCalculator.calculate(fixtures);
+        return new StandingsResponse(season.getId(), season.getName(), Instant.now(), entries);
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────

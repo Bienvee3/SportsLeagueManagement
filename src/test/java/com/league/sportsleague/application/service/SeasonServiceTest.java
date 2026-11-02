@@ -33,6 +33,7 @@ class SeasonServiceTest {
     @Mock TeamRepository teamRepository;
     @Mock SeasonRepository seasonRepository;
     @Mock RoundRepository roundRepository;
+    @Mock FixtureRepository fixtureRepository;
 
     @InjectMocks SeasonService seasonService;
 
@@ -281,5 +282,25 @@ class SeasonServiceTest {
         when(seasonRepository.findById(any())).thenReturn(Optional.empty());
         assertThrows(EntityNotFoundException.class,
                 () -> seasonService.generateSchedule(UUID.randomUUID(), Instant.now()));
+    }
+
+    // ── getStandings ──────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("getStandings throws EntityNotFoundException when season not found")
+    void getStandingsThrowsWhenSeasonNotFound() {
+        when(seasonRepository.findById(any())).thenReturn(Optional.empty());
+        assertThrows(EntityNotFoundException.class,
+                () -> seasonService.getStandings(UUID.randomUUID()));
+    }
+
+    @Test
+    @DisplayName("getStandings returns empty list for season with no finished fixtures")
+    void getStandingsReturnsEmptyForNoFixtures() {
+        when(seasonRepository.findById(season.getId())).thenReturn(Optional.of(season));
+        when(fixtureRepository.findFinishedBySeasonWithTeams(season.getId())).thenReturn(List.of());
+        var response = seasonService.getStandings(season.getId());
+        assertNotNull(response);
+        assertTrue(response.entries().isEmpty());
     }
 }
