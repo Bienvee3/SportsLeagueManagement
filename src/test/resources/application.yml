@@ -12,6 +12,9 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  ai:
+    model:
+      chat: none
 ADMIN_USERNAME: test-admin
 ADMIN_PASSWORD: test-only-password
 

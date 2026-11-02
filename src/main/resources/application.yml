@@ -49,6 +49,17 @@ spring:
       path: /swagger-ui
       operations-sorter: alpha
 
+  ai:
+    model:
+      chat: google-genai
+    google:
+      genai:
+        api-key: ${GEMINI_API_KEY}
+        chat:
+          model: gemini-2.5-flash
+          temperature: 0.7
+          max-output-tokens: 400
+
 ---
 spring:
   config:
