@@ -16,6 +16,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -222,5 +223,63 @@ class SeasonServiceTest {
         List<SeasonResponse> results = seasonService.findByLeague(league.getId());
         assertEquals(1, results.size());
         assertEquals("2026/2027", results.get(0).name());
+    }
+
+    // ── generateSchedule ──────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("generateSchedule builds rounds for CONFIRMED teams and saves the season")
+    void generateScheduleSavesRoundsForConfirmedTeams() {
+        UUID id = season.getId();
+        for (String code : List.of("AAA", "BBB", "CCC", "DDD")) {
+            season.addSeasonTeam(new SeasonTeam(season,
+                    new Team("Team " + code, code, "Stadium", "City", 1900), 1, SeasonTeamStatus.CONFIRMED));
+        }
+        when(seasonRepository.findById(id)).thenReturn(Optional.of(season));
+        when(seasonRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        seasonService.generateSchedule(id, Instant.parse("2026-09-01T18:00:00Z"));
+
+        ArgumentCaptor<Season> captor = ArgumentCaptor.forClass(Season.class);
+        verify(seasonRepository).save(captor.capture());
+        List<Round> rounds = captor.getValue().getRounds();
+        assertEquals(3, rounds.size());
+        assertEquals(6, rounds.stream().mapToInt(r -> r.getFixtures().size()).sum());
+    }
+
+    @Test
+    @DisplayName("generateSchedule excludes WITHDRAWN teams from the schedule")
+    void generateScheduleExcludesWithdrawnTeams() {
+        UUID id = season.getId();
+        for (String code : List.of("AAA", "BBB", "CCC")) {
+            season.addSeasonTeam(new SeasonTeam(season,
+                    new Team("Team " + code, code, "Stadium", "City", 1900), 1, SeasonTeamStatus.CONFIRMED));
+        }
+        Team withdrawnTeam = new Team("Team DDD", "DDD", "Stadium", "City", 1900);
+        SeasonTeam withdrawn = new SeasonTeam(season, withdrawnTeam, 4, SeasonTeamStatus.CONFIRMED);
+        season.addSeasonTeam(withdrawn);
+        withdrawn.withdraw();
+        when(seasonRepository.findById(id)).thenReturn(Optional.of(season));
+        when(seasonRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        seasonService.generateSchedule(id, Instant.parse("2026-09-01T18:00:00Z"));
+
+        ArgumentCaptor<Season> captor = ArgumentCaptor.forClass(Season.class);
+        verify(seasonRepository).save(captor.capture());
+        List<Round> rounds = captor.getValue().getRounds();
+        assertEquals(3, rounds.size());
+        assertEquals(3, rounds.stream().mapToInt(r -> r.getFixtures().size()).sum());
+        rounds.forEach(r -> r.getFixtures().forEach(f -> {
+            assertNotEquals(withdrawnTeam, f.getHomeTeam());
+            assertNotEquals(withdrawnTeam, f.getAwayTeam());
+        }));
+    }
+
+    @Test
+    @DisplayName("generateSchedule throws EntityNotFoundException when season not found")
+    void generateScheduleThrowsWhenSeasonNotFound() {
+        when(seasonRepository.findById(any())).thenReturn(Optional.empty());
+        assertThrows(EntityNotFoundException.class,
+                () -> seasonService.generateSchedule(UUID.randomUUID(), Instant.now()));
     }
 }

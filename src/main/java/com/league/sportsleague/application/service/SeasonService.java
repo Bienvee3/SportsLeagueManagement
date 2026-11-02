@@ -3,12 +3,14 @@ package com.league.sportsleague.application.service;
 import com.league.sportsleague.application.dto.CreateSeasonRequest;
 import com.league.sportsleague.application.dto.SeasonResponse;
 import com.league.sportsleague.domain.exception.EntityNotFoundException;
+import com.league.sportsleague.domain.RoundRobinScheduler;
 import com.league.sportsleague.domain.model.*;
 import com.league.sportsleague.domain.model.enums.SeasonTeamStatus;
 import com.league.sportsleague.domain.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -77,6 +79,17 @@ public class SeasonService {
                 .orElseThrow(() -> new EntityNotFoundException("Round", roundId));
         round.completeRound();
         roundRepository.save(round);
+    }
+
+    public void generateSchedule(UUID seasonId, Instant firstMatchTime) {
+        Season season = requireSeason(seasonId);
+        List<Team> confirmedTeams = season.getSeasonTeams().stream()
+                .filter(st -> st.getStatus() == SeasonTeamStatus.CONFIRMED)
+                .map(SeasonTeam::getTeam)
+                .toList();
+        RoundRobinScheduler.generateSchedule(season, confirmedTeams, firstMatchTime)
+                .forEach(season::addRound);
+        seasonRepository.save(season);
     }
 
     // ── Queries ───────────────────────────────────────────────────────────────
