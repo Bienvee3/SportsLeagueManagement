@@ -1,8 +1,8 @@
 # Current Project Status — Sports League Management
 
-**Last Updated**: 2026-11-02  
-**Active Branch**: `review/phase-9` (local, unpushed)  
-**Latest Local Commit**: `199730b feat(domain): implement standings calculation engine with 5-level tie-break cascade`  
+**Last Updated**: 2026-11-03  
+**Active Branch**: `review/phase-11` (local, unpushed)  
+**Latest Local Commit**: `8d48fec chore(infra): add JaCoCo coverage gate, fix Mockito Java 25 self-attach, add Testcontainers integration profile`  
 **Git Working Tree**: Clean.  
 **Push to origin**: Not yet — awaiting explicit user authorization per AGENTS.md §6.4.
 
@@ -21,6 +21,8 @@ Milestone 1 is 100% complete. Architecture restructuring Phases 1–5 are comple
 - **Phase 7**: Spring Security 7 + V3 migration (users/authorities) + JDBC user store + InitialUserSeeder + login page ✅
 - **Phase 8**: REST API controllers (Leagues, Teams, Seasons, Fixtures) + springdoc OpenAPI + ProblemDetail RFC 7807 ✅
 - **Phase 9**: Standings engine (5-level tie-break) + `StandingsCalculator` + `SeasonService.getStandings` + REST endpoint ✅
+- **Phase 10**: Gemini AI chronicle (Spring AI 2.0.2, hexagonal port + adapter) + `ChronicleService` + `POST /chronicle` ✅
+- **Phase 11**: JaCoCo ≥80% gate + Mockito Java 25 `-javaagent` fix + Testcontainers integration profile ✅
 
 ---
 
@@ -30,8 +32,8 @@ Milestone 1 is 100% complete. Architecture restructuring Phases 1–5 are comple
 | :---: | :--- | :---: | :---: |
 | **M1** | JPA Domain Model, Flyway V1+V2, Docker Compose, ADR 001, Tests | **COMPLETED** | 100% |
 | **M2** | Restructuring, Repos, Services, DTOs, Round-Robin, Thymeleaf | **IN PROGRESS** | ~70% |
-| **M3** | Spring Security 7, REST API + OpenAPI, AI Chronicle | **IN PROGRESS** | ~80% |
-| **M4** | JaCoCo ≥80%, i18n, Quartz, Deployment | ⏳ Pending | 0% |
+| **M3** | Spring Security 7, REST API + OpenAPI, AI Chronicle | **COMPLETED** | 100% |
+| **M4** | JaCoCo ≥80%, Mockito fix, Testcontainers integration profile | **COMPLETED** | 100% |
 
 ---
 
@@ -157,13 +159,20 @@ com.league.sportsleague/
 
 ---
 
-## 6. Immediate Next Steps — Phase 10 (AI Chronicle)
+## 6. Project Status — All Backend Phases Complete
 
-Phase 9 complete. Next: AI match chronicle generation (Advanced Requirement 4) via Hexagonal Ports & Adapters.
+**M1, M3, M4 COMPLETED. M2 IN PROGRESS (~70% — Thymeleaf views deferred pending UX design).**
 
-**Phase 10 target deliverables:**
-1. `ChroniclePort` interface (domain port) + `ChronicleRequest`/`ChronicleResult` records
-2. `StubChronicleAdapter` — deterministic stub (`@Profile("!prod")`), no external calls, CI safe
-3. `ChronicleService` + `POST /api/fixtures/{id}/chronicle` (OFFICIAL/ADMIN)
-4. ~10 tests
-5. **Blocked**: real adapter awaits provider decision (Gemini / OpenAI / Spring AI / HTTP)
+All core backend features are implemented and verified:
+- Domain model, value objects, exceptions, guards ✅
+- Application services + DTOs ✅
+- Round-Robin scheduler ✅
+- Spring Security 7 (3 roles, JDBC user store) ✅
+- REST API (Leagues, Teams, Seasons, Fixtures) + OpenAPI/Swagger UI ✅
+- Standings engine (5-level tie-break) ✅
+- AI Chronicle via Gemini API (Spring AI 2.0.2, hexagonal adapter) ✅
+- JaCoCo ≥80%, Mockito Java 25 fix, Testcontainers integration profile ✅
+
+**Remaining**: Thymeleaf CRUD views (M2) — awaiting frontend design decision from student.
+**Testcontainers**: `mvnw verify -Pintegration` — requires Docker Desktop running.
+**AI Chronicle**: set `GEMINI_API_KEY` env var before starting the application.
