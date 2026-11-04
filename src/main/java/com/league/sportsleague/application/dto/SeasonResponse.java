@@ -6,6 +6,9 @@ import java.util.UUID;
 
 public record SeasonResponse(
         UUID id,
+        UUID leagueId,
+        String leagueName,
+        String leagueSlug,
         String name,
         int yearStart,
         int yearEnd,
@@ -14,6 +17,9 @@ public record SeasonResponse(
     public static SeasonResponse from(Season season) {
         return new SeasonResponse(
                 season.getId(),
+                season.getLeague().getId(),
+                season.getLeague().getName(),
+                season.getLeague().getSlug().value(),
                 season.getName(),
                 season.getYearStart(),
                 season.getYearEnd(),

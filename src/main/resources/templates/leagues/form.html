@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/layout}">
+<head><title th:text="${editMode} ? 'Edit League' : 'New League'">League Form</title></head>
+<body>
+
+<nav class="crumbs" aria-label="Breadcrumb" layout:fragment="breadcrumb">
+  <a th:href="@{/leagues}">Leagues</a>
+  <span aria-hidden="true">/</span>
+  <span th:if="${editMode}">
+    <a th:href="@{/leagues/{id}(id=${league.id})}" th:text="${league.name}">League</a>
+    <span aria-hidden="true">/</span>
+  </span>
+  <span aria-current="page" th:text="${editMode} ? 'Edit' : 'New League'">New League</span>
+</nav>
+
+<div layout:fragment="content">
+
+  <div class="page-head">
+    <h1 th:text="${editMode} ? 'Edit League' : 'New League'">League Form</h1>
+  </div>
+
+  <div class="panel" style="max-width:640px;">
+    <div class="panel-body">
+
+      <form th:action="${editMode} ? @{/leagues/{id}(id=${league.id})} : @{/leagues}"
+            method="post"
+            th:object="${form}"
+            novalidate>
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+        <div class="form-grid">
+          <div class="field" style="grid-column:1/-1;">
+            <label for="name">League name</label>
+            <input type="text" id="name" th:field="*{name}"
+                   th:aria-invalid="${#fields.hasErrors('name')} ? 'true' : null"
+                   placeholder="e.g. SuperSport HNL">
+            <div class="error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+          </div>
+
+          <div class="field" th:if="${!editMode}">
+            <label for="slug">Slug</label>
+            <input type="text" id="slug" th:field="*{slug}"
+                   th:aria-invalid="${#fields.hasErrors('slug')} ? 'true' : null"
+                   placeholder="supersport-hnl">
+            <div class="hint">lowercase, hyphens only</div>
+            <div class="error" th:if="${#fields.hasErrors('slug')}" th:errors="*{slug}"></div>
+          </div>
+
+          <div class="field">
+            <label for="country">Country</label>
+            <input type="text" id="country" th:field="*{country}"
+                   th:aria-invalid="${#fields.hasErrors('country')} ? 'true' : null"
+                   placeholder="Croatia">
+            <div class="error" th:if="${#fields.hasErrors('country')}" th:errors="*{country}"></div>
+          </div>
+
+          <div class="field">
+            <label for="sportType">Sport type</label>
+            <select id="sportType" th:field="*{sportType}">
+              <option value="FOOTBALL">Football</option>
+              <option value="BASKETBALL">Basketball</option>
+              <option value="HANDBALL">Handball</option>
+              <option value="VOLLEYBALL">Volleyball</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="panel-foot" style="padding:0;margin-top:24px;">
+          <a class="btn ghost" th:href="${editMode} ? @{/leagues/{id}(id=${league.id})} : @{/leagues}">Cancel</a>
+          <button type="submit" class="btn primary"
+                  th:text="${editMode} ? 'Save changes' : 'Create League'">Create</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -16,6 +16,13 @@ public interface FixtureRepository {
     List<Fixture> findByRoundId(UUID roundId);
 
     /**
+     * Returns all fixtures for a season (all statuses) with homeTeam, awayTeam and round
+     * eagerly loaded via JOIN FETCH to prevent N+1 queries.
+     * Used by the calendar view and dashboard.
+     */
+    List<Fixture> findAllBySeasonWithTeams(UUID seasonId);
+
+    /**
      * Returns all FINISHED fixtures for a season with homeTeam and awayTeam
      * eagerly loaded via JOIN FETCH to prevent N+1 queries.
      */

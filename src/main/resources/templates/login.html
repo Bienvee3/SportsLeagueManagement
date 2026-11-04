@@ -1,23 +1,69 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <title>Sign in - Sports League Management</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in — League Ops</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;display=swap">
+  <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body>
-<h1>Sports League Management</h1>
+<div class="login-wrap">
 
-<p th:if="${param.error}">Invalid username or password.</p>
-<p th:if="${param.logout}">You have been signed out.</p>
+  <!-- left panel -->
+  <div class="login-side">
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:1rem;margin-bottom:24px;">
+        <span class="brand-mark">LO</span> League Ops
+      </div>
+      <h1 style="font-size:1.5rem;margin-bottom:12px;">Sports League<br>Management</h1>
+      <p style="color:rgba(255,255,255,.65);font-size:.875rem;line-height:1.6;">
+        P39 · Algebra Bernays University 2026/2027
+      </p>
+    </div>
+    <div class="mono-block" style="color:rgba(255,255,255,.55);">
+      ROLE_ADMIN — full access<br>
+      ROLE_OFFICIAL — results &amp; events<br>
+      ROLE_VIEWER — read-only
+    </div>
+  </div>
 
-<form th:action="@{/login}" method="post">
-    <label for="username">Username</label>
-    <input type="text" id="username" name="username" required autofocus>
+  <!-- right panel -->
+  <div class="login-main">
+    <div class="login-card">
+      <div>
+        <h1>Sign in</h1>
+        <p style="color:var(--fg-2);margin-top:4px;font-size:.875rem;">Enter your credentials to continue.</p>
+      </div>
 
-    <label for="password">Password</label>
-    <input type="password" id="password" name="password" required>
+      <div th:if="${param.error}" class="alert err" role="alert">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/></svg>
+        <div><strong>Invalid username or password.</strong></div>
+      </div>
 
-    <button type="submit">Sign in</button>
-</form>
+      <div th:if="${param.logout}" class="alert ok" role="status">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>
+        <div><strong>You have been signed out.</strong></div>
+      </div>
+
+      <form th:action="@{/login}" method="post">
+        <div style="display:grid;gap:16px;">
+          <div class="field">
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" required autofocus autocomplete="username">
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required autocomplete="current-password">
+          </div>
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+          <button type="submit" class="btn primary" style="width:100%;justify-content:center;">Sign in</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
 </body>
 </html>

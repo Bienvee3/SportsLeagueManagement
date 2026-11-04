@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layout/layout}">
+<head><title th:text="${fixture.homeTeamName + ' vs ' + fixture.awayTeamName}">Fixture</title></head>
+<body>
+
+<nav class="crumbs" aria-label="Breadcrumb" layout:fragment="breadcrumb">
+  <span aria-current="page" th:text="${fixture.homeTeamName + ' v ' + fixture.awayTeamName}">Fixture</span>
+</nav>
+
+<div layout:fragment="content">
+
+  <!-- Match header -->
+  <div class="panel">
+    <div class="match-head">
+      <div class="t h">
+        <span class="nm" th:text="${fixture.homeTeamName}">Home</span>
+        <span class="code" th:text="${fixture.homeTeamCode}">HOM</span>
+      </div>
+      <div class="sc" th:if="${fixture.homeScore != null}"
+           th:text="${fixture.homeScore + ' : ' + fixture.awayScore}">2 : 1</div>
+      <div class="sc" th:unless="${fixture.homeScore != null}"
+           style="color:var(--fg-3);font-size:28px;">– : –</div>
+      <div class="t">
+        <span class="nm" th:text="${fixture.awayTeamName}">Away</span>
+        <span class="code" th:text="${fixture.awayTeamCode}">AWY</span>
+      </div>
+    </div>
+    <div style="padding:0 24px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+      <!-- status chip -->
+      <span th:switch="${fixture.status}">
+        <span th:case="'SCHEDULED'" class="chip neutral"><span class="g" aria-hidden="true">○</span> Scheduled</span>
+        <span th:case="'IN_PROGRESS'" class="chip info"><span class="g" aria-hidden="true">◐</span> In progress</span>
+        <span th:case="'FINISHED'" class="chip ok"><span class="g" aria-hidden="true">●</span> Finished</span>
+        <span th:case="'POSTPONED'" class="chip warn"><span class="g" aria-hidden="true">‖</span> Postponed</span>
+        <span th:case="'CANCELLED'" class="chip err"><span class="g" aria-hidden="true">✕</span> Cancelled</span>
+      </span>
+      <span class="muted" style="font-size:.75rem;"
+            th:text="${fixture.roundName + ' · ' + #temporals.format(fixture.scheduledTime, 'EEE dd MMM yyyy HH:mm', #locale)}"></span>
+    </div>
+  </div>
+
+  <!-- OFFICIAL: record result -->
+  <div class="panel" sec:authorize="hasAnyRole('ADMIN','OFFICIAL')"
+       th:if="${fixture.status == 'SCHEDULED' or fixture.status == 'IN_PROGRESS'}">
+    <div class="panel-head"><h2>Record Result</h2></div>
+    <div class="panel-body">
+      <form th:action="@{/fixtures/{id}/result(id=${fixture.id})}" method="post"
+            style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <div class="field">
+          <label th:text="${fixture.homeTeamName + ' goals'}">Home goals</label>
+          <input type="number" name="homeGoals" min="0" value="0" style="width:80px;">
+        </div>
+        <div class="field">
+          <label th:text="${fixture.awayTeamName + ' goals'}">Away goals</label>
+          <input type="number" name="awayGoals" min="0" value="0" style="width:80px;">
+        </div>
+        <button type="submit" class="btn primary">Record Result</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- OFFICIAL: correct result -->
+  <div class="panel" sec:authorize="hasAnyRole('ADMIN','OFFICIAL')"
+       th:if="${fixture.status == 'FINISHED'}">
+    <div class="panel-head"><h2>Correct Result</h2></div>
+    <div class="panel-body">
+      <form th:action="@{/fixtures/{id}/correct-result(id=${fixture.id})}" method="post"
+            style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <div class="field">
+          <label th:text="${fixture.homeTeamName + ' goals'}">Home goals</label>
+          <input type="number" name="newHomeGoals" min="0" th:value="${fixture.homeScore}" style="width:80px;">
+        </div>
+        <div class="field">
+          <label th:text="${fixture.awayTeamName + ' goals'}">Away goals</label>
+          <input type="number" name="newAwayGoals" min="0" th:value="${fixture.awayScore}" style="width:80px;">
+        </div>
+        <div class="field" style="flex:1;min-width:200px;">
+          <label for="correctionReason">Reason</label>
+          <input type="text" id="correctionReason" name="reason" placeholder="e.g. referee report correction" required>
+        </div>
+        <button type="submit" class="btn danger">Correct Result</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- OFFICIAL: lifecycle -->
+  <div class="panel" sec:authorize="hasAnyRole('ADMIN','OFFICIAL')"
+       th:if="${fixture.status == 'SCHEDULED'}">
+    <div class="panel-head"><h2>Actions</h2></div>
+    <div class="panel-body" style="display:flex;gap:12px;flex-wrap:wrap;">
+      <form th:action="@{/fixtures/{id}/postpone(id=${fixture.id})}" method="post"
+            style="display:flex;gap:8px;align-items:flex-end;">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <div class="field">
+          <label for="postponeReason">Postpone reason</label>
+          <input type="text" id="postponeReason" name="reason" placeholder="Pitch unplayable" required>
+        </div>
+        <button type="submit" class="btn warn">Postpone</button>
+      </form>
+      <form th:action="@{/fixtures/{id}/cancel(id=${fixture.id})}" method="post">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <button type="submit" class="btn danger" data-confirm="Cancel this fixture?">Cancel Fixture</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- AI Chronicle (OFFICIAL / ADMIN only) -->
+  <div class="panel" sec:authorize="hasAnyRole('ADMIN','OFFICIAL')"
+       th:if="${fixture.status == 'FINISHED'}">
+    <div class="panel-head">
+      <h2>AI Chronicle</h2>
+    </div>
+    <div class="panel-body">
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px;">
+        <select id="chronicle-lang" style="width:auto;">
+          <option value="ENGLISH">English</option>
+          <option value="CROATIAN">Croatian (Hrvatski)</option>
+        </select>
+        <button id="chronicle-btn" class="btn primary"
+                th:attr="data-fixture-id=${fixture.id}">
+          Generate Chronicle
+        </button>
+      </div>
+      <div id="chronicle-skeleton" hidden style="max-width:68ch;">
+        <div class="skeleton" style="width:80%;"></div>
+        <div class="skeleton" style="width:95%;"></div>
+        <div class="skeleton" style="width:75%;"></div>
+        <div class="skeleton" style="width:90%;"></div>
+        <div class="skeleton" style="width:60%;"></div>
+      </div>
+      <div id="chronicle-result" class="chronicle" hidden></div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

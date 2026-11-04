@@ -24,6 +24,19 @@ public interface JpaFixtureRepository extends JpaRepository<Fixture, UUID>, Fixt
     @Override
     List<Fixture> findByRoundId(UUID roundId);
 
+    @Query("SELECT f FROM Fixture f " +
+           "JOIN FETCH f.homeTeam " +
+           "JOIN FETCH f.awayTeam " +
+           "JOIN FETCH f.round " +
+           "WHERE f.round.season.id = :seasonId " +
+           "ORDER BY f.round.roundNumber, f.scheduledTime")
+    List<Fixture> findAllBySeasonIdWithTeamsAndRound(@Param("seasonId") UUID seasonId);
+
+    @Override
+    default List<Fixture> findAllBySeasonWithTeams(UUID seasonId) {
+        return findAllBySeasonIdWithTeamsAndRound(seasonId);
+    }
+
     /**
      * Internal parametrized query used by the default override below.
      * JOIN FETCH ensures homeTeam and awayTeam are loaded in the same SQL query.

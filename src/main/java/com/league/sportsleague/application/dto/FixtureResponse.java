@@ -7,6 +7,9 @@ import java.util.UUID;
 
 public record FixtureResponse(
         UUID id,
+        UUID roundId,
+        int roundNumber,
+        String roundName,
         String homeTeamCode,
         String homeTeamName,
         String awayTeamCode,
@@ -19,6 +22,9 @@ public record FixtureResponse(
     public static FixtureResponse from(Fixture fixture) {
         return new FixtureResponse(
                 fixture.getId(),
+                fixture.getRound().getId(),
+                fixture.getRound().getRoundNumber(),
+                fixture.getRound().getName(),
                 fixture.getHomeTeam().getShortCode().value(),
                 fixture.getHomeTeam().getName(),
                 fixture.getAwayTeam().getShortCode().value(),

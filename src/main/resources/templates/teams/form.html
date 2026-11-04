@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/layout}">
+<head><title th:text="${editMode} ? 'Edit Team' : 'New Team'">Team Form</title></head>
+<body>
+
+<nav class="crumbs" aria-label="Breadcrumb" layout:fragment="breadcrumb">
+  <a th:href="@{/teams}">Teams</a>
+  <span th:if="${editMode}">
+    <span aria-hidden="true">/</span>
+    <a th:href="@{/teams/{id}(id=${team.id})}" th:text="${team.name}">Team</a>
+  </span>
+  <span aria-hidden="true">/</span>
+  <span aria-current="page" th:text="${editMode} ? 'Edit' : 'New Team'">New Team</span>
+</nav>
+
+<div layout:fragment="content">
+
+  <div class="page-head">
+    <h1 th:text="${editMode} ? 'Edit Team' : 'New Team'">Team Form</h1>
+  </div>
+
+  <div class="panel" style="max-width:640px;">
+    <div class="panel-body">
+
+      <form th:action="${editMode} ? @{/teams/{id}(id=${team.id})} : @{/teams}"
+            method="post"
+            th:object="${form}"
+            novalidate>
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+        <div class="form-grid">
+          <div class="field" style="grid-column:1/-1;">
+            <label for="name">Team name</label>
+            <input type="text" id="name" th:field="*{name}"
+                   th:aria-invalid="${#fields.hasErrors('name')} ? 'true' : null"
+                   placeholder="e.g. Dinamo Zagreb">
+            <div class="error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+          </div>
+
+          <div class="field" th:unless="${editMode}">
+            <label for="shortCode">Short code</label>
+            <input type="text" id="shortCode" th:field="*{shortCode}"
+                   th:aria-invalid="${#fields.hasErrors('shortCode')} ? 'true' : null"
+                   placeholder="DZG" maxlength="10">
+            <div class="hint">2-10 uppercase letters</div>
+            <div class="error" th:if="${#fields.hasErrors('shortCode')}" th:errors="*{shortCode}"></div>
+          </div>
+
+          <div class="field">
+            <label for="stadiumName">Stadium</label>
+            <input type="text" id="stadiumName" th:field="*{stadiumName}"
+                   th:aria-invalid="${#fields.hasErrors('stadiumName')} ? 'true' : null"
+                   placeholder="Maksimir">
+            <div class="error" th:if="${#fields.hasErrors('stadiumName')}" th:errors="*{stadiumName}"></div>
+          </div>
+
+          <div class="field">
+            <label for="city">City</label>
+            <input type="text" id="city" th:field="*{city}"
+                   th:aria-invalid="${#fields.hasErrors('city')} ? 'true' : null"
+                   placeholder="Zagreb">
+            <div class="error" th:if="${#fields.hasErrors('city')}" th:errors="*{city}"></div>
+          </div>
+
+          <div class="field">
+            <label for="foundedYear">Founded year <span class="muted">(optional)</span></label>
+            <input type="number" id="foundedYear" th:field="*{foundedYear}"
+                   placeholder="1945" min="1800" max="2100">
+          </div>
+        </div>
+
+        <div class="panel-foot" style="padding:0;margin-top:24px;">
+          <a class="btn ghost" th:href="${editMode} ? @{/teams/{id}(id=${team.id})} : @{/teams}">Cancel</a>
+          <button type="submit" class="btn primary"
+                  th:text="${editMode} ? 'Save changes' : 'Create Team'">Create</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

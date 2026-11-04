@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title layout:title-pattern="$CONTENT_TITLE — League Ops">League Ops</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;display=swap">
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+
+<!-- Flash toast (hidden span, picked up by app.js) -->
+<span id="flash-toast" th:text="${flashMsg}" style="display:none" th:if="${flashMsg}"></span>
+<div class="toast-wrap"></div>
+
+<div class="shell" id="shell">
+  <div class="scrim" id="nav-scrim"></div>
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" aria-label="Primary navigation">
+    <div class="brand">
+      <span class="brand-mark">LO</span>
+      League Ops
+    </div>
+
+    <nav class="nav" aria-label="Site">
+
+      <!-- SEASON OPERATIONS -->
+      <div class="nav-group">
+        <div class="eyebrow">Season operations <span class="scope-tag">season</span></div>
+        <a th:href="@{/}" th:classappend="${currentPage == 'dashboard'} ? 'active'" th:attrappend="aria-current=${currentPage == 'dashboard'} ? 'page' : null">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h7v9H3zM14 3h7v5h-7zM14 12h7v9h-7zM3 16h7v5H3z"/></svg>
+          Dashboard
+        </a>
+        <a th:href="@{/calendar}" th:attrappend="aria-current=${currentPage == 'calendar'} ? 'page' : null">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+          Calendar &amp; Fixtures
+        </a>
+      </div>
+
+      <!-- LEAGUE CATALOGUE -->
+      <div class="nav-group">
+        <div class="eyebrow">League catalogue <span class="scope-tag">global</span></div>
+        <a th:href="@{/leagues}" th:attrappend="aria-current=${currentPage == 'leagues'} ? 'page' : null">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/></svg>
+          Leagues
+        </a>
+        <a th:href="@{/teams}" th:attrappend="aria-current=${currentPage == 'teams'} ? 'page' : null">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z"/></svg>
+          Teams
+        </a>
+      </div>
+
+      <!-- ADMINISTRATION (ADMIN only) -->
+      <div class="nav-group" sec:authorize="hasRole('ADMIN')">
+        <div class="eyebrow">Administration <span class="scope-tag">global</span></div>
+        <a th:href="@{/admin/leagues/new}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          New League
+        </a>
+        <a th:href="@{/admin/teams/new}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          New Team
+        </a>
+      </div>
+
+    </nav>
+
+    <div class="sidebar-foot">
+      <span sec:authentication="name">User</span>
+      &nbsp;·&nbsp;
+      <span sec:authorize="hasRole('ADMIN')">Admin</span>
+      <span sec:authorize="hasRole('OFFICIAL') and !hasRole('ADMIN')">Official</span>
+      <span sec:authorize="hasRole('VIEWER') and !hasRole('ADMIN') and !hasRole('OFFICIAL')">Viewer</span>
+    </div>
+  </aside>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main">
+    <!-- topbar -->
+    <header class="topbar">
+      <button class="icon-btn menu-btn" data-act="open-nav" aria-label="Open navigation">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+
+      <!-- breadcrumb (each page sets th:fragment or model attr) -->
+      <nav class="crumbs" aria-label="Breadcrumb" layout:fragment="breadcrumb">
+        <span aria-current="page">Home</span>
+      </nav>
+
+      <div class="top-tools">
+        <div class="user-menu-wrap">
+          <button class="user-btn" aria-label="User menu">
+            <span class="avatar" sec:authentication="name" th:text="${#strings.substring(#authentication.name, 0, 2).toUpperCase()}">AD</span>
+            <span class="nm" sec:authentication="name">Admin</span>
+          </button>
+          <div class="popover">
+            <a class="item" th:href="@{/logout}"
+               th:attr="onclick='event.preventDefault(); document.getElementById(\'logout-form\').submit()'">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="16" height="16"><path d="M15 4h4v16h-4M10 17l5-5-5-5M15 12H3"/></svg>
+              Sign out
+            </a>
+            <hr>
+            <button class="item" data-act="toggle-theme">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="16" height="16"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/></svg>
+              Toggle theme
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- page content -->
+    <main>
+      <div class="content" layout:fragment="content">
+        <!-- page content injected here -->
+      </div>
+    </main>
+  </div><!-- /.main -->
+</div><!-- /.shell -->
+
+<!-- logout form (POST required by Spring Security) -->
+<form id="logout-form" th:action="@{/logout}" method="post" style="display:none">
+  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+</form>
+
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

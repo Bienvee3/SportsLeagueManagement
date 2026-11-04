@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layout/layout}">
+<head><title>Leagues</title></head>
+<body>
+
+<nav class="crumbs" aria-label="Breadcrumb" layout:fragment="breadcrumb">
+  <span aria-current="page">Leagues</span>
+</nav>
+
+<div layout:fragment="content">
+
+  <div class="page-head">
+    <div>
+      <h1>Leagues</h1>
+      <p class="lede">All registered sports leagues.</p>
+    </div>
+    <div class="actions" sec:authorize="hasRole('ADMIN')">
+      <a class="btn primary" th:href="@{/leagues/new}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        New League
+      </a>
+    </div>
+  </div>
+
+  <div class="panel" th:if="${leagues.empty}">
+    <div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/></svg>
+      <h3>No leagues</h3>
+      <p>Create the first league to get started.</p>
+    </div>
+  </div>
+
+  <div class="panel" th:unless="${leagues.empty}">
+    <div class="table-wrap">
+      <table class="data">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th class="col-opt">Country</th>
+            <th class="col-opt">Sport</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="l : ${leagues}" class="clickable"
+              th:onclick="|location.href='@{/leagues/{id}(id=${l.id})}'|">
+            <td>
+              <span style="font-weight:500;" th:text="${l.name}"></span>
+            </td>
+            <td class="col-opt muted" th:text="${l.country}"></td>
+            <td class="col-opt">
+              <span class="code" th:text="${l.sportType}"></span>
+            </td>
+            <td style="text-align:right;">
+              <a class="btn sm ghost" th:href="@{/leagues/{id}(id=${l.id})}">View</a>
+              <a class="btn sm ghost" th:href="@{/leagues/{id}/edit(id=${l.id})}"
+                 sec:authorize="hasRole('ADMIN')">Edit</a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

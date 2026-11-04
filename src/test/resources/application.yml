@@ -17,4 +17,3 @@ spring:
       chat: none
 ADMIN_USERNAME: test-admin
 ADMIN_PASSWORD: test-only-password
-

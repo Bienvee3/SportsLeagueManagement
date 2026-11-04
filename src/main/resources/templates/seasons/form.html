@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/layout}">
+<head><title>New Season</title></head>
+<body>
+
+<nav class="crumbs" aria-label="Breadcrumb" layout:fragment="breadcrumb">
+  <a th:href="@{/leagues}">Leagues</a>
+  <span aria-hidden="true">/</span>
+  <a th:href="@{/leagues/{id}(id=${league.id})}" th:text="${league.name}">League</a>
+  <span aria-hidden="true">/</span>
+  <span aria-current="page">New Season</span>
+</nav>
+
+<div layout:fragment="content">
+
+  <div class="page-head">
+    <h1>New Season</h1>
+    <p class="lede" th:text="${league.name}"></p>
+  </div>
+
+  <div class="panel" style="max-width:480px;">
+    <div class="panel-body">
+      <form th:action="@{/leagues/{id}/seasons(id=${league.id})}"
+            method="post"
+            th:object="${form}"
+            novalidate>
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+        <div class="form-grid">
+          <div class="field" style="grid-column:1/-1;">
+            <label for="name">Season name</label>
+            <input type="text" id="name" th:field="*{name}"
+                   th:aria-invalid="${#fields.hasErrors('name')} ? 'true' : null"
+                   placeholder="e.g. 2026/2027">
+            <div class="error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+          </div>
+
+          <div class="field">
+            <label for="yearStart">Year start</label>
+            <input type="number" id="yearStart" th:field="*{yearStart}"
+                   th:aria-invalid="${#fields.hasErrors('yearStart')} ? 'true' : null"
+                   placeholder="2026" min="1900">
+            <div class="error" th:if="${#fields.hasErrors('yearStart')}" th:errors="*{yearStart}"></div>
+          </div>
+
+          <div class="field">
+            <label for="yearEnd">Year end</label>
+            <input type="number" id="yearEnd" th:field="*{yearEnd}"
+                   th:aria-invalid="${#fields.hasErrors('yearEnd')} ? 'true' : null"
+                   placeholder="2027" min="1900">
+            <div class="error" th:if="${#fields.hasErrors('yearEnd')}" th:errors="*{yearEnd}"></div>
+          </div>
+        </div>
+
+        <div class="panel-foot" style="padding:0;margin-top:24px;">
+          <a class="btn ghost" th:href="@{/leagues/{id}(id=${league.id})}">Cancel</a>
+          <button type="submit" class="btn primary">Create Season</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -108,6 +108,13 @@ public class FixtureService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<FixtureResponse> findAllBySeason(UUID seasonId) {
+        return fixtureRepository.findAllBySeasonWithTeams(seasonId).stream()
+                .map(FixtureResponse::from)
+                .toList();
+    }
+
     // ── Private helpers ───────────────────────────────────────────────────────
 
     private Fixture requireFixture(UUID id) {

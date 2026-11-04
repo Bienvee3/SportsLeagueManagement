@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layout/layout}">
+<head><title th:text="${team.name}">Team</title></head>
+<body>
+
+<nav class="crumbs" aria-label="Breadcrumb" layout:fragment="breadcrumb">
+  <a th:href="@{/teams}">Teams</a>
+  <span aria-hidden="true">/</span>
+  <span aria-current="page" th:text="${team.name}">Team</span>
+</nav>
+
+<div layout:fragment="content">
+
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">
+        <span class="code" th:text="${team.shortCode}">TM</span>
+      </p>
+      <h1 th:text="${team.name}">Team Name</h1>
+      <p class="lede" th:text="${team.city}">City</p>
+    </div>
+    <div class="actions" sec:authorize="hasRole('ADMIN')">
+      <a class="btn" th:href="@{/teams/{id}/edit(id=${team.id})}">Edit</a>
+    </div>
+  </div>
+
+  <div class="panel" style="max-width:480px;">
+    <div class="panel-body">
+      <dl class="kv">
+        <dt>Short code</dt>
+        <dd><span class="code" th:text="${team.shortCode}">TM</span></dd>
+        <dt>Stadium</dt>
+        <dd th:text="${team.stadiumName}">Stadium</dd>
+        <dt>City</dt>
+        <dd th:text="${team.city}">City</dd>
+        <dt>Founded</dt>
+        <dd th:text="${team.foundedYear != null ? team.foundedYear : '—'}">—</dd>
+      </dl>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

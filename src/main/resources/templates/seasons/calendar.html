@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layout/layout}">
+<head><title th:text="${season.name + ' — Calendar'}">Calendar</title></head>
+<body>
+
+<nav class="crumbs" aria-label="Breadcrumb" layout:fragment="breadcrumb">
+  <a th:href="@{/leagues}">Leagues</a>
+  <span aria-hidden="true">/</span>
+  <a th:href="@{/leagues/{id}(id=${league.id})}" th:text="${league.name}">League</a>
+  <span aria-hidden="true">/</span>
+  <a th:href="@{/leagues/{lid}/seasons/{sid}(lid=${league.id},sid=${season.id})}" th:text="${season.name}">Season</a>
+  <span aria-hidden="true">/</span>
+  <span aria-current="page">Calendar</span>
+</nav>
+
+<div layout:fragment="content">
+
+  <div class="page-head">
+    <div>
+      <h1 th:text="${season.name + ' — Calendar'}">Calendar</h1>
+      <p class="lede" th:text="${league.name}"></p>
+    </div>
+    <div class="actions">
+      <a class="btn" th:href="@{/leagues/{lid}/seasons/{sid}(lid=${league.id},sid=${season.id})}">Standings</a>
+    </div>
+  </div>
+
+  <div class="panel" th:if="${fixtures.empty}">
+    <div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+      <h3>No fixtures yet</h3>
+      <p>Generate the round-robin schedule from the season page.</p>
+      <a class="btn" th:href="@{/leagues/{lid}/seasons/{sid}(lid=${league.id},sid=${season.id})}"
+         sec:authorize="hasRole('ADMIN')">Back to season</a>
+    </div>
+  </div>
+
+  <div th:unless="${fixtures.empty}" class="panel">
+    <!-- group fixtures by round using Thymeleaf iteration tracking -->
+    <th:block th:with="prevRound=-1">
+      <th:block th:each="f : ${fixtures}">
+        <!-- round header when round changes -->
+        <div th:if="${f.roundNumber != prevRound}" class="round-head">
+          <strong th:text="${f.roundName}">Round 1</strong>
+          <span class="muted" th:text="${#temporals.format(f.scheduledTime, 'EEE dd MMM yyyy', #locale)}"></span>
+          <th:block th:with="prevRound=${f.roundNumber}"></th:block>
+        </div>
+        <!-- fixture row -->
+        <a th:href="@{/fixtures/{id}(id=${f.id})}" class="fx-row">
+          <span class="fx-meta">
+            <span th:switch="${f.status}">
+              <span th:case="'SCHEDULED'" class="chip neutral sm"><span class="g" aria-hidden="true">○</span></span>
+              <span th:case="'FINISHED'" class="chip ok sm"><span class="g" aria-hidden="true">●</span></span>
+              <span th:case="'POSTPONED'" class="chip warn sm"><span class="g" aria-hidden="true">‖</span></span>
+              <span th:case="'CANCELLED'" class="chip err sm"><span class="g" aria-hidden="true">✕</span></span>
+              <span th:case="*" class="chip neutral sm"><span class="g" aria-hidden="true">○</span></span>
+            </span>
+          </span>
+          <span class="team home">
+            <span class="nm" th:text="${f.homeTeamName}">Home</span>
+            <span class="code" th:text="${f.homeTeamCode}">HOM</span>
+          </span>
+          <span th:if="${f.homeScore != null}"
+                class="score"
+                th:text="${f.homeScore + ' : ' + f.awayScore}">2 : 1</span>
+          <span th:unless="${f.homeScore != null}"
+                class="score pending">– : –</span>
+          <span class="team away">
+            <span class="code" th:text="${f.awayTeamCode}">AWY</span>
+            <span class="nm" th:text="${f.awayTeamName}">Away</span>
+          </span>
+          <span class="fx-meta" th:text="${#temporals.format(f.scheduledTime, 'HH:mm', #locale)}"></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="chev" width="16" height="16" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+        </a>
+      </th:block>
+    </th:block>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layout/layout}">
+<head><title th:text="${league.name}">League</title></head>
+<body>
+
+<nav class="crumbs" aria-label="Breadcrumb" layout:fragment="breadcrumb">
+  <a th:href="@{/leagues}">Leagues</a>
+  <span aria-hidden="true">/</span>
+  <span aria-current="page" th:text="${league.name}">League</span>
+</nav>
+
+<div layout:fragment="content">
+
+  <div class="page-head">
+    <div>
+      <p class="eyebrow" th:text="${league.sportType}">FOOTBALL</p>
+      <h1 th:text="${league.name}">League Name</h1>
+      <p class="lede" th:text="${league.country}">Country</p>
+    </div>
+    <div class="actions" sec:authorize="hasRole('ADMIN')">
+      <a class="btn" th:href="@{/leagues/{id}/edit(id=${league.id})}">Edit</a>
+      <form th:action="@{/leagues/{id}/delete(id=${league.id})}" method="post" style="display:inline;">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <button type="submit" class="btn danger"
+                data-confirm="Delete this league and all its seasons?">Delete</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Seasons -->
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Seasons</h2>
+      <a class="btn sm primary" th:href="@{/leagues/{id}/seasons/new(id=${league.id})}"
+         sec:authorize="hasRole('ADMIN')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        New Season
+      </a>
+    </div>
+
+    <div th:if="${seasons.empty}" class="panel-body">
+      <p class="muted">No seasons yet. Create one to start scheduling matches.</p>
+    </div>
+
+    <div th:unless="${seasons.empty}" class="list">
+      <a th:each="s : ${seasons}"
+         th:href="@{/leagues/{lid}/seasons/{sid}(lid=${league.id},sid=${s.id})}"
+         style="text-decoration:none;color:inherit;">
+        <div class="grow">
+          <div style="font-weight:500;" th:text="${s.name}"></div>
+          <div class="sub" th:text="${s.yearStart + '/' + s.yearEnd}"></div>
+        </div>
+        <!-- status chip -->
+        <span th:switch="${s.status}">
+          <span th:case="'UPCOMING'" class="chip neutral"><span class="g" aria-hidden="true">○</span> Upcoming</span>
+          <span th:case="'ACTIVE'" class="chip info"><span class="g" aria-hidden="true">▶</span> Active</span>
+          <span th:case="'COMPLETED'" class="chip ok"><span class="g" aria-hidden="true">✓</span> Completed</span>
+        </span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+      </a>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

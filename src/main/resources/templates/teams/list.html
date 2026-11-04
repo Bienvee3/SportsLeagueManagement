@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layout/layout}">
+<head><title>Teams</title></head>
+<body>
+
+<nav class="crumbs" aria-label="Breadcrumb" layout:fragment="breadcrumb">
+  <span aria-current="page">Teams</span>
+</nav>
+
+<div layout:fragment="content">
+
+  <div class="page-head">
+    <div>
+      <h1>Teams</h1>
+      <p class="lede">All registered clubs.</p>
+    </div>
+    <div class="actions" sec:authorize="hasRole('ADMIN')">
+      <a class="btn primary" th:href="@{/teams/new}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        New Team
+      </a>
+    </div>
+  </div>
+
+  <div class="panel" th:if="${teams.empty}">
+    <div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z"/></svg>
+      <h3>No teams</h3>
+      <p>Add clubs before creating a season.</p>
+    </div>
+  </div>
+
+  <div class="panel" th:unless="${teams.empty}">
+    <div class="table-wrap">
+      <table class="data">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Code</th>
+            <th class="col-opt">City</th>
+            <th class="col-opt">Stadium</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="t : ${teams}" class="clickable"
+              th:onclick="|location.href='@{/teams/{id}(id=${t.id})}'|">
+            <td style="font-weight:500;" th:text="${t.name}">Team</td>
+            <td><span class="code" th:text="${t.shortCode}">TM</span></td>
+            <td class="col-opt muted" th:text="${t.city}">City</td>
+            <td class="col-opt muted" th:text="${t.stadiumName}">Stadium</td>
+            <td style="text-align:right;">
+              <a class="btn sm ghost" th:href="@{/teams/{id}(id=${t.id})}">View</a>
+              <a class="btn sm ghost" th:href="@{/teams/{id}/edit(id=${t.id})}"
+                 sec:authorize="hasRole('ADMIN')">Edit</a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

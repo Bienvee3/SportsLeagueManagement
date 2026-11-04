@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/layout}">
+<head><title>Server Error</title></head>
+<body>
+
+<nav class="crumbs" aria-label="Breadcrumb" layout:fragment="breadcrumb">
+  <span aria-current="page">Server Error</span>
+</nav>
+
+<div layout:fragment="content">
+  <div class="empty" style="padding-top:64px;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 21h20zM12 10v5M12 18h.01"/></svg>
+    <h3>500 — Server Error</h3>
+    <p th:text="${errorMessage ?: 'An unexpected error occurred. Please try again.'}"></p>
+    <a class="btn" th:href="@{/}">Back to Dashboard</a>
+  </div>
+</div>
+</body>
+</html>
