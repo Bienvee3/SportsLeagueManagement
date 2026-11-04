@@ -47,29 +47,105 @@ $$\text{League} \longrightarrow \text{Season} \longrightarrow \text{Round} \long
 
 ### Prerequisites
 
-* JDK 25 installed and available on `PATH`.
-* Docker & Docker Compose (optional for local database container).
+* JDK 25 installed and on `PATH` — [Microsoft Build of OpenJDK 25](https://learn.microsoft.com/en-us/java/openjdk/download)
+* [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
 
-### Running PostgreSQL locally
+---
+
+### 1 — First-time setup: create your `.env` file
+
+Copy the example and fill in your values:
 
 ```bash
+copy .env.example .env
+```
+
+Edit `.env` — the minimum required:
+
+```env
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=choose-a-password
+```
+
+> `.env` is in `.gitignore` and is **never committed**. Keep your credentials there.
+
+---
+
+### 2 — Start the database
+
+```powershell
 docker compose up -d
 ```
 
-### Running the Application
+This starts a PostgreSQL 17 container on `localhost:5432`.  
+Flyway runs all migrations automatically on first app start.
 
-```bash
-# Windows
-.\mvnw.cmd spring-boot:run
+---
 
-# Unix/Linux
-./mvnw spring-boot:run
+### 3 — Start the application
+
+**Windows (PowerShell) — recommended:**
+
+```powershell
+.\run.ps1
 ```
+
+This script loads your `.env` automatically and starts the app.  
+If PowerShell blocks scripts, run this once first:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+```
+
+**Alternative (CMD):**
+
+```cmd
+set ADMIN_USERNAME=admin
+set ADMIN_PASSWORD=choose-a-password
+mvnw.cmd spring-boot:run
+```
+
+---
+
+### 4 — Open in browser
+
+| URL | Description |
+|---|---|
+| `http://localhost:8080/login` | Login page |
+| `http://localhost:8080/` | Dashboard |
+| `http://localhost:8080/leagues` | League management |
+| `http://localhost:8080/teams` | Team management |
+| `http://localhost:8080/swagger-ui` | REST API (Swagger UI) |
+| `http://localhost:8080/api-docs` | OpenAPI JSON |
+
+Log in with the `ADMIN_USERNAME` / `ADMIN_PASSWORD` you set in `.env`.
+
+---
+
+### 5 — Stop the application
+
+Press `Ctrl+C` in the terminal where the app is running.
+
+---
+
+### 6 — Stop the database
+
+```powershell
+docker compose down
+```
+
+> To also **delete all data** (full reset): `docker compose down -v`
+
+---
 
 ### Running Tests
 
-```bash
+```powershell
+# Standard test suite (325 tests, no Docker required)
 .\mvnw.cmd test
+
+# Integration tests with real PostgreSQL via Testcontainers (requires Docker)
+.\mvnw.cmd verify -Pintegration
 ```
 
 ---
