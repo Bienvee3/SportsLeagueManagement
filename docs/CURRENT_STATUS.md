@@ -1,8 +1,8 @@
 # Current Project Status — Sports League Management
 
-**Last Updated**: 2026-11-03  
-**Active Branch**: `review/phase-11` (local, unpushed)  
-**Latest Local Commit**: `8d48fec chore(infra): add JaCoCo coverage gate, fix Mockito Java 25 self-attach, add Testcontainers integration profile`  
+**Last Updated**: 2026-11-04  
+**Active Branch**: `review/phase-frontend` (local, unpushed)  
+**Latest Local Commit**: `02d97bd feat(web): complete Thymeleaf CRUD frontend M2`  
 **Git Working Tree**: Clean.  
 **Push to origin**: Not yet — awaiting explicit user authorization per AGENTS.md §6.4.
 
@@ -23,7 +23,7 @@ Milestone 1 is 100% complete. Architecture restructuring Phases 1–5 are comple
 - **Phase 9**: Standings engine (5-level tie-break) + `StandingsCalculator` + `SeasonService.getStandings` + REST endpoint ✅
 - **Phase 10**: Gemini AI chronicle (Spring AI 2.0.2, hexagonal port + adapter) + `ChronicleService` + `POST /chronicle` ✅
 - **Phase 11**: JaCoCo ≥80% gate + Mockito Java 25 `-javaagent` fix + Testcontainers integration profile ✅
-
+- **Phase 12 (frontend)**: Thymeleaf CRUD views — Layout Dialect, Dashboard, Leagues, Seasons, Teams, Fixtures, error pages, 15 WebMvcTest tests ✅
 ---
 
 ## 2. Milestone Progress Overview
@@ -31,8 +31,7 @@ Milestone 1 is 100% complete. Architecture restructuring Phases 1–5 are comple
 | Milestone | Scope | Status | Progress |
 | :---: | :--- | :---: | :---: |
 | **M1** | JPA Domain Model, Flyway V1+V2, Docker Compose, ADR 001, Tests | **COMPLETED** | 100% |
-| **M2** | Restructuring, Repos, Services, DTOs, Round-Robin, Thymeleaf | **IN PROGRESS** | ~70% |
-| **M3** | Spring Security 7, REST API + OpenAPI, AI Chronicle | **COMPLETED** | 100% |
+| **M2** | Restructuring, Repos, Services, DTOs, Round-Robin, Thymeleaf | **COMPLETED** | 100% |
 | **M4** | JaCoCo ≥80%, Mockito fix, Testcontainers integration profile | **COMPLETED** | 100% |
 
 ---
@@ -94,11 +93,11 @@ Milestone 1 is 100% complete. Architecture restructuring Phases 1–5 are comple
 
 ---
 
-## 4. Test Suite — 300/300
+## 4. Test Suite — 325/325
 
 ```
 cmd.exe /c "cd /d C:\Users\Bienve\dev\Java\SportsLeagueManagement && mvnw.cmd test"
-Tests run: 300, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS (2026-11-02)
+Tests run: 325, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS (2026-11-04)
 ```
 
 | Test Class | Count | Type |
@@ -153,17 +152,17 @@ com.league.sportsleague/
 │       ├── converter/     ← 3 AttributeConverters
 │       └── Jpa*Repository ← 5 Spring Data implementations
 └── web/
-    ├── api/        ← LeagueRestController, TeamRestController, SeasonRestController, FixtureRestController, RestExceptionHandler  ✅
-    └── view/       ← LoginController  ✅
+    ├── api/        ← LeagueRestController, TeamRestController, SeasonRestController, FixtureRestController, ChronicleRestController, RestExceptionHandler  ✅
+    └── view/       ← LoginController, DashboardController, LeagueViewController, SeasonViewController, TeamViewController, FixtureViewController, GlobalViewExceptionHandler  ✅
 ```
 
 ---
 
-## 6. Project Status — All Backend Phases Complete
+## 6. Project Status — All Backend + Frontend Phases Complete (M2 DONE)
 
-**M1, M3, M4 COMPLETED. M2 IN PROGRESS (~70% — Thymeleaf views deferred pending UX design).**
+**M1, M2, M3, M4 ALL COMPLETED.**
 
-All core backend features are implemented and verified:
+All features implemented and verified with 325/325 tests:
 - Domain model, value objects, exceptions, guards ✅
 - Application services + DTOs ✅
 - Round-Robin scheduler ✅
@@ -172,7 +171,8 @@ All core backend features are implemented and verified:
 - Standings engine (5-level tie-break) ✅
 - AI Chronicle via Gemini API (Spring AI 2.0.2, hexagonal adapter) ✅
 - JaCoCo ≥80%, Mockito Java 25 fix, Testcontainers integration profile ✅
+- Thymeleaf CRUD frontend: Layout Dialect, Dashboard, Leagues, Seasons, Teams, Fixtures, error pages ✅
 
-**Remaining**: Thymeleaf CRUD views (M2) — awaiting frontend design decision from student.
 **Testcontainers**: `mvnw verify -Pintegration` — requires Docker Desktop running.
 **AI Chronicle**: set `GEMINI_API_KEY` env var before starting the application.
+**Next**: Push `review/phase-frontend` → PR to `main` (awaiting explicit user authorization per AGENTS.md §6.4).
