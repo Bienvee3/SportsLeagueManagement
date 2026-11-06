@@ -94,10 +94,22 @@ public class SeasonService {
 
     public void generateSchedule(UUID seasonId, Instant firstMatchTime) {
         Season season = requireSeason(seasonId);
+        if (!season.getRounds().isEmpty()) {
+            throw new IllegalStateException(
+                "Schedule already exists (%d rounds). Delete this season and create a new one to regenerate."
+                    .formatted(season.getRounds().size())
+            );
+        }
         List<Team> confirmedTeams = season.getSeasonTeams().stream()
                 .filter(st -> st.getStatus() == SeasonTeamStatus.CONFIRMED)
                 .map(SeasonTeam::getTeam)
                 .toList();
+        if (confirmedTeams.size() < 2) {
+            throw new IllegalStateException(
+                "Cannot generate schedule: need at least 2 confirmed teams, found %d."
+                    .formatted(confirmedTeams.size())
+            );
+        }
         RoundRobinScheduler.generateSchedule(season, confirmedTeams, firstMatchTime)
                 .forEach(season::addRound);
         seasonRepository.save(season);

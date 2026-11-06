@@ -3,6 +3,8 @@ package com.league.sportsleague.application.dto;
 import com.league.sportsleague.domain.model.Fixture;
 
 import java.time.Instant;
+import java.util.Comparator;
+import java.util.List;
 import java.util.UUID;
 
 public record FixtureResponse(
@@ -19,9 +21,14 @@ public record FixtureResponse(
         Integer homeScore,
         Integer awayScore,
         String status,
-        Instant scheduledTime
+        Instant scheduledTime,
+        List<MatchEventResponse> events
 ) {
     public static FixtureResponse from(Fixture fixture) {
+        List<MatchEventResponse> events = fixture.getEvents().stream()
+                .sorted(Comparator.comparingInt(e -> e.getMatchMinute().value()))
+                .map(MatchEventResponse::from)
+                .toList();
         return new FixtureResponse(
                 fixture.getId(),
                 fixture.getRound().getId(),
@@ -36,7 +43,8 @@ public record FixtureResponse(
                 fixture.getHomeScore(),
                 fixture.getAwayScore(),
                 fixture.getStatus().name(),
-                fixture.getScheduledTime()
+                fixture.getScheduledTime(),
+                events
         );
     }
 }

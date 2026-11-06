@@ -12,9 +12,12 @@ public record SeasonResponse(
         String name,
         int yearStart,
         int yearEnd,
-        String status
+        String status,
+        boolean hasSchedule,
+        int roundCount
 ) {
     public static SeasonResponse from(Season season) {
+        int rounds = season.getRounds().size();
         return new SeasonResponse(
                 season.getId(),
                 season.getLeague().getId(),
@@ -23,7 +26,9 @@ public record SeasonResponse(
                 season.getName(),
                 season.getYearStart(),
                 season.getYearEnd(),
-                season.getStatus().name()
+                season.getStatus().name(),
+                rounds > 0,
+                rounds
         );
     }
 }

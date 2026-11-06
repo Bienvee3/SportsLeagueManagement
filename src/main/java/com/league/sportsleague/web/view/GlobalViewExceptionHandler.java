@@ -40,7 +40,7 @@ public class GlobalViewExceptionHandler {
         throw ex;
     }
 
-    @ExceptionHandler({IllegalArgumentException.class, DataIntegrityViolationException.class})
+    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class, DataIntegrityViolationException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public String handleDomainOrPersistence(Exception ex, Model model) {
         model.addAttribute("errorTitle", "Invalid Request");

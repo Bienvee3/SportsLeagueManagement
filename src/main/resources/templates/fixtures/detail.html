@@ -4,7 +4,9 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
       layout:decorate="~{layout/layout}">
-<head><title th:text="${fixture.homeTeamName} + ' vs ' + ${fixture.awayTeamName}">Fixture</title></head>
+<head>
+  <title th:text="${fixture.homeTeamName} + ' vs ' + ${fixture.awayTeamName}">Fixture</title>
+</head>
 <body>
 <th:block layout:fragment="breadcrumb">
   <li class="breadcrumb-item active">Fixture</li>
@@ -38,9 +40,7 @@
             <span th:text="${fixture.awayScore}">0</span>
           </div>
           <div th:if="${fixture.homeScore == null}"
-               class="score-box display-5 fw-bold text-muted font-mono">
-            vs
-          </div>
+               class="score-box display-5 fw-bold text-muted font-mono">vs</div>
         </div>
         <!-- Away team -->
         <div class="col">
@@ -51,170 +51,249 @@
     </div>
   </div>
 
-  <!-- Action cards (ADMIN / OFFICIAL only) -->
-  <div sec:authorize="hasAnyRole('ADMIN','OFFICIAL')" class="row g-3 mb-4">
+  <!-- Tab navigation -->
+  <ul class="nav nav-tabs mb-3" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="overview-tab"
+              data-bs-toggle="tab" data-bs-target="#overview-pane"
+              type="button" role="tab">
+        <i class="bi bi-info-circle me-1"></i>Overview
+      </button>
+    </li>
+    <li class="nav-item" role="presentation" sec:authorize="hasAnyRole('ADMIN','OFFICIAL')">
+      <button class="nav-link" id="actions-tab"
+              data-bs-toggle="tab" data-bs-target="#actions-pane"
+              type="button" role="tab">
+        <i class="bi bi-pencil-square me-1"></i>Actions
+      </button>
+    </li>
+  </ul>
 
-    <!-- Record / correct result -->
-    <div class="col-12 col-md-6"
-         th:if="${fixture.status == 'SCHEDULED' or fixture.status == 'IN_PROGRESS' or fixture.status == 'FINISHED'}">
-      <div class="card shadow-sm h-100">
-        <div class="card-header fw-semibold small">
-          <i class="bi bi-pencil-square me-2"></i>
-          <span th:text="${fixture.status == 'FINISHED'} ? 'Correct Result' : 'Record Result'">Record</span>
+  <div class="tab-content">
+
+    <!-- ===== OVERVIEW TAB (all roles) ===== -->
+    <div class="tab-pane fade show active" id="overview-pane" role="tabpanel">
+
+      <!-- Match events timeline -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-header fw-semibold small d-flex align-items-center justify-content-between">
+          <span><i class="bi bi-lightning me-2"></i>Match Events</span>
+          <span class="badge bg-secondary rounded-pill"
+                th:text="${#lists.size(fixture.events)}">0</span>
         </div>
-        <div class="card-body">
-          <form th:action="${fixture.status == 'FINISHED'} ? @{/fixtures/{id}/correct-result(id=${fixture.id})} : @{/fixtures/{id}/result(id=${fixture.id})}"
-                method="post">
-            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-            <div class="d-flex align-items-end gap-2">
-              <div class="text-center flex-grow-1">
-                <label class="form-label small fw-medium" th:text="${fixture.homeTeamCode}">HOM</label>
-                <input type="number"
-                       th:name="${fixture.status == 'FINISHED'} ? 'newHomeScore' : 'homeScore'"
-                       th:value="${fixture.homeScore}" min="0" max="99" required>
-              </div>
-              <div class="pb-1 fw-bold text-muted">–</div>
-              <div class="text-center flex-grow-1">
-                <label class="form-label small fw-medium" th:text="${fixture.awayTeamCode}">AWY</label>
-                <input type="number"
-                       th:name="${fixture.status == 'FINISHED'} ? 'newAwayScore' : 'awayScore'"
-                       th:value="${fixture.awayScore}" min="0" max="99" required>
-              </div>
-              <div th:if="${fixture.status == 'FINISHED'}" class="flex-grow-2">
-                <label class="form-label small fw-medium">Reason</label>
-                <input type="text" name="reason"
-                       class="form-control form-control-sm"
-                       placeholder="Reason for correction" required maxlength="255">
-              </div>
+
+        <div th:if="${#lists.isEmpty(fixture.events)}" class="card-body text-center py-4">
+          <p class="text-muted small mb-0">No events recorded yet.</p>
+        </div>
+
+        <ul th:if="${not #lists.isEmpty(fixture.events)}" class="list-group list-group-flush">
+          <li th:each="ev : ${fixture.events}"
+              class="list-group-item d-flex align-items-center gap-3 py-2">
+            <!-- Minute badge -->
+            <span class="badge bg-dark font-mono flex-shrink-0"
+                  style="min-width:36px; text-align:center"
+                  th:text="${ev.minute} + &quot;'&quot;">45'</span>
+            <!-- Event type icon -->
+            <span class="flex-shrink-0">
+              <th:block th:switch="${ev.eventType}">
+                <i th:case="'GOAL'"          class="bi bi-dribbble text-success"></i>
+                <i th:case="'OWN_GOAL'"      class="bi bi-dribbble text-danger"></i>
+                <i th:case="'YELLOW_CARD'"   class="bi bi-square-fill text-warning"></i>
+                <i th:case="'RED_CARD'"      class="bi bi-square-fill text-danger"></i>
+                <i th:case="'SUBSTITUTION'" class="bi bi-arrow-down-up text-primary"></i>
+                <i th:case="'PENALTY'"       class="bi bi-bullseye text-info"></i>
+                <i th:case="*"               class="bi bi-dot"></i>
+              </th:block>
+            </span>
+            <!-- Player + team -->
+            <div class="flex-grow-1">
+              <span class="fw-medium" th:text="${ev.playerName}">Player</span>
+              <span th:if="${ev.assistingPlayer != null and not #strings.isEmpty(ev.assistingPlayer)}"
+                    class="text-muted small"
+                    th:text="' (assist: ' + ${ev.assistingPlayer} + ')'"></span>
             </div>
-            <button type="submit" class="btn btn-primary btn-sm w-100 mt-3">
-              <i class="bi bi-check-lg me-1"></i>
-              <span th:text="${fixture.status == 'FINISHED'} ? 'Correct' : 'Save result'">Save</span>
-            </button>
-          </form>
-        </div>
+            <!-- Team -->
+            <span class="badge bg-secondary font-mono flex-shrink-0"
+                  th:text="${ev.teamCode}">TM</span>
+          </li>
+        </ul>
       </div>
-    </div>
 
-    <!-- Postpone / Cancel -->
-    <div class="col-12 col-md-6"
-         th:if="${fixture.status == 'SCHEDULED' or fixture.status == 'IN_PROGRESS'}">
-      <div class="card shadow-sm h-100">
-        <div class="card-header fw-semibold small">
-          <i class="bi bi-calendar-x me-2"></i>Manage
-        </div>
-        <div class="card-body d-flex flex-column gap-2">
-          <!-- Postpone -->
-          <form th:action="@{/fixtures/{id}/postpone(id=${fixture.id})}" method="post">
-            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-            <div class="input-group input-group-sm">
-              <input type="text" name="reason" class="form-control"
-                     placeholder="Reason for postponement" required maxlength="255">
-              <button type="submit" class="btn btn-warning">
-                <i class="bi bi-pause-circle me-1"></i>Postpone
+      <!-- AI Chronicle (FINISHED only) -->
+      <div class="card shadow-sm" th:if="${fixture.status == 'FINISHED'}">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <span class="fw-semibold small">
+            <i class="bi bi-stars me-2"></i>AI Match Chronicle
+          </span>
+          <div class="d-flex gap-2">
+            <form th:action="@{/api/fixtures/{id}/chronicle(id=${fixture.id})}"
+                  method="post" target="_blank">
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+              <button type="submit" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-translate me-1"></i>English
               </button>
-            </div>
-          </form>
-          <!-- Cancel -->
-          <form th:action="@{/fixtures/{id}/cancel(id=${fixture.id})}" method="post">
-            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-            <button type="submit" class="btn btn-sm btn-outline-danger w-100"
-                    data-confirm="Cancel this fixture? This cannot be undone.">
-              <i class="bi bi-x-circle me-1"></i>Cancel fixture
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- Record match event -->
-    <div class="col-12"
-         th:if="${fixture.status == 'IN_PROGRESS' or fixture.status == 'FINISHED'}">
-      <div class="card shadow-sm">
-        <div class="card-header fw-semibold small">
-          <i class="bi bi-lightning me-2"></i>Record Match Event
+            </form>
+            <form th:action="@{/api/fixtures/{id}/chronicle(id=${fixture.id},lang=CROATIAN)}"
+                  method="post" target="_blank">
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+              <button type="submit" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-translate me-1"></i>Croatian
+              </button>
+            </form>
+          </div>
         </div>
         <div class="card-body">
-          <form th:action="@{/fixtures/{id}/events(id=${fixture.id})}" method="post">
-            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-            <div class="row g-2 align-items-end">
-              <div class="col-12 col-md-3">
-                <label class="form-label form-label-sm fw-medium">Team</label>
-                <select name="teamId" class="form-select form-select-sm" required>
-                  <option th:value="${fixture.homeTeamId}" th:text="${fixture.homeTeamName}">Home</option>
-                  <option th:value="${fixture.awayTeamId}" th:text="${fixture.awayTeamName}">Away</option>
-                </select>
-              </div>
-              <div class="col-6 col-md-2">
-                <label class="form-label form-label-sm fw-medium">Minute</label>
-                <input type="number" name="matchMinute"
-                       class="form-control form-control-sm font-mono"
-                       min="1" max="130" placeholder="45" required>
-              </div>
-              <div class="col-6 col-md-2">
-                <label class="form-label form-label-sm fw-medium">Type</label>
-                <select name="eventType" class="form-select form-select-sm" required>
-                  <option value="GOAL">Goal</option>
-                  <option value="OWN_GOAL">Own goal</option>
-                  <option value="YELLOW_CARD">Yellow card</option>
-                  <option value="RED_CARD">Red card</option>
-                  <option value="SUBSTITUTION">Substitution</option>
-                  <option value="PENALTY">Penalty</option>
-                </select>
-              </div>
-              <div class="col-6 col-md-3">
-                <label class="form-label form-label-sm fw-medium">Player</label>
-                <input type="text" name="playerName"
-                       class="form-control form-control-sm"
-                       placeholder="Player name" required maxlength="100">
-              </div>
-              <div class="col-6 col-md-3">
-                <label class="form-label form-label-sm fw-medium">Assist (optional)</label>
-                <input type="text" name="assistingPlayer"
-                       class="form-control form-control-sm"
-                       placeholder="Assisting player" maxlength="100">
-              </div>
-              <div class="col-12 col-md-2">
-                <button type="submit" class="btn btn-primary btn-sm w-100">
-                  <i class="bi bi-plus-lg me-1"></i>Add
-                </button>
-              </div>
-            </div>
-          </form>
+          <p class="text-muted small mb-0">
+            <i class="bi bi-info-circle me-1"></i>
+            Generated on demand via the AI backend. Opens in a new tab.
+          </p>
         </div>
       </div>
-    </div>
 
-  </div>
+    </div><!-- /#overview-pane -->
 
-  <!-- AI Chronicle section -->
-  <div class="card shadow-sm" th:if="${fixture.status == 'FINISHED'}">
-    <div class="card-header d-flex align-items-center justify-content-between">
-      <span class="fw-semibold small">
-        <i class="bi bi-stars me-2"></i>AI Match Chronicle
-      </span>
-      <div class="d-flex gap-2">
-        <form th:action="@{/api/fixtures/{id}/chronicle(id=${fixture.id})}" method="post" target="_blank">
-          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-          <button type="submit" class="btn btn-sm btn-outline-secondary">
-            <i class="bi bi-translate me-1"></i>English
-          </button>
-        </form>
-        <form th:action="@{/api/fixtures/{id}/chronicle(id=${fixture.id},lang=CROATIAN)}" method="post" target="_blank">
-          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-          <button type="submit" class="btn btn-sm btn-outline-secondary">
-            <i class="bi bi-translate me-1"></i>Croatian
-          </button>
-        </form>
-      </div>
-    </div>
-    <div class="card-body">
-      <p class="text-muted small mb-0">
-        <i class="bi bi-info-circle me-1"></i>
-        Chronicle is generated on demand via the REST API above. Opens in a new tab.
-      </p>
-    </div>
-  </div>
+
+    <!-- ===== ACTIONS TAB (ADMIN / OFFICIAL only) ===== -->
+    <div class="tab-pane fade" id="actions-pane" role="tabpanel"
+         sec:authorize="hasAnyRole('ADMIN','OFFICIAL')">
+
+      <div class="row g-3 mb-4">
+
+        <!-- Record / correct result -->
+        <div class="col-12 col-md-6"
+             th:if="${fixture.status == 'SCHEDULED' or fixture.status == 'IN_PROGRESS' or fixture.status == 'FINISHED'}">
+          <div class="card shadow-sm h-100">
+            <div class="card-header fw-semibold small">
+              <i class="bi bi-pencil-square me-2"></i>
+              <span th:text="${fixture.status == 'FINISHED'} ? 'Correct Result' : 'Record Result'">Record</span>
+            </div>
+            <div class="card-body">
+              <form th:action="${fixture.status == 'FINISHED'} ? @{/fixtures/{id}/correct-result(id=${fixture.id})} : @{/fixtures/{id}/result(id=${fixture.id})}"
+                    method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <div class="d-flex align-items-end gap-2">
+                  <div class="text-center flex-grow-1">
+                    <label class="form-label small fw-medium" th:text="${fixture.homeTeamCode}">HOM</label>
+                    <input type="number"
+                           th:name="${fixture.status == 'FINISHED'} ? 'newHomeScore' : 'homeScore'"
+                           class="form-control form-control-sm font-mono text-center"
+                           th:value="${fixture.homeScore}" min="0" max="99" required>
+                  </div>
+                  <div class="pb-1 fw-bold text-muted">–</div>
+                  <div class="text-center flex-grow-1">
+                    <label class="form-label small fw-medium" th:text="${fixture.awayTeamCode}">AWY</label>
+                    <input type="number"
+                           th:name="${fixture.status == 'FINISHED'} ? 'newAwayScore' : 'awayScore'"
+                           class="form-control form-control-sm font-mono text-center"
+                           th:value="${fixture.awayScore}" min="0" max="99" required>
+                  </div>
+                  <div th:if="${fixture.status == 'FINISHED'}" class="flex-grow-1">
+                    <label class="form-label small fw-medium">Reason</label>
+                    <input type="text" name="reason"
+                           class="form-control form-control-sm"
+                           placeholder="Reason for correction" required maxlength="255">
+                  </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm w-100 mt-3">
+                  <i class="bi bi-check-lg me-1"></i>
+                  <span th:text="${fixture.status == 'FINISHED'} ? 'Correct' : 'Save result'">Save</span>
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Postpone / Cancel -->
+        <div class="col-12 col-md-6"
+             th:if="${fixture.status == 'SCHEDULED' or fixture.status == 'IN_PROGRESS'}">
+          <div class="card shadow-sm h-100">
+            <div class="card-header fw-semibold small">
+              <i class="bi bi-calendar-x me-2"></i>Manage
+            </div>
+            <div class="card-body d-flex flex-column gap-2">
+              <form th:action="@{/fixtures/{id}/postpone(id=${fixture.id})}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <div class="input-group input-group-sm">
+                  <input type="text" name="reason" class="form-control"
+                         placeholder="Reason for postponement" required maxlength="255">
+                  <button type="submit" class="btn btn-warning">
+                    <i class="bi bi-pause-circle me-1"></i>Postpone
+                  </button>
+                </div>
+              </form>
+              <form th:action="@{/fixtures/{id}/cancel(id=${fixture.id})}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <button type="submit" class="btn btn-sm btn-outline-danger w-100"
+                        data-confirm="Cancel this fixture? This cannot be undone.">
+                  <i class="bi bi-x-circle me-1"></i>Cancel fixture
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Record match event -->
+        <div class="col-12"
+             th:if="${fixture.status == 'IN_PROGRESS' or fixture.status == 'FINISHED'}">
+          <div class="card shadow-sm">
+            <div class="card-header fw-semibold small">
+              <i class="bi bi-lightning me-2"></i>Record Match Event
+            </div>
+            <div class="card-body">
+              <form th:action="@{/fixtures/{id}/events(id=${fixture.id})}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <div class="row g-2 align-items-end">
+                  <div class="col-6 col-md-2">
+                    <label class="form-label form-label-sm fw-medium">Team</label>
+                    <select name="teamId" class="form-select form-select-sm" required>
+                      <option th:value="${fixture.homeTeamId}" th:text="${fixture.homeTeamName}">Home</option>
+                      <option th:value="${fixture.awayTeamId}" th:text="${fixture.awayTeamName}">Away</option>
+                    </select>
+                  </div>
+                  <div class="col-6 col-md-2">
+                    <label class="form-label form-label-sm fw-medium">Minute</label>
+                    <input type="number" name="matchMinute"
+                           class="form-control form-control-sm font-mono"
+                           min="1" max="130" placeholder="45" required>
+                  </div>
+                  <div class="col-6 col-md-2">
+                    <label class="form-label form-label-sm fw-medium">Type</label>
+                    <select name="eventType" class="form-select form-select-sm" required>
+                      <option value="GOAL">Goal</option>
+                      <option value="OWN_GOAL">Own goal</option>
+                      <option value="YELLOW_CARD">Yellow card</option>
+                      <option value="RED_CARD">Red card</option>
+                      <option value="SUBSTITUTION">Substitution</option>
+                      <option value="PENALTY">Penalty</option>
+                    </select>
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <label class="form-label form-label-sm fw-medium">Player</label>
+                    <input type="text" name="playerName"
+                           class="form-control form-control-sm"
+                           placeholder="Player name" required maxlength="100">
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <label class="form-label form-label-sm fw-medium">Assist (optional)</label>
+                    <input type="text" name="assistingPlayer"
+                           class="form-control form-control-sm"
+                           placeholder="Assisting player" maxlength="100">
+                  </div>
+                  <div class="col-12">
+                    <button type="submit" class="btn btn-primary btn-sm">
+                      <i class="bi bi-plus-lg me-1"></i>Add Event
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /.row -->
+    </div><!-- /#actions-pane -->
+
+  </div><!-- /.tab-content -->
 
 </th:block>
 </body>

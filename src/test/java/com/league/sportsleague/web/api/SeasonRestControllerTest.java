@@ -41,7 +41,7 @@ class SeasonRestControllerTest {
     private static final UUID SEASON_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
 
     private SeasonResponse sample() {
-        return new SeasonResponse(SEASON_ID, LEAGUE_ID, "Test League", "test-league", "2026/2027", 2026, 2027, "UPCOMING");
+        return new SeasonResponse(SEASON_ID, LEAGUE_ID, "Test League", "test-league", "2026/2027", 2026, 2027, "UPCOMING", false, 0);
     }
 
     @Test
