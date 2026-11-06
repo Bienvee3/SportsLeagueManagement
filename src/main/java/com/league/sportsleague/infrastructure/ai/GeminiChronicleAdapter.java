@@ -5,6 +5,8 @@ import com.league.sportsleague.domain.ai.ChronicleRequest;
 import com.league.sportsleague.domain.ai.ChronicleResult;
 import com.league.sportsleague.domain.ai.Language;
 import com.league.sportsleague.domain.ai.MatchEventSummary;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 
 /**
@@ -15,6 +17,8 @@ import org.springframework.ai.chat.client.ChatClient;
  */
 public class GeminiChronicleAdapter implements ChroniclePort {
 
+    private static final Logger log = LoggerFactory.getLogger(GeminiChronicleAdapter.class);
+
     private final ChatClient chatClient;
 
     public GeminiChronicleAdapter(ChatClient.Builder chatClientBuilder) {
@@ -23,9 +27,14 @@ public class GeminiChronicleAdapter implements ChroniclePort {
 
     @Override
     public ChronicleResult generate(ChronicleRequest request) {
-        String prompt = buildPrompt(request);
-        String text = chatClient.prompt(prompt).call().content();
-        return new ChronicleResult(text, request.language());
+        try {
+            String prompt = buildPrompt(request);
+            String text = chatClient.prompt(prompt).call().content();
+            return new ChronicleResult(text, request.language());
+        } catch (Exception ex) {
+            log.warn("Gemini API call failed — returning stub chronicle. Cause: {}", ex.getMessage());
+            return new StubChronicleAdapter().generate(request);
+        }
     }
 
     // ── Prompt builder ────────────────────────────────────────────────────────

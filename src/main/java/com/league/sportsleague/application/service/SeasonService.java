@@ -95,10 +95,7 @@ public class SeasonService {
     public void generateSchedule(UUID seasonId, Instant firstMatchTime) {
         Season season = requireSeason(seasonId);
         if (!season.getRounds().isEmpty()) {
-            throw new IllegalStateException(
-                "Schedule already exists (%d rounds). Delete this season and create a new one to regenerate."
-                    .formatted(season.getRounds().size())
-            );
+            season.clearRounds();
         }
         List<Team> confirmedTeams = season.getSeasonTeams().stream()
                 .filter(st -> st.getStatus() == SeasonTeamStatus.CONFIRMED)

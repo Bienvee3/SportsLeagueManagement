@@ -128,6 +128,10 @@ public class Season {
         round.setSeason(null);
     }
 
+    public void clearRounds() {
+        rounds.clear();
+    }
+
     void setLeague(League league) {
         this.league = league;
     }
