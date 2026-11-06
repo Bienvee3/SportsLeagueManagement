@@ -15,4 +15,6 @@ public interface SeasonRepository {
     List<Season> findByLeagueId(UUID leagueId);
     void delete(Season season);
     Season save(Season season);
+    /** Flush pending changes immediately — ensures orphan DELETEs precede new INSERTs on schedule regeneration. */
+    void flush();
 }

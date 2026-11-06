@@ -70,8 +70,16 @@ public class SeasonService {
         Season season = requireSeason(seasonId);
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new EntityNotFoundException("Team", teamId));
-        SeasonTeam seasonTeam = new SeasonTeam(season, team, initialSeed, SeasonTeamStatus.CONFIRMED);
-        season.addSeasonTeam(seasonTeam); // domain guard: throws DuplicateTeamException if already enrolled
+        // If the team was previously withdrawn, reinstate its existing entry instead of
+        // creating a new row (uk_season_teams_season_team prevents duplicate inserts).
+        season.getSeasonTeams().stream()
+                .filter(st -> st.getTeam().getId().equals(teamId)
+                           && st.getStatus() == SeasonTeamStatus.WITHDRAWN)
+                .findFirst()
+                .ifPresentOrElse(
+                        st -> st.reinstate(),
+                        () -> season.addSeasonTeam(new SeasonTeam(season, team, initialSeed, SeasonTeamStatus.CONFIRMED))
+                );
         seasonRepository.save(season);
     }
 
@@ -96,6 +104,7 @@ public class SeasonService {
         Season season = requireSeason(seasonId);
         if (!season.getRounds().isEmpty()) {
             season.clearRounds();
+            seasonRepository.flush(); // force DELETEs before INSERTs to avoid uk_rounds_season_round_number violation
         }
         List<Team> confirmedTeams = season.getSeasonTeams().stream()
                 .filter(st -> st.getStatus() == SeasonTeamStatus.CONFIRMED)
@@ -146,7 +155,10 @@ public class SeasonService {
 
     @Transactional(readOnly = true)
     public java.util.Set<UUID> findAllSeasonTeamIds(UUID seasonId) {
+        // Exclude CONFIRMED and DISQUALIFIED — WITHDRAWN teams appear in the dropdown
+        // so the admin can re-register (reinstate) them.
         return requireSeason(seasonId).getSeasonTeams().stream()
+                .filter(st -> st.getStatus() != SeasonTeamStatus.WITHDRAWN)
                 .map(st -> st.getTeam().getId())
                 .collect(java.util.stream.Collectors.toSet());
     }

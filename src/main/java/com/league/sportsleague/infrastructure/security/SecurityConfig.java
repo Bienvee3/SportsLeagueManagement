@@ -12,7 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.switchuser.SwitchUserFilter;
-import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 
 @Configuration
 public class SecurityConfig {
@@ -36,7 +36,7 @@ public class SecurityConfig {
                         .anyRequest().hasAnyRole("ADMIN", "OFFICIAL", "VIEWER"))
                 .formLogin(form -> form.loginPage("/login").permitAll())
                 .logout(logout -> logout.logoutUrl("/logout").logoutSuccessUrl("/login?logout").permitAll())
-                .addFilterAfter(switchUserFilter, SecurityContextHolderAwareRequestFilter.class);
+                .addFilterAfter(switchUserFilter, AuthorizationFilter.class);
         return http.build();
     }
 
