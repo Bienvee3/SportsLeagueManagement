@@ -37,24 +37,10 @@
   menuBtn  && menuBtn.addEventListener('click', toggleSidebar);
   backdrop && backdrop.addEventListener('click', closeSidebar);
 
-  /* ---- flash toast ---- */
-  const flashEl = document.getElementById('flash-data');
-  if (flashEl && flashEl.dataset.msg) {
-    const container = document.getElementById('toast-container');
-    if (container) {
-      const div = document.createElement('div');
-      div.className = 'toast align-items-center text-bg-dark border-0 show';
-      div.setAttribute('role', 'alert');
-      div.innerHTML = `
-        <div class="d-flex">
-          <div class="toast-body">${flashEl.dataset.msg}</div>
-          <button type="button" class="btn-close btn-close-white me-2 m-auto"
-                  data-bs-dismiss="toast"></button>
-        </div>`;
-      container.appendChild(div);
-      setTimeout(() => div.remove(), 4000);
-    }
-  }
+  /* Close drawer on resize to desktop */
+  window.addEventListener('resize', () => {
+    if (window.innerWidth >= 992) closeSidebar();
+  });
 
   /* ---- confirm dangerous actions ---- */
   document.querySelectorAll('[data-confirm]').forEach(btn => {

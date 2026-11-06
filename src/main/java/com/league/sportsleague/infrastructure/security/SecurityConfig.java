@@ -30,7 +30,7 @@ public class SecurityConfig {
                         .requestMatchers("/login", "/css/**", "/js/**", "/images/**", "/error",
                                 "/swagger-ui/**", "/swagger-ui.html", "/api-docs/**", "/api-docs").permitAll()
                         .requestMatchers("/dev/switch").hasRole("SWITCH_USER")
-                        .requestMatchers("/dev/switch-exit").authenticated()
+                        .requestMatchers("/dev/switch-exit").hasRole("PREVIOUS_ADMINISTRATOR")
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/official/**").hasAnyRole("ADMIN", "OFFICIAL")
                         .anyRequest().hasAnyRole("ADMIN", "OFFICIAL", "VIEWER"))

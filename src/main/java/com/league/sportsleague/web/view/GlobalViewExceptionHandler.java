@@ -41,7 +41,7 @@ public class GlobalViewExceptionHandler {
     public String handleInvalidState(InvalidStateTransitionException ex,
                                      RedirectAttributes ra,
                                      HttpServletRequest request) {
-        ra.addFlashAttribute("flashMsg", "Invalid operation: " + ex.getMessage());
+        ra.addFlashAttribute("errorMsg", "Invalid operation: " + ex.getMessage());
         return redirectToReferer(request);
     }
 

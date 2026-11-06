@@ -35,6 +35,11 @@
     </div>
 
     <!-- Season state actions (ADMIN only) -->
+
+      <a th:href="@{/leagues/{lid}/seasons/{sid}/calendar(lid=${league.id},sid=${season.id})}"
+         class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-calendar3 me-1"></i>Calendar
+      </a>
     <div sec:authorize="hasRole('ADMIN')" class="d-flex flex-wrap gap-2">
       <form th:if="${season.status == 'UPCOMING'}"
             th:action="@{/leagues/{lid}/seasons/{sid}/activate(lid=${league.id},sid=${season.id})}"
@@ -67,11 +72,6 @@
           <i class="bi bi-flag-fill me-1"></i>Complete
         </button>
       </form>
-
-      <a th:href="@{/leagues/{lid}/seasons/{sid}/calendar(lid=${league.id},sid=${season.id})}"
-         class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-calendar3 me-1"></i>Calendar
-      </a>
       <form th:action="@{/leagues/{lid}/seasons/{sid}/delete(lid=${league.id},sid=${season.id})}"
             method="post" class="d-inline">
         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">

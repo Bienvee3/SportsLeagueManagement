@@ -128,8 +128,13 @@ public class LeagueViewController {
     @PostMapping("/{id}/delete")
     @PreAuthorize("hasRole('ADMIN')")
     public String delete(@PathVariable UUID id, RedirectAttributes ra) {
-        leagueService.delete(id);
-        ra.addFlashAttribute("flashMsg", "League deleted.");
-        return "redirect:/leagues";
+        try {
+            leagueService.delete(id);
+            ra.addFlashAttribute("flashMsg", "League deleted.");
+            return "redirect:/leagues";
+        } catch (Exception e) {
+            ra.addFlashAttribute("errorMsg", "Cannot delete league: " + e.getMessage());
+            return "redirect:/leagues/" + id;
+        }
     }
 }

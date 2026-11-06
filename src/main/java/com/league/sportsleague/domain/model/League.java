@@ -56,7 +56,7 @@ public class League {
             throw new IllegalArgumentException("Country must not be blank");
         this.name = name;
         this.slug = new Slug(slug);
-        this.sportType = (sportType != null) ? sportType : "FOOTBALL";
+        this.sportType = (sportType != null && !sportType.isBlank()) ? sportType : "FOOTBALL";
         this.country = country;
     }
 
@@ -83,7 +83,7 @@ public class League {
             throw new IllegalArgumentException("League name must not be blank");
         this.name = name;
         this.country = country;
-        if (sportType != null) {
+        if (sportType != null && !sportType.isBlank()) {
             this.sportType = sportType;
         }
     }

@@ -100,6 +100,12 @@ public class SeasonViewController {
             UUID id = seasonService.createSeason(leagueId, form);
             ra.addFlashAttribute("flashMsg", "Season created.");
             return "redirect:/leagues/" + leagueId + "/seasons/" + id;
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            model.addAttribute("league", leagueService.findById(leagueId));
+            model.addAttribute("form", form);
+            model.addAttribute("currentPage", "leagues");
+            model.addAttribute("errorMsg", "A season named \"" + form.name() + "\" already exists in this league.");
+            return "seasons/form";
         } catch (Exception e) {
             model.addAttribute("league", leagueService.findById(leagueId));
             model.addAttribute("form", form);
@@ -155,7 +161,7 @@ public class SeasonViewController {
             seasonService.generateSchedule(id, Instant.now());
             ra.addFlashAttribute("flashMsg", "Schedule generated.");
         } catch (Exception e) {
-            ra.addFlashAttribute("errorMsg", "Schedule already exists or could not be generated: " + e.getMessage());
+            ra.addFlashAttribute("errorMsg", "Could not generate schedule: " + e.getMessage());
         }
         return "redirect:/leagues/" + leagueId + "/seasons/" + id + "/calendar";
     }
