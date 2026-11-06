@@ -3,82 +3,96 @@
       xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layout/layout}">
-<head><title th:text="${editMode} ? 'Edit League' : 'New League'">League Form</title></head>
+<head>
+  <title th:text="${editMode} ? 'Edit League' : 'New League'">League Form</title>
+</head>
 <body>
+<th:block layout:fragment="breadcrumb">
+  <li class="breadcrumb-item"><a th:href="@{/leagues}">Leagues</a></li>
+  <li class="breadcrumb-item active"
+      th:text="${editMode} ? 'Edit' : 'New League'">New</li>
+</th:block>
+<th:block layout:fragment="content">
 
-<nav class="crumbs" aria-label="Breadcrumb" layout:fragment="breadcrumb">
-  <a th:href="@{/leagues}">Leagues</a>
-  <span aria-hidden="true">/</span>
-  <span th:if="${editMode}">
-    <a th:href="@{/leagues/{id}(id=${league.id})}" th:text="${league.name}">League</a>
-    <span aria-hidden="true">/</span>
-  </span>
-  <span aria-current="page" th:text="${editMode} ? 'Edit' : 'New League'">New League</span>
-</nav>
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-7">
 
-<div layout:fragment="content">
+      <div class="d-flex align-items-center gap-3 mb-4">
+        <a th:href="${editMode} ? @{/leagues/{id}(id=${league?.id})} : @{/leagues}"
+           class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="h3 fw-bold mb-0"
+            th:text="${editMode} ? 'Edit League' : 'New League'">League</h1>
+      </div>
 
-  <div class="page-head">
-    <h1 th:text="${editMode} ? 'Edit League' : 'New League'">League Form</h1>
-  </div>
+      <div class="card shadow-sm">
+        <div class="card-body p-4">
+          <form th:action="${editMode} ? @{/leagues/{id}(id=${league.id})} : @{/leagues}"
+                method="post" novalidate>
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
-  <div class="panel" style="max-width:640px;">
-    <div class="panel-body">
+            <!-- Name -->
+            <div class="mb-3">
+              <label for="name" class="form-label fw-medium">League name <span class="text-danger">*</span></label>
+              <input type="text" id="name" name="name"
+                     class="form-control" th:classappend="${#fields.hasErrors('form.name')} ? ' is-invalid'"
+                     th:value="${form.name}" required maxlength="100" placeholder="e.g. Premier League">
+              <div class="invalid-feedback" th:errors="${form.name}">Required</div>
+            </div>
 
-      <form th:action="${editMode} ? @{/leagues/{id}(id=${league.id})} : @{/leagues}"
-            method="post"
-            th:object="${form}"
-            novalidate>
-        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <!-- Slug (create only) -->
+            <div class="mb-3" th:if="${not editMode}">
+              <label for="slug" class="form-label fw-medium">URL slug <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <span class="input-group-text text-muted">/leagues/</span>
+                <input type="text" id="slug" name="slug"
+                       class="form-control" th:classappend="${#fields.hasErrors('form.slug')} ? ' is-invalid'"
+                       th:value="${form.slug}" required maxlength="100"
+                       placeholder="premier-league" pattern="[a-z0-9\-]+">
+                <div class="invalid-feedback" th:errors="${form.slug}">Required</div>
+              </div>
+              <div class="form-text">Lowercase letters, numbers and hyphens only.</div>
+            </div>
 
-        <div class="form-grid">
-          <div class="field" style="grid-column:1/-1;">
-            <label for="name">League name</label>
-            <input type="text" id="name" th:field="*{name}"
-                   th:aria-invalid="${#fields.hasErrors('name')} ? 'true' : null"
-                   placeholder="e.g. SuperSport HNL">
-            <div class="error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
-          </div>
+            <!-- Sport Type -->
+            <div class="mb-3">
+              <label for="sportType" class="form-label fw-medium">Sport <span class="text-danger">*</span></label>
+              <select id="sportType" name="sportType" class="form-select"
+                      th:classappend="${#fields.hasErrors('form.sportType')} ? ' is-invalid'">
+                <option value="">Select sport…</option>
+                <option value="FOOTBALL"   th:selected="${form.sportType == 'FOOTBALL'}">Football</option>
+                <option value="BASKETBALL" th:selected="${form.sportType == 'BASKETBALL'}">Basketball</option>
+                <option value="VOLLEYBALL" th:selected="${form.sportType == 'VOLLEYBALL'}">Volleyball</option>
+                <option value="HANDBALL"   th:selected="${form.sportType == 'HANDBALL'}">Handball</option>
+              </select>
+              <div class="invalid-feedback" th:errors="${form.sportType}">Required</div>
+            </div>
 
-          <div class="field" th:if="${!editMode}">
-            <label for="slug">Slug</label>
-            <input type="text" id="slug" th:field="*{slug}"
-                   th:aria-invalid="${#fields.hasErrors('slug')} ? 'true' : null"
-                   placeholder="supersport-hnl">
-            <div class="hint">lowercase, hyphens only</div>
-            <div class="error" th:if="${#fields.hasErrors('slug')}" th:errors="*{slug}"></div>
-          </div>
+            <!-- Country -->
+            <div class="mb-4">
+              <label for="country" class="form-label fw-medium">Country <span class="text-danger">*</span></label>
+              <input type="text" id="country" name="country"
+                     class="form-control" th:classappend="${#fields.hasErrors('form.country')} ? ' is-invalid'"
+                     th:value="${form.country}" required maxlength="100" placeholder="e.g. England">
+              <div class="invalid-feedback" th:errors="${form.country}">Required</div>
+            </div>
 
-          <div class="field">
-            <label for="country">Country</label>
-            <input type="text" id="country" th:field="*{country}"
-                   th:aria-invalid="${#fields.hasErrors('country')} ? 'true' : null"
-                   placeholder="Croatia">
-            <div class="error" th:if="${#fields.hasErrors('country')}" th:errors="*{country}"></div>
-          </div>
-
-          <div class="field">
-            <label for="sportType">Sport type</label>
-            <select id="sportType" th:field="*{sportType}">
-              <option value="FOOTBALL">Football</option>
-              <option value="BASKETBALL">Basketball</option>
-              <option value="HANDBALL">Handball</option>
-              <option value="VOLLEYBALL">Volleyball</option>
-              <option value="OTHER">Other</option>
-            </select>
-          </div>
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg me-1"></i>
+                <span th:text="${editMode} ? 'Save changes' : 'Create League'">Save</span>
+              </button>
+              <a th:href="${editMode} ? @{/leagues/{id}(id=${league.id})} : @{/leagues}"
+                 class="btn btn-outline-secondary">Cancel</a>
+            </div>
+          </form>
         </div>
-
-        <div class="panel-foot" style="padding:0;margin-top:24px;">
-          <a class="btn ghost" th:href="${editMode} ? @{/leagues/{id}(id=${league.id})} : @{/leagues}">Cancel</a>
-          <button type="submit" class="btn primary"
-                  th:text="${editMode} ? 'Save changes' : 'Create League'">Create</button>
-        </div>
-      </form>
+      </div>
 
     </div>
   </div>
 
-</div>
+</th:block>
 </body>
 </html>

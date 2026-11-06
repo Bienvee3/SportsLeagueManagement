@@ -5,18 +5,20 @@
       layout:decorate="~{layout/layout}">
 <head><title>Server Error</title></head>
 <body>
-
-<nav class="crumbs" aria-label="Breadcrumb" layout:fragment="breadcrumb">
-  <span aria-current="page">Server Error</span>
-</nav>
-
-<div layout:fragment="content">
-  <div class="empty" style="padding-top:64px;">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 21h20zM12 10v5M12 18h.01"/></svg>
-    <h3>500 — Server Error</h3>
-    <p th:text="${errorMessage ?: 'An unexpected error occurred. Please try again.'}"></p>
-    <a class="btn" th:href="@{/}">Back to Dashboard</a>
+<th:block layout:fragment="breadcrumb">
+  <li class="breadcrumb-item"><a th:href="@{/}">Home</a></li>
+  <li class="breadcrumb-item active">Server Error</li>
+</th:block>
+<th:block layout:fragment="content">
+  <div class="text-center py-5">
+    <div class="display-1 fw-bold text-danger mb-3">500</div>
+    <h2 class="mb-2">Something went wrong</h2>
+    <p class="text-muted mb-4"
+       th:text="${errorMessage} ?: 'An unexpected error occurred. Please try again.'"></p>
+    <a th:href="@{/}" class="btn btn-primary">
+      <i class="bi bi-house me-2"></i>Back to Dashboard
+    </a>
   </div>
-</div>
+</th:block>
 </body>
 </html>

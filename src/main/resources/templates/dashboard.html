@@ -7,47 +7,60 @@
 <head><title>Dashboard</title></head>
 <body>
 
-<nav class="crumbs" aria-label="Breadcrumb" layout:fragment="breadcrumb">
-  <span aria-current="page">Dashboard</span>
-</nav>
+<th:block layout:fragment="breadcrumb">
+  <li class="breadcrumb-item active">Dashboard</li>
+</th:block>
 
-<div layout:fragment="content">
+<th:block layout:fragment="content">
 
-  <div class="page-head">
+  <div class="d-flex align-items-center justify-content-between mb-4">
     <div>
-      <h1>Dashboard</h1>
-      <p class="lede">Overview of all leagues and seasons.</p>
+      <h1 class="h3 fw-bold mb-1">Dashboard</h1>
+      <p class="text-muted mb-0 small">All leagues at a glance</p>
     </div>
+    <a sec:authorize="hasRole('ADMIN')"
+       th:href="@{/leagues/new}" class="btn btn-primary">
+      <i class="bi bi-plus-lg me-1"></i>New League
+    </a>
   </div>
 
-  <!-- leagues list -->
-  <div th:if="${leagues.empty}" class="panel">
-    <div class="empty">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/></svg>
-      <h3>No leagues yet</h3>
-      <p>Create your first league to get started.</p>
-      <a class="btn primary" th:href="@{/leagues/new}" sec:authorize="hasRole('ADMIN')">New League</a>
-    </div>
-  </div>
-
-  <div th:unless="${leagues.empty}" class="panel">
-    <div class="panel-head">
-      <h2>Leagues</h2>
-      <a class="btn sm" th:href="@{/leagues}">View all</a>
-    </div>
-    <div class="list">
-      <a th:each="l : ${leagues}"
-         th:href="@{/leagues/{id}(id=${l.id})}"
-         style="text-decoration:none;color:inherit;">
-        <div class="grow">
-          <div th:text="${l.name}" style="font-weight:500;"></div>
-          <div class="sub" th:text="${l.country + ' · ' + l.sportType}"></div>
-        </div>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+  <!-- Empty state -->
+  <div th:if="${#lists.isEmpty(leagues)}" class="card text-center py-5">
+    <div class="card-body">
+      <i class="bi bi-trophy display-5 text-muted mb-3 d-block"></i>
+      <h5 class="card-title">No leagues yet</h5>
+      <p class="card-text text-muted">Create your first league to get started.</p>
+      <a sec:authorize="hasRole('ADMIN')"
+         th:href="@{/leagues/new}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i>Create League
       </a>
     </div>
   </div>
 
-</div>
+  <!-- League cards -->
+  <div th:if="${not #lists.isEmpty(leagues)}"
+       class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
+    <div class="col" th:each="l : ${leagues}">
+      <a th:href="@{/leagues/{id}(id=${l.id})}"
+         class="card h-100 text-decoration-none text-dark shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-start justify-content-between mb-2">
+            <h5 class="card-title mb-0 fw-semibold" th:text="${l.name}">League Name</h5>
+            <span class="badge bg-secondary ms-2 text-uppercase" style="font-size:.65rem;"
+                  th:text="${l.sportType}">FOOTBALL</span>
+          </div>
+          <p class="text-muted small mb-0">
+            <i class="bi bi-geo-alt me-1"></i>
+            <span th:text="${l.country}">Country</span>
+          </p>
+        </div>
+        <div class="card-footer bg-transparent small text-muted d-flex align-items-center gap-1">
+          <i class="bi bi-arrow-right-circle"></i> View seasons &amp; standings
+        </div>
+      </a>
+    </div>
+  </div>
+
+</th:block>
 </body>
 </html>

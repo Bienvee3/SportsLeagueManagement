@@ -2,84 +2,84 @@
 <html lang="en"
       xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
       layout:decorate="~{layout/layout}">
-<head><title th:text="${season.name + ' — Calendar'}">Calendar</title></head>
+<head><title th:text="${season.name} + ' — Calendar'">Calendar</title></head>
 <body>
+<th:block layout:fragment="breadcrumb">
+  <li class="breadcrumb-item"><a th:href="@{/leagues}">Leagues</a></li>
+  <li class="breadcrumb-item">
+    <a th:href="@{/leagues/{id}(id=${league.id})}" th:text="${league.name}">League</a>
+  </li>
+  <li class="breadcrumb-item">
+    <a th:href="@{/leagues/{lid}/seasons/{sid}(lid=${league.id},sid=${season.id})}"
+       th:text="${season.name}">Season</a>
+  </li>
+  <li class="breadcrumb-item active">Calendar</li>
+</th:block>
+<th:block layout:fragment="content">
 
-<nav class="crumbs" aria-label="Breadcrumb" layout:fragment="breadcrumb">
-  <a th:href="@{/leagues}">Leagues</a>
-  <span aria-hidden="true">/</span>
-  <a th:href="@{/leagues/{id}(id=${league.id})}" th:text="${league.name}">League</a>
-  <span aria-hidden="true">/</span>
-  <a th:href="@{/leagues/{lid}/seasons/{sid}(lid=${league.id},sid=${season.id})}" th:text="${season.name}">Season</a>
-  <span aria-hidden="true">/</span>
-  <span aria-current="page">Calendar</span>
-</nav>
-
-<div layout:fragment="content">
-
-  <div class="page-head">
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <a th:href="@{/leagues/{lid}/seasons/{sid}(lid=${league.id},sid=${season.id})}"
+       class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i>
+    </a>
     <div>
-      <h1 th:text="${season.name + ' — Calendar'}">Calendar</h1>
-      <p class="lede" th:text="${league.name}"></p>
-    </div>
-    <div class="actions">
-      <a class="btn" th:href="@{/leagues/{lid}/seasons/{sid}(lid=${league.id},sid=${season.id})}">Standings</a>
+      <h1 class="h3 fw-bold mb-1">Calendar</h1>
+      <div class="text-muted small" th:text="${league.name} + ' · ' + ${season.name}">League · Season</div>
     </div>
   </div>
 
-  <div class="panel" th:if="${fixtures.empty}">
-    <div class="empty">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
-      <h3>No fixtures yet</h3>
-      <p>Generate the round-robin schedule from the season page.</p>
-      <a class="btn" th:href="@{/leagues/{lid}/seasons/{sid}(lid=${league.id},sid=${season.id})}"
-         sec:authorize="hasRole('ADMIN')">Back to season</a>
+  <!-- Empty -->
+  <div th:if="${#lists.isEmpty(fixtures)}" class="card shadow-sm">
+    <div class="card-body text-center py-5">
+      <i class="bi bi-calendar-x display-5 text-muted mb-3 d-block"></i>
+      <p class="text-muted mb-0">No fixtures scheduled yet.</p>
     </div>
   </div>
 
-  <div th:unless="${fixtures.empty}" class="panel">
-    <!-- group fixtures by round using Thymeleaf iteration tracking -->
+  <!-- Fixtures grouped by round -->
+  <th:block th:if="${not #lists.isEmpty(fixtures)}">
     <th:block th:with="prevRound=-1">
       <th:block th:each="f : ${fixtures}">
-        <!-- round header when round changes -->
-        <div th:if="${f.roundNumber != prevRound}" class="round-head">
-          <strong th:text="${f.roundName}">Round 1</strong>
-          <span class="muted" th:text="${#temporals.format(f.scheduledTime, 'EEE dd MMM yyyy', #locale)}"></span>
+
+        <!-- Round header (show when round changes) -->
+        <div th:if="${f.roundNumber != prevRound}"
+             class="d-flex align-items-center gap-2 mt-4 mb-2">
+          <span class="badge bg-primary" th:text="'Round ' + ${f.roundNumber}">Round 1</span>
+          <span class="text-muted small font-mono"
+                th:text="${#temporals.format(f.scheduledTime, 'EEE dd MMM yyyy')}">Date</span>
           <th:block th:with="prevRound=${f.roundNumber}"></th:block>
         </div>
-        <!-- fixture row -->
-        <a th:href="@{/fixtures/{id}(id=${f.id})}" class="fx-row">
-          <span class="fx-meta">
-            <span th:switch="${f.status}">
-              <span th:case="'SCHEDULED'" class="chip neutral sm"><span class="g" aria-hidden="true">○</span></span>
-              <span th:case="'FINISHED'" class="chip ok sm"><span class="g" aria-hidden="true">●</span></span>
-              <span th:case="'POSTPONED'" class="chip warn sm"><span class="g" aria-hidden="true">‖</span></span>
-              <span th:case="'CANCELLED'" class="chip err sm"><span class="g" aria-hidden="true">✕</span></span>
-              <span th:case="*" class="chip neutral sm"><span class="g" aria-hidden="true">○</span></span>
-            </span>
-          </span>
-          <span class="team home">
-            <span class="nm" th:text="${f.homeTeamName}">Home</span>
-            <span class="code" th:text="${f.homeTeamCode}">HOM</span>
-          </span>
-          <span th:if="${f.homeScore != null}"
-                class="score"
-                th:text="${f.homeScore + ' : ' + f.awayScore}">2 : 1</span>
-          <span th:unless="${f.homeScore != null}"
-                class="score pending">– : –</span>
-          <span class="team away">
-            <span class="code" th:text="${f.awayTeamCode}">AWY</span>
-            <span class="nm" th:text="${f.awayTeamName}">Away</span>
-          </span>
-          <span class="fx-meta" th:text="${#temporals.format(f.scheduledTime, 'HH:mm', #locale)}"></span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="chev" width="16" height="16" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
-        </a>
+
+        <div class="card shadow-sm mb-2">
+          <a th:href="@{/fixtures/{id}(id=${f.id})}"
+             class="card-body py-2 px-3 text-decoration-none text-dark d-flex align-items-center gap-3">
+            <!-- Home team -->
+            <div class="text-end flex-grow-1 fw-medium text-truncate" th:text="${f.homeTeamName}">Home</div>
+            <!-- Score / Status -->
+            <div class="text-center flex-shrink-0" style="min-width:80px">
+              <th:block th:if="${f.homeScore != null}">
+                <span class="score-box">
+                  <span th:text="${f.homeScore}">0</span>
+                  <span class="text-muted">–</span>
+                  <span th:text="${f.awayScore}">0</span>
+                </span>
+              </th:block>
+              <th:block th:if="${f.homeScore == null}">
+                <span class="badge" th:classappend="'badge-' + ${f.status}"
+                      th:text="${f.status}">SCH</span>
+              </th:block>
+            </div>
+            <!-- Away team -->
+            <div class="flex-grow-1 fw-medium text-truncate" th:text="${f.awayTeamName}">Away</div>
+            <i class="bi bi-chevron-right text-muted flex-shrink-0"></i>
+          </a>
+        </div>
+
       </th:block>
     </th:block>
-  </div>
+  </th:block>
 
-</div>
+</th:block>
 </body>
 </html>

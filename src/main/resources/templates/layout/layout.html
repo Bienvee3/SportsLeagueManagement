@@ -7,127 +7,153 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title layout:title-pattern="$CONTENT_TITLE — League Ops">League Ops</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;display=swap">
+  <!-- Bootstrap 5.3 -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+        crossorigin="anonymous">
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <!-- Custom overrides -->
   <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body>
 
-<!-- Flash toast (hidden span, picked up by app.js) -->
-<span id="flash-toast" th:text="${flashMsg}" style="display:none" th:if="${flashMsg}"></span>
-<div class="toast-wrap"></div>
+<!-- Flash data carrier (read by app.js) -->
+<span id="flash-data"
+      th:if="${flashMsg}"
+      th:attr="data-msg=${flashMsg}"
+      hidden></span>
 
-<div class="shell" id="shell">
-  <div class="scrim" id="nav-scrim"></div>
+<!-- Mobile sidebar backdrop -->
+<div id="sidebar-backdrop"></div>
 
-  <!-- ===== SIDEBAR ===== -->
-  <aside class="sidebar" aria-label="Primary navigation">
-    <div class="brand">
-      <span class="brand-mark">LO</span>
-      League Ops
+<!-- ===== SIDEBAR ===== -->
+<nav id="sidebar" class="bg-dark" data-bs-theme="dark">
+
+  <a th:href="@{/}" class="brand">
+    <span class="brand-mark">LO</span>
+    League Ops
+  </a>
+
+  <div class="px-2 py-2">
+
+    <div class="nav-section">Main</div>
+    <a th:href="@{/}" class="nav-link"
+       th:classappend="${currentPage == 'dashboard'} ? ' active'">
+      <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+
+    <div class="nav-section mt-2">Competition</div>
+    <a th:href="@{/leagues}" class="nav-link"
+       th:classappend="${currentPage == 'leagues'} ? ' active'">
+      <i class="bi bi-trophy"></i> Leagues
+    </a>
+    <a th:href="@{/teams}" class="nav-link"
+       th:classappend="${currentPage == 'teams'} ? ' active'">
+      <i class="bi bi-people"></i> Teams
+    </a>
+
+    <!-- ADMIN only section -->
+    <div sec:authorize="hasRole('ADMIN')">
+      <div class="nav-section mt-2">Admin</div>
+      <a th:href="@{/leagues/new}" class="nav-link">
+        <i class="bi bi-plus-circle"></i> New League
+      </a>
+      <a th:href="@{/teams/new}" class="nav-link">
+        <i class="bi bi-person-plus"></i> New Team
+      </a>
     </div>
 
-    <nav class="nav" aria-label="Site">
+  </div>
 
-      <!-- SEASON OPERATIONS -->
-      <div class="nav-group">
-        <div class="eyebrow">Season operations <span class="scope-tag">season</span></div>
-        <a th:href="@{/}" th:classappend="${currentPage == 'dashboard'} ? 'active'" th:attrappend="aria-current=${currentPage == 'dashboard'} ? 'page' : null">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h7v9H3zM14 3h7v5h-7zM14 12h7v9h-7zM3 16h7v5H3z"/></svg>
-          Dashboard
-        </a>
-        <a th:href="@{/calendar}" th:attrappend="aria-current=${currentPage == 'calendar'} ? 'page' : null">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
-          Calendar &amp; Fixtures
-        </a>
-      </div>
+  <div class="sidebar-footer">
+    <div>Logged in as
+      <strong>
+        <span sec:authentication="name">user</span>
+      </strong>
+    </div>
+    <form th:action="@{/logout}" method="post" class="mt-1">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+      <button type="submit"
+              class="btn btn-sm btn-outline-secondary w-100 text-start px-2 py-1">
+        <i class="bi bi-box-arrow-left me-1"></i>Sign out
+      </button>
+    </form>
+  </div>
 
-      <!-- LEAGUE CATALOGUE -->
-      <div class="nav-group">
-        <div class="eyebrow">League catalogue <span class="scope-tag">global</span></div>
-        <a th:href="@{/leagues}" th:attrappend="aria-current=${currentPage == 'leagues'} ? 'page' : null">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/></svg>
-          Leagues
-        </a>
-        <a th:href="@{/teams}" th:attrappend="aria-current=${currentPage == 'teams'} ? 'page' : null">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z"/></svg>
-          Teams
-        </a>
-      </div>
+</nav>
+<!-- ===== END SIDEBAR ===== -->
 
-      <!-- ADMINISTRATION (ADMIN only) -->
-      <div class="nav-group" sec:authorize="hasRole('ADMIN')">
-        <div class="eyebrow">Administration <span class="scope-tag">global</span></div>
-        <a th:href="@{/admin/leagues/new}">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-          New League
-        </a>
-        <a th:href="@{/admin/teams/new}">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-          New Team
-        </a>
-      </div>
+<!-- ===== MAIN ===== -->
+<div id="main-wrapper">
 
+  <!-- Topbar -->
+  <header id="topbar">
+    <button id="menu-toggle-btn" aria-label="Toggle navigation">
+      <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="me-auto">
+      <ol class="breadcrumb mb-0 small">
+        <layout:fragment name="breadcrumb">
+          <li class="breadcrumb-item active">Home</li>
+        </layout:fragment>
+      </ol>
     </nav>
 
-    <div class="sidebar-foot">
-      <span sec:authentication="name">User</span>
-      &nbsp;·&nbsp;
-      <span sec:authorize="hasRole('ADMIN')">Admin</span>
-      <span sec:authorize="hasRole('OFFICIAL') and !hasRole('ADMIN')">Official</span>
-      <span sec:authorize="hasRole('VIEWER') and !hasRole('ADMIN') and !hasRole('OFFICIAL')">Viewer</span>
-    </div>
-  </aside>
-
-  <!-- ===== MAIN ===== -->
-  <div class="main">
-    <!-- topbar -->
-    <header class="topbar">
-      <button class="icon-btn menu-btn" data-act="open-nav" aria-label="Open navigation">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    <!-- User menu -->
+    <div class="dropdown">
+      <button class="btn btn-sm btn-outline-secondary dropdown-toggle d-flex align-items-center gap-2"
+              type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi bi-person-circle"></i>
+        <span class="d-none d-md-inline" sec:authentication="name">user</span>
       </button>
-
-      <!-- breadcrumb (each page sets th:fragment or model attr) -->
-      <nav class="crumbs" aria-label="Breadcrumb" layout:fragment="breadcrumb">
-        <span aria-current="page">Home</span>
-      </nav>
-
-      <div class="top-tools">
-        <div class="user-menu-wrap">
-          <button class="user-btn" aria-label="User menu">
-            <span class="avatar" sec:authentication="name" th:text="${#strings.substring(#authentication.name, 0, 2).toUpperCase()}">AD</span>
-            <span class="nm" sec:authentication="name">Admin</span>
-          </button>
-          <div class="popover">
-            <a class="item" th:href="@{/logout}"
-               th:attr="onclick='event.preventDefault(); document.getElementById(\'logout-form\').submit()'">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="16" height="16"><path d="M15 4h4v16h-4M10 17l5-5-5-5M15 12H3"/></svg>
-              Sign out
-            </a>
-            <hr>
-            <button class="item" data-act="toggle-theme">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="16" height="16"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/></svg>
-              Toggle theme
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li>
+          <span class="dropdown-item-text small text-muted" sec:authentication="name">user</span>
+        </li>
+        <li><hr class="dropdown-divider"></li>
+        <li>
+          <form th:action="@{/logout}" method="post" class="d-inline">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <button type="submit" class="dropdown-item text-danger">
+              <i class="bi bi-box-arrow-left me-2"></i>Sign out
             </button>
-          </div>
-        </div>
-      </div>
-    </header>
+          </form>
+        </li>
+      </ul>
+    </div>
+  </header>
 
-    <!-- page content -->
-    <main>
-      <div class="content" layout:fragment="content">
-        <!-- page content injected here -->
-      </div>
-    </main>
-  </div><!-- /.main -->
-</div><!-- /.shell -->
+  <!-- Page content -->
+  <main class="page-content">
+    <!-- Flash alert -->
+    <div th:if="${flashMsg}"
+         class="alert alert-success alert-dismissible auto-dismiss fade show mb-3"
+         role="alert">
+      <i class="bi bi-check-circle me-2"></i>
+      <span th:text="${flashMsg}"></span>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
 
-<!-- logout form (POST required by Spring Security) -->
-<form id="logout-form" th:action="@{/logout}" method="post" style="display:none">
-  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-</form>
+    <layout:fragment name="content">
+      <!-- page body inserted here -->
+    </layout:fragment>
+  </main>
 
+</div>
+<!-- ===== END MAIN ===== -->
+
+<!-- Toast container -->
+<div id="toast-container" aria-live="polite"></div>
+
+<!-- Bootstrap JS bundle (includes Popper) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc4s9bIOgUxi8T/jzmzV7Kb+5P4+CtCFjJUBzSrCbxo"
+        crossorigin="anonymous"></script>
 <script th:src="@{/js/app.js}"></script>
 </body>
 </html>

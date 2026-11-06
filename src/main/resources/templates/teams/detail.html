@@ -6,43 +6,59 @@
       layout:decorate="~{layout/layout}">
 <head><title th:text="${team.name}">Team</title></head>
 <body>
+<th:block layout:fragment="breadcrumb">
+  <li class="breadcrumb-item"><a th:href="@{/teams}">Teams</a></li>
+  <li class="breadcrumb-item active" th:text="${team.name}">Team</li>
+</th:block>
+<th:block layout:fragment="content">
 
-<nav class="crumbs" aria-label="Breadcrumb" layout:fragment="breadcrumb">
-  <a th:href="@{/teams}">Teams</a>
-  <span aria-hidden="true">/</span>
-  <span aria-current="page" th:text="${team.name}">Team</span>
-</nav>
-
-<div layout:fragment="content">
-
-  <div class="page-head">
-    <div>
-      <p class="eyebrow">
-        <span class="code" th:text="${team.shortCode}">TM</span>
-      </p>
-      <h1 th:text="${team.name}">Team Name</h1>
-      <p class="lede" th:text="${team.city}">City</p>
+  <div class="d-flex align-items-start justify-content-between flex-wrap gap-3 mb-4">
+    <div class="d-flex align-items-center gap-3">
+      <a th:href="@{/teams}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-dark font-mono fs-6" th:text="${team.shortCode}">DZG</span>
+          <h1 class="h3 fw-bold mb-0" th:text="${team.name}">Team</h1>
+        </div>
+      </div>
     </div>
-    <div class="actions" sec:authorize="hasRole('ADMIN')">
-      <a class="btn" th:href="@{/teams/{id}/edit(id=${team.id})}">Edit</a>
+    <a sec:authorize="hasRole('ADMIN')"
+       th:href="@{/teams/{id}/edit(id=${team.id})}"
+       class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-pencil me-1"></i>Edit
+    </a>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-12 col-md-5">
+      <div class="card shadow-sm h-100">
+        <div class="card-header fw-semibold">
+          <i class="bi bi-info-circle me-2"></i>Club info
+        </div>
+        <div class="card-body">
+          <dl class="row mb-0 small">
+            <dt class="col-5 text-muted">Full name</dt>
+            <dd class="col-7 fw-medium" th:text="${team.name}">—</dd>
+
+            <dt class="col-5 text-muted">Code</dt>
+            <dd class="col-7 font-mono fw-bold" th:text="${team.shortCode}">—</dd>
+
+            <dt class="col-5 text-muted">Stadium</dt>
+            <dd class="col-7" th:text="${team.stadiumName} ?: '—'">—</dd>
+
+            <dt class="col-5 text-muted">City</dt>
+            <dd class="col-7" th:text="${team.city} ?: '—'">—</dd>
+
+            <dt class="col-5 text-muted">Founded</dt>
+            <dd class="col-7 font-mono" th:text="${team.foundedYear} ?: '—'">—</dd>
+          </dl>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="panel" style="max-width:480px;">
-    <div class="panel-body">
-      <dl class="kv">
-        <dt>Short code</dt>
-        <dd><span class="code" th:text="${team.shortCode}">TM</span></dd>
-        <dt>Stadium</dt>
-        <dd th:text="${team.stadiumName}">Stadium</dd>
-        <dt>City</dt>
-        <dd th:text="${team.city}">City</dd>
-        <dt>Founded</dt>
-        <dd th:text="${team.foundedYear != null ? team.foundedYear : '—'}">—</dd>
-      </dl>
-    </div>
-  </div>
-
-</div>
+</th:block>
 </body>
 </html>
