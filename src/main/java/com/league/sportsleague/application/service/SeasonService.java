@@ -135,6 +135,13 @@ public class SeasonService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public java.util.Set<UUID> findAllSeasonTeamIds(UUID seasonId) {
+        return requireSeason(seasonId).getSeasonTeams().stream()
+                .map(st -> st.getTeam().getId())
+                .collect(java.util.stream.Collectors.toSet());
+    }
+
     // ── Private helpers ───────────────────────────────────────────────────────
 
     private Season requireSeason(UUID id) {

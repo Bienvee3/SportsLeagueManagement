@@ -1,6 +1,7 @@
 package com.league.sportsleague.web.view;
 
 import com.league.sportsleague.application.dto.CreateTeamRequest;
+import com.league.sportsleague.application.dto.UpdateTeamRequest;
 import com.league.sportsleague.application.service.TeamService;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -84,7 +85,7 @@ public class TeamViewController {
     public String editForm(@PathVariable UUID id, Model model) {
         var t = teamService.findById(id);
         model.addAttribute("team", t);
-        model.addAttribute("form", new CreateTeamRequest(t.name(), t.shortCode(), t.stadiumName(), t.city(), t.foundedYear()));
+        model.addAttribute("form", new UpdateTeamRequest(t.name(), t.stadiumName(), t.city(), t.foundedYear()));
         model.addAttribute("editMode", true);
         model.addAttribute("currentPage", "teams");
         return "teams/form";
@@ -93,7 +94,7 @@ public class TeamViewController {
     @PostMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public String update(@PathVariable UUID id,
-                         @ModelAttribute("form") @Valid CreateTeamRequest form,
+                         @ModelAttribute("form") @Valid UpdateTeamRequest form,
                          BindingResult br,
                          Model model,
                          RedirectAttributes ra) {

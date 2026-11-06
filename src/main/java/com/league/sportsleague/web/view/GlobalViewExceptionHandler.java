@@ -1,6 +1,7 @@
 package com.league.sportsleague.web.view;
 
 import com.league.sportsleague.domain.exception.EntityNotFoundException;
+import com.league.sportsleague.domain.exception.DuplicateTeamException;
 import org.springframework.dao.DataIntegrityViolationException;
 import com.league.sportsleague.domain.exception.InvalidStateTransitionException;
 import org.springframework.http.HttpStatus;
@@ -45,6 +46,12 @@ public class GlobalViewExceptionHandler {
         model.addAttribute("errorTitle", "Invalid Request");
         model.addAttribute("errorMessage", ex.getMessage() != null ? ex.getMessage() : "A data error occurred.");
         return "error/500";
+    }
+
+    @ExceptionHandler(DuplicateTeamException.class)
+    public String handleDuplicateTeam(DuplicateTeamException ex, RedirectAttributes ra) {
+        ra.addFlashAttribute("errorMsg", "Cannot register team: " + ex.getMessage());
+        return "redirect:/";
     }
 
     @ExceptionHandler(Exception.class)

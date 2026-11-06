@@ -48,7 +48,7 @@ public class SeasonViewController {
         var standings = seasonService.getStandings(id);
         var registeredTeams = seasonService.findRegisteredTeams(id);
         var allTeams        = teamService.findAll();
-        var registeredIds   = registeredTeams.stream().map(t -> t.id()).collect(java.util.stream.Collectors.toSet());
+        var registeredIds   = seasonService.findAllSeasonTeamIds(id);
         var availableTeams  = allTeams.stream().filter(t -> !registeredIds.contains(t.id())).toList();
         model.addAttribute("season", season);
         model.addAttribute("league", leagueService.findById(leagueId));
