@@ -2,6 +2,7 @@ package com.league.sportsleague.application.service;
 
 import com.league.sportsleague.application.dto.CreateSeasonRequest;
 import com.league.sportsleague.application.dto.SeasonResponse;
+import com.league.sportsleague.application.dto.TeamResponse;
 import com.league.sportsleague.application.dto.StandingsResponse;
 import com.league.sportsleague.domain.StandingsCalculator;
 import com.league.sportsleague.domain.exception.EntityNotFoundException;
@@ -119,6 +120,14 @@ public class SeasonService {
         var fixtures = fixtureRepository.findFinishedBySeasonWithTeams(seasonId);
         var entries  = StandingsCalculator.calculate(fixtures);
         return new StandingsResponse(season.getId(), season.getName(), Instant.now(), entries);
+    }
+
+    @Transactional(readOnly = true)
+    public List<TeamResponse> findRegisteredTeams(UUID seasonId) {
+        return requireSeason(seasonId).getTeams().stream()
+                .filter(st -> st.getStatus() == SeasonTeamStatus.CONFIRMED)
+                .map(st -> TeamResponse.from(st.getTeam()))
+                .toList();
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────

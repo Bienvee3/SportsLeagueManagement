@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.bind.annotation.ModelAttribute;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -45,11 +46,15 @@ public class SeasonViewController {
                          Model model) {
         var season = seasonService.findById(id);
         var standings = seasonService.getStandings(id);
-        var teams = teamService.findAll();
+        var registeredTeams = seasonService.findRegisteredTeams(id);
+        var allTeams        = teamService.findAll();
+        var registeredIds   = registeredTeams.stream().map(t -> t.id()).collect(java.util.stream.Collectors.toSet());
+        var availableTeams  = allTeams.stream().filter(t -> !registeredIds.contains(t.id())).toList();
         model.addAttribute("season", season);
         model.addAttribute("league", leagueService.findById(leagueId));
         model.addAttribute("standings", standings);
-        model.addAttribute("teams", teams);
+        model.addAttribute("registeredTeams", registeredTeams);
+        model.addAttribute("availableTeams", availableTeams);
         model.addAttribute("currentPage", "leagues");
         return "seasons/detail";
     }
@@ -81,7 +86,7 @@ public class SeasonViewController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public String create(@PathVariable UUID leagueId,
-                         @Valid CreateSeasonRequest form,
+                         @ModelAttribute("form") @Valid CreateSeasonRequest form,
                          BindingResult br,
                          Model model,
                          RedirectAttributes ra) {

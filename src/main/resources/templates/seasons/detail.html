@@ -86,7 +86,7 @@
               type="button" role="tab">
         <i class="bi bi-people me-1"></i>Teams
         <span class="badge bg-secondary ms-1 rounded-pill"
-              th:text="${#lists.size(teams)}">0</span>
+              th:text="${#lists.size(registeredTeams)}">0</span>
       </button>
     </li>
   </ul>
@@ -140,7 +140,7 @@
           <div class="card-footer text-muted small d-flex gap-1 align-items-center">
             <i class="bi bi-clock-history"></i>
             Updated
-            <span th:text="${#temporals.format(standings.computedAt, 'dd MMM yyyy HH:mm')}">now</span>
+            <span th:text="${standings.computedAt.toString().substring(0,16).replace('T',' ')}">now</span>
           </div>
         </div>
       </div>
@@ -164,7 +164,7 @@
               <label for="teamId" class="form-label form-label-sm fw-medium mb-1">Add team</label>
               <select id="teamId" name="teamId" class="form-select form-select-sm" required>
                 <option value="">Select team…</option>
-                <option th:each="t : ${teams}"
+                <option th:each="t : ${availableTeams}"
                         th:value="${t.id}"
                         th:text="${t.name}">Team</option>
               </select>
@@ -180,12 +180,12 @@
           </form>
         </div>
 
-        <div th:if="${#lists.isEmpty(teams)}" class="card-body text-center py-4">
+        <div th:if="${#lists.isEmpty(registeredTeams)}" class="card-body text-center py-4">
           <p class="text-muted mb-0 small">No teams registered yet.</p>
         </div>
 
-        <ul th:if="${not #lists.isEmpty(teams)}" class="list-group list-group-flush">
-          <li th:each="t : ${teams}"
+        <ul th:if="${not #lists.isEmpty(registeredTeams)}" class="list-group list-group-flush">
+          <li th:each="t : ${registeredTeams}"
               class="list-group-item d-flex align-items-center justify-content-between py-2">
             <div class="d-flex align-items-center gap-2">
               <span class="badge bg-dark font-mono" th:text="${t.shortCode}">DZG</span>

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.UUID;
@@ -50,7 +51,7 @@ public class TeamViewController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public String create(@Valid CreateTeamRequest form,
+    public String create(@ModelAttribute("form") @Valid CreateTeamRequest form,
                          BindingResult br,
                          Model model,
                          RedirectAttributes ra) {
@@ -60,7 +61,12 @@ public class TeamViewController {
             model.addAttribute("currentPage", "teams");
             return "teams/form";
         }
-        UUID id = teamService.createTeam(form);
+        UUID id = teamService.createTeam(new CreateTeamRequest(
+                form.name(),
+                form.shortCode() != null ? form.shortCode().toUpperCase() : "",
+                form.stadiumName(),
+                form.city(),
+                form.foundedYear()));
         ra.addFlashAttribute("flashMsg", "Team created.");
         return "redirect:/teams/" + id;
     }
@@ -79,7 +85,7 @@ public class TeamViewController {
     @PostMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public String update(@PathVariable UUID id,
-                         @Valid CreateTeamRequest form,
+                         @ModelAttribute("form") @Valid CreateTeamRequest form,
                          BindingResult br,
                          Model model,
                          RedirectAttributes ra) {

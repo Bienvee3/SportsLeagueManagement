@@ -38,9 +38,12 @@ class FixtureRestControllerTest {
     private static final UUID FIXTURE_ID = UUID.fromString("44444444-4444-4444-4444-444444444444");
     private static final UUID ROUND_ID   = UUID.fromString("55555555-5555-5555-5555-555555555555");
     private static final UUID SEASON_ID  = UUID.fromString("33333333-3333-3333-3333-333333333333");
+    private static final UUID HOME_TEAM_ID = UUID.fromString("66666666-6666-6666-6666-666666666666");
+    private static final UUID AWAY_TEAM_ID = UUID.fromString("77777777-7777-7777-7777-777777777777");
     private FixtureResponse sample() {
         return new FixtureResponse(FIXTURE_ID, ROUND_ID, 1, "Round 1",
-                "HFC", "Home FC", "AFC", "Away FC", null, null, "SCHEDULED", Instant.now());
+                "HFC", "Home FC", HOME_TEAM_ID, "AFC", "Away FC", AWAY_TEAM_ID,
+                null, null, "SCHEDULED", Instant.now());
     }
 
     @Test

@@ -9,18 +9,32 @@
   const menuBtn   = document.getElementById('menu-toggle-btn');
 
   function openSidebar() {
-    sidebar && sidebar.classList.add('show');
-    backdrop && (backdrop.style.display = 'block');
+    sidebar  && sidebar.classList.add('show');
+    backdrop && backdrop.classList.add('show');
     document.body.style.overflow = 'hidden';
   }
 
   function closeSidebar() {
-    sidebar && sidebar.classList.remove('show');
-    backdrop && (backdrop.style.display = 'none');
+    sidebar  && sidebar.classList.remove('show');
+    backdrop && backdrop.classList.remove('show');
     document.body.style.overflow = '';
   }
 
-  menuBtn  && menuBtn.addEventListener('click', openSidebar);
+  function toggleSidebar() {
+    const isMobile = window.innerWidth < 992;
+    if (isMobile) {
+      if (sidebar && sidebar.classList.contains('show')) {
+        closeSidebar();
+      } else {
+        openSidebar();
+      }
+    } else {
+      document.body.classList.toggle('sidebar-collapsed');
+      document.body.style.overflow = '';
+    }
+  }
+
+  menuBtn  && menuBtn.addEventListener('click', toggleSidebar);
   backdrop && backdrop.addEventListener('click', closeSidebar);
 
   /* ---- flash toast ---- */

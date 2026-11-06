@@ -39,44 +39,34 @@
 
   <!-- Fixtures grouped by round -->
   <th:block th:if="${not #lists.isEmpty(fixtures)}">
-    <th:block th:with="prevRound=-1">
-      <th:block th:each="f : ${fixtures}">
-
-        <!-- Round header (show when round changes) -->
-        <div th:if="${f.roundNumber != prevRound}"
-             class="d-flex align-items-center gap-2 mt-4 mb-2">
-          <span class="badge bg-primary" th:text="'Round ' + ${f.roundNumber}">Round 1</span>
-          <span class="text-muted small font-mono"
-                th:text="${#temporals.format(f.scheduledTime, 'EEE dd MMM yyyy')}">Date</span>
-          <th:block th:with="prevRound=${f.roundNumber}"></th:block>
-        </div>
-
-        <div class="card shadow-sm mb-2">
-          <a th:href="@{/fixtures/{id}(id=${f.id})}"
-             class="card-body py-2 px-3 text-decoration-none text-dark d-flex align-items-center gap-3">
-            <!-- Home team -->
-            <div class="text-end flex-grow-1 fw-medium text-truncate" th:text="${f.homeTeamName}">Home</div>
-            <!-- Score / Status -->
-            <div class="text-center flex-shrink-0" style="min-width:80px">
-              <th:block th:if="${f.homeScore != null}">
-                <span class="score-box">
-                  <span th:text="${f.homeScore}">0</span>
-                  <span class="text-muted">–</span>
-                  <span th:text="${f.awayScore}">0</span>
-                </span>
-              </th:block>
-              <th:block th:if="${f.homeScore == null}">
-                <span class="badge" th:classappend="'badge-' + ${f.status}"
-                      th:text="${f.status}">SCH</span>
-              </th:block>
-            </div>
-            <!-- Away team -->
-            <div class="flex-grow-1 fw-medium text-truncate" th:text="${f.awayTeamName}">Away</div>
-            <i class="bi bi-chevron-right text-muted flex-shrink-0"></i>
-          </a>
-        </div>
-
-      </th:block>
+    <th:block th:each="f, stat : ${fixtures}">
+      <div th:if="${stat.first or fixtures[stat.index - 1].roundNumber != f.roundNumber}"
+           class="d-flex align-items-center gap-2 mt-4 mb-2">
+        <span class="badge bg-primary" th:text="'Round ' + ${f.roundNumber}">Round 1</span>
+        <span class="text-muted small font-mono"
+              th:text="${f.scheduledTime.toString().substring(0,10)}">Date</span>
+      </div>
+      <div class="card shadow-sm mb-2">
+        <a th:href="@{/fixtures/{id}(id=${f.id})}"
+           class="card-body py-2 px-3 text-decoration-none text-dark d-flex align-items-center gap-3">
+          <div class="text-end flex-grow-1 fw-medium text-truncate" th:text="${f.homeTeamName}">Home</div>
+          <div class="text-center flex-shrink-0" style="min-width:80px">
+            <th:block th:if="${f.homeScore != null}">
+              <span class="score-box">
+                <span th:text="${f.homeScore}">0</span>
+                <span class="text-muted">–</span>
+                <span th:text="${f.awayScore}">0</span>
+              </span>
+            </th:block>
+            <th:block th:if="${f.homeScore == null}">
+              <span class="badge" th:classappend="'badge-' + ${f.status}"
+                    th:text="${f.status}">SCH</span>
+            </th:block>
+          </div>
+          <div class="flex-grow-1 fw-medium text-truncate" th:text="${f.awayTeamName}">Away</div>
+          <i class="bi bi-chevron-right text-muted flex-shrink-0"></i>
+        </a>
+      </div>
     </th:block>
   </th:block>
 

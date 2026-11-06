@@ -17,7 +17,7 @@
       <div class="text-center text-muted small mb-3">
         <span th:text="${fixture.roundName}">Round 1</span>
         &nbsp;·&nbsp;
-        <span th:text="${#temporals.format(fixture.scheduledTime, 'EEE dd MMM yyyy HH:mm')}">Date</span>
+        <span th:text="${fixture.scheduledTime.toString().substring(0,16).replace('T',' ')}">Date</span>
         &nbsp;·&nbsp;
         <span class="badge" th:classappend="'badge-' + ${fixture.status}"
               th:text="${fixture.status}">SCHEDULED</span>
@@ -69,15 +69,15 @@
             <div class="d-flex align-items-end gap-2">
               <div class="text-center flex-grow-1">
                 <label class="form-label small fw-medium" th:text="${fixture.homeTeamCode}">HOM</label>
-                <input type="number" name="homeScore"
-                       class="form-control form-control-sm font-mono text-center"
+                <input type="number"
+                       th:name="${fixture.status == 'FINISHED'} ? 'newHomeScore' : 'homeScore'"
                        th:value="${fixture.homeScore}" min="0" max="99" required>
               </div>
               <div class="pb-1 fw-bold text-muted">–</div>
               <div class="text-center flex-grow-1">
                 <label class="form-label small fw-medium" th:text="${fixture.awayTeamCode}">AWY</label>
-                <input type="number" name="awayScore"
-                       class="form-control form-control-sm font-mono text-center"
+                <input type="number"
+                       th:name="${fixture.status == 'FINISHED'} ? 'newAwayScore' : 'awayScore'"
                        th:value="${fixture.awayScore}" min="0" max="99" required>
               </div>
               <div th:if="${fixture.status == 'FINISHED'}" class="flex-grow-2">
@@ -138,6 +138,13 @@
           <form th:action="@{/fixtures/{id}/events(id=${fixture.id})}" method="post">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
             <div class="row g-2 align-items-end">
+              <div class="col-12 col-md-3">
+                <label class="form-label form-label-sm fw-medium">Team</label>
+                <select name="teamId" class="form-select form-select-sm" required>
+                  <option th:value="${fixture.homeTeamId}" th:text="${fixture.homeTeamName}">Home</option>
+                  <option th:value="${fixture.awayTeamId}" th:text="${fixture.awayTeamName}">Away</option>
+                </select>
+              </div>
               <div class="col-6 col-md-2">
                 <label class="form-label form-label-sm fw-medium">Minute</label>
                 <input type="number" name="matchMinute"
@@ -187,14 +194,18 @@
         <i class="bi bi-stars me-2"></i>AI Match Chronicle
       </span>
       <div class="d-flex gap-2">
-        <a th:href="@{/api/fixtures/{id}/chronicle(id=${fixture.id})}"
-           class="btn btn-sm btn-outline-secondary" target="_blank">
-          <i class="bi bi-translate me-1"></i>English
-        </a>
-        <a th:href="@{/api/fixtures/{id}/chronicle(id=${fixture.id},lang=CROATIAN)}"
-           class="btn btn-sm btn-outline-secondary" target="_blank">
-          <i class="bi bi-translate me-1"></i>Croatian
-        </a>
+        <form th:action="@{/api/fixtures/{id}/chronicle(id=${fixture.id})}" method="post" target="_blank">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+          <button type="submit" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-translate me-1"></i>English
+          </button>
+        </form>
+        <form th:action="@{/api/fixtures/{id}/chronicle(id=${fixture.id},lang=CROATIAN)}" method="post" target="_blank">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+          <button type="submit" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-translate me-1"></i>Croatian
+          </button>
+        </form>
       </div>
     </div>
     <div class="card-body">
