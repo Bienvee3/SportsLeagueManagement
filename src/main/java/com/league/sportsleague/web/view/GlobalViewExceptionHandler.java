@@ -1,6 +1,7 @@
 package com.league.sportsleague.web.view;
 
 import com.league.sportsleague.domain.exception.EntityNotFoundException;
+import org.springframework.dao.DataIntegrityViolationException;
 import com.league.sportsleague.domain.exception.InvalidStateTransitionException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
@@ -36,6 +37,14 @@ public class GlobalViewExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public void rethrowAccessDenied(AccessDeniedException ex) throws AccessDeniedException {
         throw ex;
+    }
+
+    @ExceptionHandler({IllegalArgumentException.class, DataIntegrityViolationException.class})
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public String handleDomainOrPersistence(Exception ex, Model model) {
+        model.addAttribute("errorTitle", "Invalid Request");
+        model.addAttribute("errorMessage", ex.getMessage() != null ? ex.getMessage() : "A data error occurred.");
+        return "error/500";
     }
 
     @ExceptionHandler(Exception.class)

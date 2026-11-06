@@ -42,6 +42,12 @@ public class TeamService {
         teamRepository.save(team);
     }
 
+    public void deleteTeam(UUID id) {
+        Team team = teamRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Team", id));
+        teamRepository.delete(team);
+    }
+
     // ── Queries ───────────────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)

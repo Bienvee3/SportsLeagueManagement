@@ -96,9 +96,17 @@ public class SeasonViewController {
             model.addAttribute("currentPage", "leagues");
             return "seasons/form";
         }
-        UUID id = seasonService.createSeason(leagueId, form);
-        ra.addFlashAttribute("flashMsg", "Season created.");
-        return "redirect:/leagues/" + leagueId + "/seasons/" + id;
+        try {
+            UUID id = seasonService.createSeason(leagueId, form);
+            ra.addFlashAttribute("flashMsg", "Season created.");
+            return "redirect:/leagues/" + leagueId + "/seasons/" + id;
+        } catch (Exception e) {
+            model.addAttribute("league", leagueService.findById(leagueId));
+            model.addAttribute("form", form);
+            model.addAttribute("currentPage", "leagues");
+            model.addAttribute("errorMsg", e.getMessage());
+            return "seasons/form";
+        }
     }
 
     // ── ADMIN: lifecycle ──────────────────────────────────────────────────────
@@ -128,8 +136,12 @@ public class SeasonViewController {
     public String generateSchedule(@PathVariable UUID leagueId,
                                    @PathVariable UUID id,
                                    RedirectAttributes ra) {
-        seasonService.generateSchedule(id, Instant.now());
-        ra.addFlashAttribute("flashMsg", "Schedule generated.");
+        try {
+            seasonService.generateSchedule(id, Instant.now());
+            ra.addFlashAttribute("flashMsg", "Schedule generated.");
+        } catch (Exception e) {
+            ra.addFlashAttribute("errorMsg", "Schedule already exists or could not be generated: " + e.getMessage());
+        }
         return "redirect:/leagues/" + leagueId + "/seasons/" + id + "/calendar";
     }
 
@@ -138,7 +150,12 @@ public class SeasonViewController {
     public String registerTeam(@PathVariable UUID leagueId,
                                @PathVariable UUID id,
                                @Valid RegisterTeamRequest form,
+                               BindingResult br,
                                RedirectAttributes ra) {
+        if (br.hasErrors()) {
+            ra.addFlashAttribute("errorMsg", "Invalid team selection");
+            return "redirect:/leagues/" + leagueId + "/seasons/" + id;
+        }
         seasonService.registerTeam(id, form.teamId(), form.initialSeed());
         ra.addFlashAttribute("flashMsg", "Team registered.");
         return "redirect:/leagues/" + leagueId + "/seasons/" + id;

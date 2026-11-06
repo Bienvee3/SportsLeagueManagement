@@ -69,9 +69,17 @@ public class LeagueViewController {
             model.addAttribute("currentPage", "leagues");
             return "leagues/form";
         }
-        UUID id = leagueService.createLeague(form);
-        ra.addFlashAttribute("flashMsg", "League created.");
-        return "redirect:/leagues/" + id;
+        try {
+            UUID id = leagueService.createLeague(form);
+            ra.addFlashAttribute("flashMsg", "League created.");
+            return "redirect:/leagues/" + id;
+        } catch (Exception e) {
+            model.addAttribute("form", form);
+            model.addAttribute("editMode", false);
+            model.addAttribute("currentPage", "leagues");
+            model.addAttribute("errorMsg", e.getMessage());
+            return "leagues/form";
+        }
     }
 
     // ── ADMIN: edit ───────────────────────────────────────────────────────────
@@ -101,9 +109,18 @@ public class LeagueViewController {
             model.addAttribute("currentPage", "leagues");
             return "leagues/form";
         }
-        leagueService.rename(id, form);
-        ra.addFlashAttribute("flashMsg", "League updated.");
-        return "redirect:/leagues/" + id;
+        try {
+            leagueService.rename(id, form);
+            ra.addFlashAttribute("flashMsg", "League updated.");
+            return "redirect:/leagues/" + id;
+        } catch (Exception e) {
+            model.addAttribute("league", leagueService.findById(id));
+            model.addAttribute("form", form);
+            model.addAttribute("editMode", true);
+            model.addAttribute("currentPage", "leagues");
+            model.addAttribute("errorMsg", e.getMessage());
+            return "leagues/form";
+        }
     }
 
     // ── ADMIN: delete ─────────────────────────────────────────────────────────

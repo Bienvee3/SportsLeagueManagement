@@ -61,14 +61,22 @@ public class TeamViewController {
             model.addAttribute("currentPage", "teams");
             return "teams/form";
         }
-        UUID id = teamService.createTeam(new CreateTeamRequest(
-                form.name(),
-                form.shortCode() != null ? form.shortCode().toUpperCase() : "",
-                form.stadiumName(),
-                form.city(),
-                form.foundedYear()));
-        ra.addFlashAttribute("flashMsg", "Team created.");
-        return "redirect:/teams/" + id;
+        try {
+            UUID id = teamService.createTeam(new CreateTeamRequest(
+                    form.name(),
+                    form.shortCode() != null ? form.shortCode().toUpperCase() : "",
+                    form.stadiumName(),
+                    form.city(),
+                    form.foundedYear()));
+            ra.addFlashAttribute("flashMsg", "Team created.");
+            return "redirect:/teams/" + id;
+        } catch (Exception e) {
+            model.addAttribute("form", form);
+            model.addAttribute("editMode", false);
+            model.addAttribute("currentPage", "teams");
+            model.addAttribute("errorMsg", e.getMessage());
+            return "teams/form";
+        }
     }
 
     @GetMapping("/{id}/edit")
@@ -99,5 +107,13 @@ public class TeamViewController {
         teamService.updateProfile(id, form.name(), form.stadiumName(), form.city(), form.foundedYear());
         ra.addFlashAttribute("flashMsg", "Team updated.");
         return "redirect:/teams/" + id;
+    }
+
+    @PostMapping("/{id}/delete")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String delete(@PathVariable UUID id, RedirectAttributes ra) {
+        teamService.deleteTeam(id);
+        ra.addFlashAttribute("flashMsg", "Team deleted.");
+        return "redirect:/teams";
     }
 }

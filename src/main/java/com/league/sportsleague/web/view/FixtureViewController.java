@@ -4,7 +4,7 @@ import com.league.sportsleague.application.dto.CorrectResultRequest;
 import com.league.sportsleague.application.dto.RecordMatchEventRequest;
 import com.league.sportsleague.application.dto.RecordResultRequest;
 import com.league.sportsleague.application.service.FixtureService;
-import jakarta.validation.Valid;
+import org.springframework.validation.BindingResult;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -39,7 +39,12 @@ public class FixtureViewController {
     @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
     public String recordResult(@PathVariable UUID id,
                                @Valid RecordResultRequest form,
+                               BindingResult br,
                                RedirectAttributes ra) {
+        if (br.hasErrors()) {
+            ra.addFlashAttribute("errorMsg", "Invalid input: " + br.getAllErrors().get(0).getDefaultMessage());
+            return "redirect:/fixtures/" + id;
+        }
         fixtureService.recordResult(id, form);
         ra.addFlashAttribute("flashMsg", "Result recorded.");
         return "redirect:/fixtures/" + id;
@@ -49,8 +54,13 @@ public class FixtureViewController {
     @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
     public String correctResult(@PathVariable UUID id,
                                 @Valid CorrectResultRequest form,
+                                BindingResult br,
                                 @AuthenticationPrincipal UserDetails user,
                                 RedirectAttributes ra) {
+        if (br.hasErrors()) {
+            ra.addFlashAttribute("errorMsg", "Invalid input: " + br.getAllErrors().get(0).getDefaultMessage());
+            return "redirect:/fixtures/" + id;
+        }
         fixtureService.correctResult(id, form, user.getUsername());
         ra.addFlashAttribute("flashMsg", "Result corrected.");
         return "redirect:/fixtures/" + id;
@@ -60,7 +70,12 @@ public class FixtureViewController {
     @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
     public String recordEvent(@PathVariable UUID id,
                               @Valid RecordMatchEventRequest form,
+                              BindingResult br,
                               RedirectAttributes ra) {
+        if (br.hasErrors()) {
+            ra.addFlashAttribute("errorMsg", "Invalid input: " + br.getAllErrors().get(0).getDefaultMessage());
+            return "redirect:/fixtures/" + id;
+        }
         fixtureService.recordMatchEvent(id, form);
         ra.addFlashAttribute("flashMsg", "Event recorded.");
         return "redirect:/fixtures/" + id;

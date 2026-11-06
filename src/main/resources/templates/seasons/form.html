@@ -31,39 +31,38 @@
       <div class="card shadow-sm">
         <div class="card-body p-4">
           <form th:action="@{/leagues/{id}/seasons(id=${league.id})}"
-                method="post" novalidate>
+                th:object="${form}" method="post" novalidate>
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
             <!-- Season name -->
             <div class="mb-3">
               <label for="name" class="form-label fw-medium">Season name <span class="text-danger">*</span></label>
-              <input type="text" id="name" name="name"
-                     class="form-control" th:classappend="${#fields.hasErrors('form.name')} ? ' is-invalid'"
-                     th:value="${form.name}" required maxlength="100"
+              <input type="text" id="name"
+                     class="form-control" th:classappend="${#fields.hasErrors('name')} ? ' is-invalid'"
+                     th:field="*{name}" required maxlength="100"
                      placeholder="e.g. 2026/2027 Season">
-              <div class="invalid-feedback" th:errors="${form.name}">Required</div>
+              <div class="invalid-feedback" th:errors="*{name}">Required</div>
             </div>
 
             <div class="row g-3 mb-4">
               <!-- Year start -->
               <div class="col-6">
                 <label for="yearStart" class="form-label fw-medium">Start year <span class="text-danger">*</span></label>
-                <input type="number" id="yearStart" name="yearStart"
+                <input type="number" id="yearStart"
                        class="form-control font-mono"
-                       th:classappend="${#fields.hasErrors('form.yearStart')} ? ' is-invalid'"
-                       th:value="${form.yearStart}" required min="1900" max="2100"
+                       th:classappend="${#fields.hasErrors('yearStart')} ? ' is-invalid'"
+                       th:field="*{yearStart}" required min="1900" max="2100"
                        placeholder="2026">
-                <div class="invalid-feedback" th:errors="${form.yearStart}">Required</div>
+                <div class="invalid-feedback" th:errors="*{yearStart}">Required</div>
               </div>
               <!-- Year end -->
               <div class="col-6">
-                <label for="yearEnd" class="form-label fw-medium">End year <span class="text-danger">*</span></label>
-                <input type="number" id="yearEnd" name="yearEnd"
+                <input type="number" id="yearEnd"
                        class="form-control font-mono"
-                       th:classappend="${#fields.hasErrors('form.yearEnd')} ? ' is-invalid'"
-                       th:value="${form.yearEnd}" required min="1900" max="2100"
+                       th:classappend="${#fields.hasErrors('yearEnd')} ? ' is-invalid'"
+                       th:field="*{yearEnd}" required min="1900" max="2100"
                        placeholder="2027">
-                <div class="invalid-feedback" th:errors="${form.yearEnd}">Must be &gt; start year</div>
+                <div class="invalid-feedback" th:errors="*{yearEnd}">Must be &gt; start year</div>
               </div>
             </div>
 

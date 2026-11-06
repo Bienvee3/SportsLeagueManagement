@@ -29,27 +29,27 @@
       <div class="card shadow-sm">
         <div class="card-body p-4">
           <form th:action="${editMode} ? @{/teams/{id}(id=${team.id})} : @{/teams}"
-                method="post" novalidate>
+                th:object="${form}" method="post" novalidate>
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
             <div class="row g-3 mb-3">
               <!-- Name -->
               <div class="col-12 col-md-8">
                 <label for="name" class="form-label fw-medium">Club name <span class="text-danger">*</span></label>
-                <input type="text" id="name" name="name"
-                       class="form-control" th:classappend="${#fields.hasErrors('form.name')} ? ' is-invalid'"
-                       th:value="${form.name}" required maxlength="100" placeholder="e.g. Dinamo Zagreb">
-                <div class="invalid-feedback" th:errors="${form.name}">Required</div>
+                <input type="text" id="name"
+                       class="form-control" th:classappend="${#fields.hasErrors('name')} ? ' is-invalid'"
+                       th:field="*{name}" required maxlength="100" placeholder="e.g. Dinamo Zagreb">
+                <div class="invalid-feedback" th:errors="*{name}">Required</div>
               </div>
               <!-- Short code (create only) -->
               <div class="col-12 col-md-4" th:if="${not editMode}">
                 <label for="shortCode" class="form-label fw-medium">Code <span class="text-danger">*</span></label>
-                <input type="text" id="shortCode" name="shortCode"
+                <input type="text" id="shortCode"
                        class="form-control font-mono text-uppercase"
-                       th:classappend="${#fields.hasErrors('form.shortCode')} ? ' is-invalid'"
-                       th:value="${form.shortCode}" required maxlength="10"
+                       th:classappend="${#fields.hasErrors('shortCode')} ? ' is-invalid'"
+                       th:field="*{shortCode}" required maxlength="10"
                        placeholder="DZG" style="letter-spacing:.08em">
-                <div class="invalid-feedback" th:errors="${form.shortCode}">Required</div>
+                <div class="invalid-feedback" th:errors="*{shortCode}">Required</div>
                 <div class="form-text">2–10 uppercase letters</div>
               </div>
             </div>
@@ -58,29 +58,29 @@
               <!-- Stadium -->
               <div class="col-12 col-md-7">
                 <label for="stadiumName" class="form-label fw-medium">Stadium</label>
-                <input type="text" id="stadiumName" name="stadiumName"
-                       class="form-control" th:classappend="${#fields.hasErrors('form.stadiumName')} ? ' is-invalid'"
-                       th:value="${form.stadiumName}" maxlength="100" placeholder="e.g. Maksimir">
-                <div class="invalid-feedback" th:errors="${form.stadiumName}">Invalid</div>
+                <input type="text" id="stadiumName"
+                       class="form-control" th:classappend="${#fields.hasErrors('stadiumName')} ? ' is-invalid'"
+                       th:field="*{stadiumName}" maxlength="100" placeholder="e.g. Maksimir">
+                <div class="invalid-feedback" th:errors="*{stadiumName}">Invalid</div>
               </div>
               <!-- Founded year -->
               <div class="col-12 col-md-5">
                 <label for="foundedYear" class="form-label fw-medium">Founded</label>
-                <input type="number" id="foundedYear" name="foundedYear"
-                       class="form-control" th:classappend="${#fields.hasErrors('form.foundedYear')} ? ' is-invalid'"
-                       th:value="${form.foundedYear}" min="1800" max="2026"
+                <input type="number" id="foundedYear"
+                       class="form-control" th:classappend="${#fields.hasErrors('foundedYear')} ? ' is-invalid'"
+                       th:field="*{foundedYear}" min="1800" max="2026"
                        placeholder="e.g. 1945">
-                <div class="invalid-feedback" th:errors="${form.foundedYear}">Invalid year</div>
+                <div class="invalid-feedback" th:errors="*{foundedYear}">Invalid year</div>
               </div>
             </div>
 
             <!-- City -->
             <div class="mb-4">
               <label for="city" class="form-label fw-medium">City</label>
-              <input type="text" id="city" name="city"
-                     class="form-control" th:classappend="${#fields.hasErrors('form.city')} ? ' is-invalid'"
-                     th:value="${form.city}" maxlength="100" placeholder="e.g. Zagreb">
-              <div class="invalid-feedback" th:errors="${form.city}">Invalid</div>
+              <input type="text" id="city"
+                     class="form-control" th:classappend="${#fields.hasErrors('city')} ? ' is-invalid'"
+                     th:field="*{city}" maxlength="100" placeholder="e.g. Zagreb">
+              <div class="invalid-feedback" th:errors="*{city}">Invalid</div>
             </div>
 
             <div class="d-flex gap-2">

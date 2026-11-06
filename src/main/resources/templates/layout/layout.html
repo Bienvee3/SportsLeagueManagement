@@ -138,6 +138,13 @@
       <span th:text="${flashMsg}"></span>
       <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
+    <div th:if="${errorMsg}"
+         class="alert alert-danger alert-dismissible auto-dismiss fade show mb-3"
+         role="alert">
+      <i class="bi bi-exclamation-triangle me-2"></i>
+      <span th:text="${errorMsg}"></span>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
 
     <th:block layout:fragment="content">
       <!-- page body inserted here -->

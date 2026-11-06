@@ -61,6 +61,14 @@
                    class="btn btn-sm btn-outline-primary" title="Edit">
                   <i class="bi bi-pencil"></i>
                 </a>
+                <form sec:authorize="hasRole('ADMIN')"
+                      th:action="@{/teams/{id}/delete(id=${t.id})}" method="post" class="d-inline">
+                  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                  <button type="submit" class="btn btn-sm btn-outline-danger"
+                          data-confirm="Delete this team? This cannot be undone.">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
               </div>
             </td>
           </tr>
