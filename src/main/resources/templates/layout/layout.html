@@ -98,9 +98,9 @@
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb" class="me-auto">
       <ol class="breadcrumb mb-0 small">
-        <layout:fragment name="breadcrumb">
+        <th:block layout:fragment="breadcrumb">
           <li class="breadcrumb-item active">Home</li>
-        </layout:fragment>
+        </th:block>
       </ol>
     </nav>
 
@@ -139,9 +139,9 @@
       <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 
-    <layout:fragment name="content">
+    <th:block layout:fragment="content">
       <!-- page body inserted here -->
-    </layout:fragment>
+    </th:block>
   </main>
 
 </div>
