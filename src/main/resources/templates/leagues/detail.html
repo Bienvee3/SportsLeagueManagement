@@ -79,11 +79,20 @@
                     th:classappend="'badge-' + ${s.status}"
                     th:text="${s.status}">UPCOMING</span>
             </td>
-            <td>
+            <td class="text-end">
               <a th:href="@{/leagues/{lid}/seasons/{sid}(lid=${league.id},sid=${s.id})}"
                  class="btn btn-sm btn-outline-secondary">
                 <i class="bi bi-eye"></i>
               </a>
+              <form sec:authorize="hasRole('ADMIN')"
+                    th:action="@{/leagues/{lid}/seasons/{sid}/delete(lid=${league.id},sid=${s.id})}"
+                    method="post" class="d-inline">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <button type="submit" class="btn btn-sm btn-outline-danger"
+                        data-confirm="Delete this season? All fixtures and rounds will be removed.">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
             </td>
           </tr>
         </tbody>

@@ -16,4 +16,5 @@ public interface TeamRepository {
     Optional<Team> findByShortCode(TeamCode shortCode);
     List<Team> findAll();
     Team save(Team team);
+    void delete(Team team);
 }

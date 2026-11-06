@@ -13,5 +13,6 @@ import java.util.UUID;
 public interface SeasonRepository {
     Optional<Season> findById(UUID id);
     List<Season> findByLeagueId(UUID leagueId);
+    void delete(Season season);
     Season save(Season season);
 }

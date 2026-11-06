@@ -61,6 +61,11 @@ public class SeasonService {
         seasonRepository.save(season);
     }
 
+    public void deleteSeason(UUID id) {
+        Season season = requireSeason(id);
+        seasonRepository.delete(season);
+    }
+
     public void registerTeam(UUID seasonId, UUID teamId, int initialSeed) {
         Season season = requireSeason(seasonId);
         Team team = teamRepository.findById(teamId)
@@ -124,7 +129,7 @@ public class SeasonService {
 
     @Transactional(readOnly = true)
     public List<TeamResponse> findRegisteredTeams(UUID seasonId) {
-        return requireSeason(seasonId).getTeams().stream()
+        return requireSeason(seasonId).getSeasonTeams().stream()
                 .filter(st -> st.getStatus() == SeasonTeamStatus.CONFIRMED)
                 .map(st -> TeamResponse.from(st.getTeam()))
                 .toList();

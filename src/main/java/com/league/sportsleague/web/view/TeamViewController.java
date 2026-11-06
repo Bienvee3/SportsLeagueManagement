@@ -112,8 +112,14 @@ public class TeamViewController {
     @PostMapping("/{id}/delete")
     @PreAuthorize("hasRole('ADMIN')")
     public String delete(@PathVariable UUID id, RedirectAttributes ra) {
-        teamService.deleteTeam(id);
-        ra.addFlashAttribute("flashMsg", "Team deleted.");
-        return "redirect:/teams";
+        try {
+            teamService.deleteTeam(id);
+            ra.addFlashAttribute("flashMsg", "Team deleted.");
+            return "redirect:/teams";
+        } catch (Exception e) {
+            ra.addFlashAttribute("errorMsg",
+                    "Cannot delete team — it may be registered in one or more seasons. Withdraw it from all seasons first.");
+            return "redirect:/teams/" + id;
+        }
     }
 }

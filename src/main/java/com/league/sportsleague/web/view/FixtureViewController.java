@@ -4,6 +4,7 @@ import com.league.sportsleague.application.dto.CorrectResultRequest;
 import com.league.sportsleague.application.dto.RecordMatchEventRequest;
 import com.league.sportsleague.application.dto.RecordResultRequest;
 import com.league.sportsleague.application.service.FixtureService;
+import jakarta.validation.Valid;
 import org.springframework.validation.BindingResult;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

@@ -131,6 +131,21 @@ public class SeasonViewController {
         return "redirect:/leagues/" + leagueId + "/seasons/" + id;
     }
 
+    @PostMapping("/{id}/delete")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String delete(@PathVariable UUID leagueId,
+                         @PathVariable UUID id,
+                         RedirectAttributes ra) {
+        try {
+            seasonService.deleteSeason(id);
+            ra.addFlashAttribute("flashMsg", "Season deleted.");
+            return "redirect:/leagues/" + leagueId;
+        } catch (Exception e) {
+            ra.addFlashAttribute("errorMsg", "Cannot delete season: " + e.getMessage());
+            return "redirect:/leagues/" + leagueId + "/seasons/" + id;
+        }
+    }
+
     @PostMapping("/{id}/schedule")
     @PreAuthorize("hasRole('ADMIN')")
     public String generateSchedule(@PathVariable UUID leagueId,
