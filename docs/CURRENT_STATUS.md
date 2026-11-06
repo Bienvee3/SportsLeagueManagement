@@ -1,9 +1,9 @@
 # Current Project Status — Sports League Management
 
-**Last Updated**: 2026-11-04  
-**Active Branch**: `review/phase-frontend` (local, unpushed)  
-**Latest Local Commit**: `02d97bd feat(web): complete Thymeleaf CRUD frontend M2`  
-**Git Working Tree**: Clean.  
+**Last Updated**: 2026-11-06
+**Active Branch**: `main`
+**Latest Local Commit**: `2402773 feat(web,security): schedule regeneration, Gemini fallback, SwitchUserFilter dev role preview, richer UI`
+**Git Working Tree**: Clean.
 **Push to origin**: Not yet — awaiting explicit user authorization per AGENTS.md §6.4.
 
 ---
@@ -93,11 +93,11 @@ Milestone 1 is 100% complete. Architecture restructuring Phases 1–5 are comple
 
 ---
 
-## 4. Test Suite — 325/325
+## 4. Test Suite — 326/326
 
 ```
 cmd.exe /c "cd /d C:\Users\Bienve\dev\Java\SportsLeagueManagement && mvnw.cmd test"
-Tests run: 325, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS (2026-11-04)
+Tests run: 326, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS (2026-11-06)
 ```
 
 | Test Class | Count | Type |
@@ -106,7 +106,7 @@ Tests run: 325, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS (2026-11-04
 | `SeasonServiceTest` | 17 | Mockito unit |
 | `LeagueServiceTest` | 11 | Mockito unit |
 | `TeamServiceTest` | 6 | Mockito unit |
-| `InitialUserSeederTest` | 4 | Mockito unit |
+| `InitialUserSeederTest` | 5 | Mockito unit |
 | `SlugTest` | 23 | Pure unit |
 | `StateTransitionGuardTest` | 37 | Pure unit |
 | `TeamCodeTest` | 19 | Pure unit |
@@ -124,7 +124,6 @@ Tests run: 325, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS (2026-11-04
 | `SeasonRestControllerTest` | 8 | `@WebMvcTest` |
 | `FixtureRestControllerTest` | 8 | `@WebMvcTest` |
 | `StandingsCalculatorTest` | 18 | Pure unit |
-
 ---
 
 ## 5. Current Package Structure
@@ -158,21 +157,24 @@ com.league.sportsleague/
 
 ---
 
-## 6. Project Status — All Backend + Frontend Phases Complete (M2 DONE)
+## 6. Project Status — All Phases Complete + UX Improvements
 
-**M1, M2, M3, M4 ALL COMPLETED.**
+**M1, M2, M3, M4 ALL COMPLETED. Branch `main` is current.**
 
-All features implemented and verified with 325/325 tests:
+All features implemented and verified with 326/326 tests:
 - Domain model, value objects, exceptions, guards ✅
 - Application services + DTOs ✅
-- Round-Robin scheduler ✅
+- Round-Robin scheduler + `Season.clearRounds()` for regeneration ✅
 - Spring Security 7 (3 roles, JDBC user store) ✅
+- `SwitchUserFilter` dev role preview (switch to test-official / test-viewer from topbar) ✅
 - REST API (Leagues, Teams, Seasons, Fixtures) + OpenAPI/Swagger UI ✅
 - Standings engine (5-level tie-break) ✅
-- AI Chronicle via Gemini API (Spring AI 2.0.2, hexagonal adapter) ✅
+- AI Chronicle via Gemini API + stub fallback on API failure (no more 500) ✅
 - JaCoCo ≥80%, Mockito Java 25 fix, Testcontainers integration profile ✅
 - Thymeleaf CRUD frontend: Layout Dialect, Dashboard, Leagues, Seasons, Teams, Fixtures, error pages ✅
+- Richer UI: sidebar gradient, topbar blur/glassmorphism, card shadows, event timeline classes ✅
 
 **Testcontainers**: `mvnw verify -Pintegration` — requires Docker Desktop running.
-**AI Chronicle**: set `GEMINI_API_KEY` env var before starting the application.
-**Next**: Push `review/phase-frontend` → PR to `main` (awaiting explicit user authorization per AGENTS.md §6.4).
+**AI Chronicle**: set `GEMINI_API_KEY` env var; falls back to stub if key invalid/missing.
+**Dev role switcher**: `test-official` / `test-viewer` seeded at startup; switch via topbar user menu.
+**Next**: Push `main` to origin / open PR (awaiting explicit user authorization per AGENTS.md §6.4).
