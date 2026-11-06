@@ -26,21 +26,7 @@ class InitialUserSeederTest {
     @Mock PasswordEncoder passwordEncoder;
 
     @Test
-    @DisplayName("constructor fails fast when ADMIN_USERNAME is blank")
-    void failsFastWhenUsernameMissing() {
-        assertThrows(IllegalStateException.class,
-                () -> new InitialUserSeeder(userDetailsManager, passwordEncoder, "", "secret"));
-    }
-
-    @Test
-    @DisplayName("constructor fails fast when ADMIN_PASSWORD is blank")
-    void failsFastWhenPasswordMissing() {
-        assertThrows(IllegalStateException.class,
-                () -> new InitialUserSeeder(userDetailsManager, passwordEncoder, "admin", "  "));
-    }
-
-    @Test
-    @DisplayName("run creates the admin with an encoded password and ROLE_ADMIN when absent")
+    @DisplayName("run creates admin with encoded password and ROLE_ADMIN when env vars provided and user absent")
     void createsAdminWhenAbsent() {
         when(userDetailsManager.userExists("admin")).thenReturn(false);
         when(passwordEncoder.encode("secret")).thenReturn("{bcrypt}hash");
@@ -64,6 +50,24 @@ class InitialUserSeederTest {
         new InitialUserSeeder(userDetailsManager, passwordEncoder, "admin", "secret").run(null);
 
         verify(userDetailsManager, never()).createUser(any());
+        verifyNoInteractions(passwordEncoder);
+    }
+
+    @Test
+    @DisplayName("run fails fast when username provided but password is blank")
+    void failsFastWhenPasswordMissingAndUserAbsent() {
+        when(userDetailsManager.userExists("admin")).thenReturn(false);
+
+        assertThrows(IllegalStateException.class,
+                () -> new InitialUserSeeder(userDetailsManager, passwordEncoder, "admin", "").run(null));
+    }
+
+    @Test
+    @DisplayName("run does nothing when no env vars provided — allows restart without vars")
+    void doesNothingWhenNoEnvVarsProvided() {
+        new InitialUserSeeder(userDetailsManager, passwordEncoder, "", "").run(null);
+
+        verifyNoInteractions(userDetailsManager);
         verifyNoInteractions(passwordEncoder);
     }
 }
