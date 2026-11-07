@@ -82,6 +82,16 @@ public class FixtureViewController {
         return "redirect:/fixtures/" + id;
     }
 
+    @PostMapping("/{id}/events/{eventId}/delete")
+    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
+    public String deleteEvent(@PathVariable UUID id,
+                              @PathVariable UUID eventId,
+                              RedirectAttributes ra) {
+        fixtureService.deleteMatchEvent(id, eventId);
+        ra.addFlashAttribute("flashKey", "fixtures.flash.eventDeleted");
+        return "redirect:/fixtures/" + id;
+    }
+
     @PostMapping("/{id}/postpone")
     @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
     public String postpone(@PathVariable UUID id,
