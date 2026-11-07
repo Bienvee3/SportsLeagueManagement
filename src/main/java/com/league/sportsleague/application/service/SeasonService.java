@@ -3,17 +3,20 @@ package com.league.sportsleague.application.service;
 import com.league.sportsleague.application.dto.CreateSeasonRequest;
 import com.league.sportsleague.application.dto.SeasonResponse;
 import com.league.sportsleague.application.dto.TeamResponse;
+import com.league.sportsleague.application.dto.RoundResponse;
 import com.league.sportsleague.application.dto.StandingsResponse;
 import com.league.sportsleague.domain.StandingsCalculator;
 import com.league.sportsleague.domain.exception.EntityNotFoundException;
 import com.league.sportsleague.domain.RoundRobinScheduler;
 import com.league.sportsleague.domain.model.*;
+import com.league.sportsleague.domain.model.enums.SeasonStatus;
 import com.league.sportsleague.domain.model.enums.SeasonTeamStatus;
 import com.league.sportsleague.domain.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -127,6 +130,46 @@ public class SeasonService {
         seasonRepository.save(season);
     }
 
+    /** Adds the next numbered round (empty) to a season; matches are then added one by one. */
+    public UUID createRound(UUID seasonId, String name, LocalDate startDate) {
+        Season season = requireSeason(seasonId);
+        requireOpen(season);
+        int next = season.getRounds().stream().mapToInt(Round::getRoundNumber).max().orElse(0) + 1;
+        String roundName = (name == null || name.isBlank()) ? "Round " + next : name.trim();
+        Round round = new Round(season, next, roundName, startDate, null, null);
+        season.addRound(round);
+        seasonRepository.save(season);
+        return round.getId();
+    }
+
+    /** Adds one match to a round; both teams must be CONFIRMED in the season and free in that round. */
+    public void addFixture(UUID seasonId, UUID roundId, UUID homeTeamId, UUID awayTeamId, Instant scheduledTime) {
+        Season season = requireSeason(seasonId);
+        requireOpen(season);
+        Round round = season.getRounds().stream()
+                .filter(r -> r.getId().equals(roundId))
+                .findFirst()
+                .orElseThrow(() -> new EntityNotFoundException("Round", roundId));
+        Team home = requireConfirmedTeam(season, homeTeamId);
+        Team away = requireConfirmedTeam(season, awayTeamId);
+        boolean busy = round.getFixtures().stream().anyMatch(f ->
+                f.getHomeTeam().getId().equals(home.getId()) || f.getAwayTeam().getId().equals(home.getId())
+                || f.getHomeTeam().getId().equals(away.getId()) || f.getAwayTeam().getId().equals(away.getId()));
+        if (busy) {
+            throw new IllegalArgumentException("A selected team already plays in " + round.getName() + ".");
+        }
+        round.addFixture(new Fixture(round, home, away, scheduledTime));
+        seasonRepository.save(season);
+    }
+
+    @Transactional(readOnly = true)
+    public List<RoundResponse> findRounds(UUID seasonId) {
+        return requireSeason(seasonId).getRounds().stream()
+                .sorted(java.util.Comparator.comparingInt(Round::getRoundNumber))
+                .map(RoundResponse::from)
+                .toList();
+    }
+
     // ── Queries ───────────────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
@@ -174,5 +217,20 @@ public class SeasonService {
     private Season requireSeason(UUID id) {
         return seasonRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Season", id));
+    }
+
+    private void requireOpen(Season season) {
+        if (season.getStatus() == SeasonStatus.COMPLETED) {
+            throw new IllegalStateException("The season is completed; rounds and matches can no longer be added.");
+        }
+    }
+
+    private Team requireConfirmedTeam(Season season, UUID teamId) {
+        return season.getSeasonTeams().stream()
+                .filter(st -> st.getStatus() == SeasonTeamStatus.CONFIRMED)
+                .map(SeasonTeam::getTeam)
+                .filter(t -> t.getId().equals(teamId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Team is not a confirmed participant of this season."));
     }
 }

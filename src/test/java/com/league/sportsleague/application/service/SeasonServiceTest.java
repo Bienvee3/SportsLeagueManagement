@@ -169,6 +169,80 @@ class SeasonServiceTest {
         verify(seasonRepository, never()).save(any());
     }
 
+    // ── createRound / addFixture ──────────────────────────────────────────────
+
+    private Team confirmedTeam(String code) {
+        Team t = new Team("Team " + code, code, "Stadium", "City", 2000);
+        season.addSeasonTeam(new SeasonTeam(season, t, 1, SeasonTeamStatus.CONFIRMED));
+        return t;
+    }
+
+    @Test
+    @DisplayName("createRound numbers the new round after the last existing one")
+    void createRoundUsesNextNumber() {
+        season.addRound(new Round(season, 1, "Round 1", null, null, null));
+        when(seasonRepository.findById(season.getId())).thenReturn(Optional.of(season));
+        when(seasonRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        seasonService.createRound(season.getId(), null, null);
+
+        assertEquals(2, season.getRounds().size());
+        Round created = season.getRounds().get(1);
+        assertEquals(2, created.getRoundNumber());
+        assertEquals("Round 2", created.getName());
+    }
+
+    @Test
+    @DisplayName("createRound is rejected on a COMPLETED season")
+    void createRoundRejectedWhenCompleted() {
+        Season done = new Season(league, "2025/2026", 2025, 2026, SeasonStatus.COMPLETED);
+        when(seasonRepository.findById(done.getId())).thenReturn(Optional.of(done));
+        assertThrows(IllegalStateException.class,
+                () -> seasonService.createRound(done.getId(), "Extra", null));
+    }
+
+    @Test
+    @DisplayName("addFixture adds a match between two confirmed teams to the round")
+    void addFixtureAddsMatch() {
+        Team a = confirmedTeam("AAA"); Team b = confirmedTeam("BBB");
+        Round round = new Round(season, 1, "Round 1", null, null, null);
+        season.addRound(round);
+        when(seasonRepository.findById(season.getId())).thenReturn(Optional.of(season));
+        when(seasonRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        seasonService.addFixture(season.getId(), round.getId(), a.getId(), b.getId(),
+                java.time.Instant.parse("2026-12-01T18:00:00Z"));
+
+        assertEquals(1, round.getFixtures().size());
+        assertEquals(a, round.getFixtures().get(0).getHomeTeam());
+    }
+
+    @Test
+    @DisplayName("addFixture rejects a team that already plays in that round")
+    void addFixtureRejectsTeamAlreadyInRound() {
+        Team a = confirmedTeam("AAA"); Team b = confirmedTeam("BBB"); Team c = confirmedTeam("CCC");
+        Round round = new Round(season, 1, "Round 1", null, null, null);
+        season.addRound(round);
+        round.addFixture(new Fixture(round, a, b, java.time.Instant.now()));
+        when(seasonRepository.findById(season.getId())).thenReturn(Optional.of(season));
+
+        assertThrows(IllegalArgumentException.class, () -> seasonService.addFixture(
+                season.getId(), round.getId(), a.getId(), c.getId(), java.time.Instant.now()));
+    }
+
+    @Test
+    @DisplayName("addFixture rejects a team not registered in the season")
+    void addFixtureRejectsUnregisteredTeam() {
+        Team a = confirmedTeam("AAA");
+        Team outsider = new Team("Out", "OUT", "S", "C", 2000);
+        Round round = new Round(season, 1, "Round 1", null, null, null);
+        season.addRound(round);
+        when(seasonRepository.findById(season.getId())).thenReturn(Optional.of(season));
+
+        assertThrows(IllegalArgumentException.class, () -> seasonService.addFixture(
+                season.getId(), round.getId(), a.getId(), outsider.getId(), java.time.Instant.now()));
+    }
+
     // ── withdrawTeam ──────────────────────────────────────────────────────────
 
     @Test

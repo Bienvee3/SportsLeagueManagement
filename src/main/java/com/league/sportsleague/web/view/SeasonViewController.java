@@ -1,7 +1,9 @@
 package com.league.sportsleague.web.view;
 
 import com.league.sportsleague.application.dto.CreateSeasonRequest;
+import com.league.sportsleague.application.dto.FixtureResponse;
 import com.league.sportsleague.application.dto.RegisterTeamRequest;
+import com.league.sportsleague.domain.exception.DuplicateTeamException;
 import com.league.sportsleague.application.service.FixtureService;
 import com.league.sportsleague.application.service.LeagueService;
 import com.league.sportsleague.application.service.SeasonService;
@@ -17,8 +19,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 @Controller
@@ -72,8 +79,49 @@ public class SeasonViewController {
         model.addAttribute("season", season);
         model.addAttribute("league", leagueService.findById(leagueId));
         model.addAttribute("fixtures", fixtures);
+        model.addAttribute("rounds", seasonService.findRounds(id));
+        model.addAttribute("fixturesByRound", fixtures.stream()
+                .collect(java.util.stream.Collectors.groupingBy(FixtureResponse::roundId)));
+        model.addAttribute("registeredTeams", seasonService.findRegisteredTeams(id));
         model.addAttribute("currentPage", "calendar");
         return "seasons/calendar";
+    }
+
+    // ── ADMIN: rounds and matches (one by one) ───────────────────────────────
+
+    @PostMapping("/{id}/rounds")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String createRound(@PathVariable UUID leagueId,
+                              @PathVariable UUID id,
+                              @RequestParam(required = false) String name,
+                              @RequestParam(required = false)
+                              @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+                              RedirectAttributes ra) {
+        try {
+            seasonService.createRound(id, name, startDate);
+            ra.addFlashAttribute("flashMsg", "Round created. Now add its matches.");
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            ra.addFlashAttribute("errorMsg", e.getMessage());
+        }
+        return "redirect:/leagues/" + leagueId + "/seasons/" + id + "/calendar";
+    }
+
+    @PostMapping("/{id}/rounds/{roundId}/fixtures")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String addFixture(@PathVariable UUID leagueId,
+                             @PathVariable UUID id,
+                             @PathVariable UUID roundId,
+                             @RequestParam UUID homeTeamId,
+                             @RequestParam UUID awayTeamId,
+                             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime scheduledTime,
+                             RedirectAttributes ra) {
+        try {
+            seasonService.addFixture(id, roundId, homeTeamId, awayTeamId, scheduledTime.toInstant(ZoneOffset.UTC));
+            ra.addFlashAttribute("flashMsg", "Match added.");
+        } catch (IllegalStateException | IllegalArgumentException | DuplicateTeamException e) {
+            ra.addFlashAttribute("errorMsg", e.getMessage());
+        }
+        return "redirect:/leagues/" + leagueId + "/seasons/" + id + "/calendar";
     }
 
     // ── ADMIN: create ─────────────────────────────────────────────────────────
