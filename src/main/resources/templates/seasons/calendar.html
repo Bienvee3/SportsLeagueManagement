@@ -26,16 +26,11 @@
           method="post" class="d-flex flex-wrap gap-2 align-items-end">
       <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
       <div>
-        <label class="form-label small text-secondary mb-1" for="roundName">Round name (optional)</label>
-        <input id="roundName" name="name" type="text" maxlength="100" class="form-control form-control-sm"
-               th:placeholder="'Round ' + ${#lists.size(rounds) + 1}">
-      </div>
-      <div>
         <label class="form-label small text-secondary mb-1" for="roundStart">Start date (optional)</label>
         <input id="roundStart" name="startDate" type="date" class="form-control form-control-sm">
       </div>
       <button type="submit" class="btn btn-primary btn-sm">
-        <i class="bi bi-plus-lg me-1"></i>New round
+        <i class="bi bi-plus-lg me-1"></i>New round <span th:text="${#lists.size(rounds) + 1}">2</span>
       </button>
     </form>
   </div>

@@ -127,6 +127,38 @@ class DomainMethodsTest {
         }
     }
 
+    @Nested
+    @DisplayName("Round.renumber()")
+    class RoundRenumber {
+
+        @Test
+        @DisplayName("updates the number and the default 'Round N' name")
+        void renumbersDefaultName() {
+            Season s = activeSeason();
+            Round r = new Round(s, 3, "Round 3", null, null, null);
+            r.renumber(2);
+            assertEquals(2, r.getRoundNumber());
+            assertEquals("Round 2", r.getName());
+        }
+
+        @Test
+        @DisplayName("keeps a custom name")
+        void keepsCustomName() {
+            Season s = activeSeason();
+            Round r = new Round(s, 3, "Derby week", null, null, null);
+            r.renumber(2);
+            assertEquals(2, r.getRoundNumber());
+            assertEquals("Derby week", r.getName());
+        }
+
+        @Test
+        @DisplayName("rejects numbers below 1")
+        void rejectsInvalidNumber() {
+            Round r = new Round(activeSeason(), 1, "Round 1", null, null, null);
+            assertThrows(IllegalArgumentException.class, () -> r.renumber(0));
+        }
+    }
+
     // ── Fixture.correctResult() ────────────────────────────────────────────────
 
     @Nested

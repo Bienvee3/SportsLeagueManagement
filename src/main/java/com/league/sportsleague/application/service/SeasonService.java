@@ -130,13 +130,12 @@ public class SeasonService {
         seasonRepository.save(season);
     }
 
-    /** Adds the next numbered round (empty) to a season; matches are then added one by one. */
-    public UUID createRound(UUID seasonId, String name, LocalDate startDate) {
+    /** Adds the next numbered round (empty); numbering is automatic, matches are then added one by one. */
+    public UUID createRound(UUID seasonId, LocalDate startDate) {
         Season season = requireSeason(seasonId);
         requireOpen(season);
         int next = season.getRounds().stream().mapToInt(Round::getRoundNumber).max().orElse(0) + 1;
-        String roundName = (name == null || name.isBlank()) ? "Round " + next : name.trim();
-        Round round = new Round(season, next, roundName, startDate, null, null);
+        Round round = new Round(season, next, "Round " + next, startDate, null, null);
         season.addRound(round);
         seasonRepository.save(season);
         return round.getId();
@@ -193,7 +192,17 @@ public class SeasonService {
             throw new IllegalStateException(
                     round.getName() + " has finished matches and cannot be deleted.");
         }
+        int removedNumber = round.getRoundNumber();
         season.removeRound(round);
+        seasonRepository.flush(); // DELETE first so the freed number can be reused
+        // Close the gap: shift later rounds down one at a time (unique key season_id+round_number).
+        season.getRounds().stream()
+                .filter(r -> r.getRoundNumber() > removedNumber)
+                .sorted(java.util.Comparator.comparingInt(Round::getRoundNumber))
+                .forEach(r -> {
+                    r.renumber(r.getRoundNumber() - 1);
+                    seasonRepository.flush();
+                });
         seasonRepository.save(season);
     }
 

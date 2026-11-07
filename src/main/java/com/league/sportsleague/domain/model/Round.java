@@ -96,6 +96,16 @@ public class Round {
         this.endDate = endDate;
     }
 
+    /** Changes the round number; a default "Round N" name follows the number, a custom name is kept. */
+    public void renumber(int newNumber) {
+        if (newNumber < 1)
+            throw new IllegalArgumentException("Round number must be >= 1, got: " + newNumber);
+        if (("Round " + this.roundNumber).equals(this.name)) {
+            this.name = "Round " + newNumber;
+        }
+        this.roundNumber = newNumber;
+    }
+
     // Bidirectional helper methods
     public void addFixture(Fixture fixture) {
         fixtures.add(fixture);

@@ -184,7 +184,7 @@ class SeasonServiceTest {
         when(seasonRepository.findById(season.getId())).thenReturn(Optional.of(season));
         when(seasonRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        seasonService.createRound(season.getId(), null, null);
+        seasonService.createRound(season.getId(), null);
 
         assertEquals(2, season.getRounds().size());
         Round created = season.getRounds().get(1);
@@ -198,7 +198,28 @@ class SeasonServiceTest {
         Season done = new Season(league, "2025/2026", 2025, 2026, SeasonStatus.COMPLETED);
         when(seasonRepository.findById(done.getId())).thenReturn(Optional.of(done));
         assertThrows(IllegalStateException.class,
-                () -> seasonService.createRound(done.getId(), "Extra", null));
+                () -> seasonService.createRound(done.getId(), null));
+    }
+
+    @Test
+    @DisplayName("deleteRound renumbers the following rounds so numbering stays contiguous")
+    void deleteRoundRenumbersFollowingRounds() {
+        Round r1 = new Round(season, 1, "Round 1", null, null, null);
+        Round r2 = new Round(season, 2, "Round 2", null, null, null);
+        Round r3 = new Round(season, 3, "Round 3", null, null, null);
+        Round r4 = new Round(season, 4, "Round 4", null, null, null);
+        season.addRound(r1); season.addRound(r2); season.addRound(r3); season.addRound(r4);
+        when(seasonRepository.findById(season.getId())).thenReturn(Optional.of(season));
+        when(seasonRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        seasonService.deleteRound(season.getId(), r2.getId());
+
+        assertEquals(3, season.getRounds().size());
+        assertEquals(1, r1.getRoundNumber());
+        assertEquals(2, r3.getRoundNumber());
+        assertEquals("Round 2", r3.getName());
+        assertEquals(3, r4.getRoundNumber());
+        assertEquals("Round 3", r4.getName());
     }
 
     @Test

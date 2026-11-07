@@ -93,12 +93,11 @@ public class SeasonViewController {
     @PreAuthorize("hasRole('ADMIN')")
     public String createRound(@PathVariable UUID leagueId,
                               @PathVariable UUID id,
-                              @RequestParam(required = false) String name,
                               @RequestParam(required = false)
                               @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
                               RedirectAttributes ra) {
         try {
-            seasonService.createRound(id, name, startDate);
+            seasonService.createRound(id, startDate);
             ra.addFlashAttribute("flashMsg", "Round created. Now add its matches.");
         } catch (IllegalStateException | IllegalArgumentException e) {
             ra.addFlashAttribute("errorMsg", e.getMessage());
