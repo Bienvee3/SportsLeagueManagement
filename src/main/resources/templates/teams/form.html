@@ -69,10 +69,10 @@
         <div class="row g-3 mb-3">
           <!-- Stadium -->
           <div class="col-12 col-md-7">
-            <label for="stadiumName" class="form-label fw-medium">Stadium</label>
+            <label for="stadiumName" class="form-label fw-medium">Stadium <span class="text-danger">*</span></label>
             <input type="text" id="stadiumName"
                    class="form-control" th:classappend="${#fields.hasErrors('stadiumName')} ? ' is-invalid'"
-                   th:field="*{stadiumName}" maxlength="100" placeholder="e.g. Maksimir">
+                   th:field="*{stadiumName}" required maxlength="100" placeholder="e.g. Maksimir">
             <div class="invalid-feedback" th:errors="*{stadiumName}">Invalid</div>
           </div>
           <!-- Founded year -->
@@ -88,10 +88,10 @@
 
         <!-- City -->
         <div class="mb-4">
-          <label for="city" class="form-label fw-medium">City</label>
+          <label for="city" class="form-label fw-medium">City <span class="text-danger">*</span></label>
           <input type="text" id="city"
                  class="form-control" th:classappend="${#fields.hasErrors('city')} ? ' is-invalid'"
-                 th:field="*{city}" maxlength="100" placeholder="e.g. Zagreb">
+                 th:field="*{city}" required maxlength="100" placeholder="e.g. Zagreb">
           <div class="invalid-feedback" th:errors="*{city}">Invalid</div>
         </div>
 
