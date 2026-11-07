@@ -2,7 +2,7 @@
 
 **Last Updated**: 2026-11-07
 **Active Branch**: `main`
-**Latest Local Commit**: `18e94be feat(service): let admins create rounds and add matches one by one from the calendar`
+**Latest Local Commit**: `86d900a feat(service): let admins delete unplayed matches and rounds from the calendar`
 **Git Working Tree**: Clean.
 **Push to origin**: Not yet — awaiting explicit user authorization per AGENTS.md §6.4.
 
@@ -93,11 +93,11 @@ Milestone 1 is 100% complete. Architecture restructuring Phases 1–5 are comple
 
 ---
 
-## 4. Test Suite — 339/339
+## 4. Test Suite — 343/343
 
 ```
 cmd.exe /c "cd /d C:\Users\Bienve\dev\Java\SportsLeagueManagement && mvnw.cmd test"
-Tests run: 339, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS (2026-11-07)
+Tests run: 343, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS (2026-11-07)
 ```
 
 | Test Class | Count | Type |
@@ -192,3 +192,5 @@ All features implemented and verified with 326/326 tests:
 - `9f7ddea`: AI chronicle now available to VIEWER (REST `@PreAuthorize` widened) and rendered inline on the fixture page (no raw JSON tab).
 - `18e94be`: `SeasonService.createRound/addFixture/findRounds`; calendar page lets ADMIN create the next round and add matches one by one (teams must be CONFIRMED and free in that round; blocked on COMPLETED seasons). Busy-team check compares ids (Hibernate proxies broke `equals`). +5 tests.
 - Not yet in UI: delete/edit a round or a match; REST endpoints for round/match creation.
+- `8c5375a`: season Teams tab explains an empty "Add team" list (only unregistered teams of the league's sport are offered).
+- `86d900a`: `SeasonService.deleteFixture/deleteRound` + calendar trash buttons (ADMIN). FINISHED matches (and rounds containing them) cannot be deleted; round numbers are not renumbered after a delete (gaps allowed). +4 tests.
