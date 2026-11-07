@@ -6,17 +6,18 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.UserDetailsManager;
 
-import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -28,45 +29,39 @@ class InitialUserSeederTest {
     @Mock UserDetailsManager userDetailsManager;
     @Mock PasswordEncoder passwordEncoder;
 
-    @Test
-    @DisplayName("run creates admin + dev users with correct roles when env vars provided and admin absent")
-    void createsAdminWhenAbsent() {
-        when(userDetailsManager.userExists("admin")).thenReturn(false);
-        when(userDetailsManager.userExists("test-official")).thenReturn(false);
-        when(userDetailsManager.userExists("test-viewer")).thenReturn(false);
-        when(passwordEncoder.encode(any())).thenReturn("{bcrypt}hash");
+    private InitialUserSeeder seeder(String adminUser, String adminPass,
+                                     String officialUser, String officialPass,
+                                     String viewerUser, String viewerPass) {
+        return new InitialUserSeeder(userDetailsManager, passwordEncoder,
+                adminUser, adminPass, officialUser, officialPass, viewerUser, viewerPass);
+    }
 
-        new InitialUserSeeder(userDetailsManager, passwordEncoder, "admin", "secret").run(null);
-
-        ArgumentCaptor<UserDetails> captor = ArgumentCaptor.forClass(UserDetails.class);
-        verify(userDetailsManager, times(3)).createUser(captor.capture());
-
-        // Find the admin user and verify its authorities
-        UserDetails adminUser = captor.getAllValues().stream()
-                .filter(u -> u.getUsername().equals("admin"))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("admin not created"));
-        assertEquals("{bcrypt}hash", adminUser.getPassword());
-        assertTrue(adminUser.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN")));
-        assertTrue(adminUser.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_SWITCH_USER")),
-                "Admin must have ROLE_SWITCH_USER for dev role preview");
+    private static Set<String> authorities(UserDetails user) {
+        return user.getAuthorities().stream().map(a -> a.getAuthority()).collect(Collectors.toSet());
     }
 
     @Test
-    @DisplayName("run is idempotent: does not recreate existing users when all already present")
-    void doesNothingWhenAllUsersExist() {
-        UserDetails adminDetails = User.withUsername("admin")
-                .password("{bcrypt}hash")
-                .roles("ADMIN", "SWITCH_USER")
-                .build();
-        when(userDetailsManager.userExists("admin")).thenReturn(true);
-        when(userDetailsManager.loadUserByUsername("admin")).thenReturn(adminDetails);
-        when(userDetailsManager.userExists("test-official")).thenReturn(true);
-        when(userDetailsManager.userExists("test-viewer")).thenReturn(true);
+    @DisplayName("run creates admin, official and viewer with exactly their own role when all are absent")
+    void createsAllThreeUsersWhenAbsent() {
+        when(userDetailsManager.userExists(any())).thenReturn(false);
+        when(passwordEncoder.encode(any())).thenReturn("{bcrypt}hash");
 
-        new InitialUserSeeder(userDetailsManager, passwordEncoder, "admin", "secret").run(null);
+        seeder("admin", "a-secret", "official", "o-secret", "viewer", "v-secret").run(null);
+
+        ArgumentCaptor<UserDetails> captor = ArgumentCaptor.forClass(UserDetails.class);
+        verify(userDetailsManager, times(3)).createUser(captor.capture());
+        assertEquals(Set.of("ROLE_ADMIN"), authorities(userNamed(captor, "admin")));
+        assertEquals(Set.of("ROLE_OFFICIAL"), authorities(userNamed(captor, "official")));
+        assertEquals(Set.of("ROLE_VIEWER"), authorities(userNamed(captor, "viewer")));
+        assertEquals("{bcrypt}hash", userNamed(captor, "viewer").getPassword());
+    }
+
+    @Test
+    @DisplayName("run is idempotent: existing users are never recreated or modified")
+    void doesNothingWhenAllUsersExist() {
+        when(userDetailsManager.userExists(any())).thenReturn(true);
+
+        seeder("admin", "a-secret", "official", "o-secret", "viewer", "v-secret").run(null);
 
         verify(userDetailsManager, never()).createUser(any());
         verify(userDetailsManager, never()).updateUser(any());
@@ -74,49 +69,43 @@ class InitialUserSeederTest {
     }
 
     @Test
-    @DisplayName("run adds ROLE_SWITCH_USER to existing admin missing that role")
-    void upgradesExistingAdminWithSwitchRole() {
-        UserDetails adminWithoutSwitch = User.withUsername("admin")
-                .password("{bcrypt}hash")
-                .roles("ADMIN")           // no SWITCH_USER
-                .build();
-        when(userDetailsManager.userExists("admin")).thenReturn(true);
-        when(userDetailsManager.loadUserByUsername("admin")).thenReturn(adminWithoutSwitch);
-        when(userDetailsManager.userExists("test-official")).thenReturn(true);
-        when(userDetailsManager.userExists("test-viewer")).thenReturn(true);
-
-        new InitialUserSeeder(userDetailsManager, passwordEncoder, "admin", "secret").run(null);
-
-        ArgumentCaptor<UserDetails> captor = ArgumentCaptor.forClass(UserDetails.class);
-        verify(userDetailsManager).updateUser(captor.capture());
-        assertTrue(captor.getValue().getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_SWITCH_USER")));
-    }
-
-    @Test
-    @DisplayName("run fails fast when username provided but password is blank")
-    void failsFastWhenPasswordMissingAndUserAbsent() {
+    @DisplayName("run fails fast when admin is absent and its password is blank")
+    void failsFastWhenAdminPasswordMissing() {
         when(userDetailsManager.userExists("admin")).thenReturn(false);
 
         assertThrows(IllegalStateException.class,
-                () -> new InitialUserSeeder(userDetailsManager, passwordEncoder, "admin", "").run(null));
+                () -> seeder("admin", "", "", "", "", "").run(null));
     }
 
     @Test
-    @DisplayName("run seeds only dev users when no admin env vars provided")
-    void seedsDevUsersWhenNoAdminEnvVars() {
-        when(userDetailsManager.userExists("test-official")).thenReturn(false);
-        when(userDetailsManager.userExists("test-viewer")).thenReturn(false);
+    @DisplayName("run fails fast naming OFFICIAL_PASSWORD when official is absent and its password is blank")
+    void failsFastWhenOfficialPasswordMissing() {
+        when(userDetailsManager.userExists("admin")).thenReturn(true);
+        when(userDetailsManager.userExists("official")).thenReturn(false);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> seeder("admin", "a-secret", "official", "", "viewer", "v-secret").run(null));
+        assertTrue(ex.getMessage().contains("OFFICIAL_PASSWORD"), ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("run skips roles whose username is not configured")
+    void skipsRolesWithoutUsername() {
+        when(userDetailsManager.userExists("admin")).thenReturn(false);
         when(passwordEncoder.encode(any())).thenReturn("{bcrypt}hash");
 
-        new InitialUserSeeder(userDetailsManager, passwordEncoder, "", "").run(null);
+        seeder("admin", "a-secret", "", "", "", "").run(null);
 
         ArgumentCaptor<UserDetails> captor = ArgumentCaptor.forClass(UserDetails.class);
-        verify(userDetailsManager, times(2)).createUser(captor.capture());
-        List<String> usernames = captor.getAllValues().stream()
-                .map(UserDetails::getUsername)
-                .toList();
-        assertTrue(usernames.contains("test-official"));
-        assertTrue(usernames.contains("test-viewer"));
+        verify(userDetailsManager, times(1)).createUser(captor.capture());
+        assertEquals("admin", captor.getValue().getUsername());
+        verify(userDetailsManager, never()).userExists(eq(""));
+    }
+
+    private static UserDetails userNamed(ArgumentCaptor<UserDetails> captor, String username) {
+        return captor.getAllValues().stream()
+                .filter(u -> u.getUsername().equals(username))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(username + " not created"));
     }
 }
