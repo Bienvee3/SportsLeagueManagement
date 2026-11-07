@@ -2,7 +2,7 @@
 
 **Last Updated**: 2026-11-07
 **Active Branch**: `main`
-**Latest Local Commit**: `1d0f69b feat(web): redesign UI as dark sports dashboard with topbar nav, real dashboard KPIs and fixed fixture minute expression`
+**Latest Local Commit**: `c08fab5 feat(domain): add sport type to teams with V5 migration, sport dropdown, list filter and league sport guard`
 **Git Working Tree**: Clean.
 **Push to origin**: Not yet — awaiting explicit user authorization per AGENTS.md §6.4.
 
@@ -93,11 +93,11 @@ Milestone 1 is 100% complete. Architecture restructuring Phases 1–5 are comple
 
 ---
 
-## 4. Test Suite — 328/328
+## 4. Test Suite — 334/334
 
 ```
 cmd.exe /c "cd /d C:\Users\Bienve\dev\Java\SportsLeagueManagement && mvnw.cmd test"
-Tests run: 328, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS (2026-11-07)
+Tests run: 334, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS (2026-11-07)
 ```
 
 | Test Class | Count | Type |
@@ -185,3 +185,6 @@ All features implemented and verified with 326/326 tests:
 - `1d0f69b`: full UI redesign (dark sports theme, fixed topbar, no sidebar, per-role views); `DashboardController` real KPIs; fixed `fixtures/detail` minute expression (500 on any fixture with events).
 - Smoke-verified at runtime: all pages 200 as ADMIN/OFFICIAL/VIEWER; OFFICIAL/VIEWER get 403 on create routes; switch/exit round-trip OK.
 - Dev DB: `league_admin` password aligned with `.env` (`leagueadmin`); `application.yml` dev default (`league_dev_secret`) still differs from `.env`.
+- `b730d41`: root cause of dead dropdown/tabs/role switch = invalid SRI hash on `bootstrap.bundle.js` (script blocked). Removed; topbar now has visible segmented "View as Admin/Official/Viewer" switcher (JS: exit then switch via fetch) and a Sign out button.
+- `c08fab5`: `Team.sportType` (immutable, default FOOTBALL, V5 migration), sport dropdown on create, sport column + filter pills in `/teams`, season team dropdown limited to league sport, `SeasonService.registerTeam` rejects sport mismatch. +6 tests.
+- Browser-verified with real clicks: role switch, Actions tab, season Teams tab, team creation, Sign out.
