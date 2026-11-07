@@ -58,6 +58,15 @@
       <span class="fw-semibold" th:text="${r.name}">Name</span>
       <span class="text-secondary small font-monospace" th:if="${r.startDate != null}" th:text="${r.startDate}">Date</span>
       <span class="badge bg-secondary ms-auto" th:text="${r.fixtureCount} + ' matches'">0 matches</span>
+      <form sec:authorize="hasRole('ADMIN')"
+            th:action="@{/leagues/{lid}/seasons/{sid}/rounds/{rid}/delete(lid=${league.id},sid=${season.id},rid=${r.id})}"
+            method="post" class="m-0">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete round"
+                data-confirm="Delete this round and all its unplayed matches?">
+          <i class="bi bi-trash"></i>
+        </button>
+      </form>
     </div>
 
     <div th:if="${fixturesByRound[r.id] == null}" class="sport-card mb-2">
@@ -99,6 +108,15 @@
           <a th:href="@{/fixtures/{id}(id=${f.id})}" class="btn btn-sm btn-outline-secondary" title="Details">
             <i class="bi bi-chevron-right"></i>
           </a>
+          <form sec:authorize="hasRole('ADMIN')" th:if="${f.status != 'FINISHED'}"
+                th:action="@{/leagues/{lid}/seasons/{sid}/rounds/{rid}/fixtures/{fid}/delete(lid=${league.id},sid=${season.id},rid=${r.id},fid=${f.id})}"
+                method="post" class="m-0">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete match"
+                    data-confirm="Delete this match?">
+              <i class="bi bi-trash"></i>
+            </button>
+          </form>
         </div>
       </div>
     </div>

@@ -243,6 +243,65 @@ class SeasonServiceTest {
                 season.getId(), round.getId(), a.getId(), outsider.getId(), java.time.Instant.now()));
     }
 
+    // ── deleteFixture / deleteRound ───────────────────────────────────────────
+
+    private Round roundWithMatch(Team a, Team b, boolean finished) {
+        Round round = new Round(season, 1, "Round 1", null, null, null);
+        season.addRound(round);
+        Fixture f = new Fixture(round, a, b, java.time.Instant.now());
+        round.addFixture(f);
+        if (finished) f.recordResult(new com.league.sportsleague.domain.valueobject.Score(1, 0));
+        return round;
+    }
+
+    @Test
+    @DisplayName("deleteFixture removes a scheduled match from its round")
+    void deleteFixtureRemovesScheduledMatch() {
+        Round round = roundWithMatch(confirmedTeam("AAA"), confirmedTeam("BBB"), false);
+        Fixture f = round.getFixtures().get(0);
+        when(seasonRepository.findById(season.getId())).thenReturn(Optional.of(season));
+        when(seasonRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        seasonService.deleteFixture(season.getId(), round.getId(), f.getId());
+
+        assertTrue(round.getFixtures().isEmpty());
+    }
+
+    @Test
+    @DisplayName("deleteFixture refuses a FINISHED match")
+    void deleteFixtureRefusesFinished() {
+        Round round = roundWithMatch(confirmedTeam("AAA"), confirmedTeam("BBB"), true);
+        Fixture f = round.getFixtures().get(0);
+        when(seasonRepository.findById(season.getId())).thenReturn(Optional.of(season));
+
+        assertThrows(IllegalStateException.class,
+                () -> seasonService.deleteFixture(season.getId(), round.getId(), f.getId()));
+        assertEquals(1, round.getFixtures().size());
+    }
+
+    @Test
+    @DisplayName("deleteRound removes the round and its scheduled matches")
+    void deleteRoundRemovesRound() {
+        Round round = roundWithMatch(confirmedTeam("AAA"), confirmedTeam("BBB"), false);
+        when(seasonRepository.findById(season.getId())).thenReturn(Optional.of(season));
+        when(seasonRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        seasonService.deleteRound(season.getId(), round.getId());
+
+        assertTrue(season.getRounds().isEmpty());
+    }
+
+    @Test
+    @DisplayName("deleteRound refuses a round that contains a FINISHED match")
+    void deleteRoundRefusesFinishedMatch() {
+        Round round = roundWithMatch(confirmedTeam("AAA"), confirmedTeam("BBB"), true);
+        when(seasonRepository.findById(season.getId())).thenReturn(Optional.of(season));
+
+        assertThrows(IllegalStateException.class,
+                () -> seasonService.deleteRound(season.getId(), round.getId()));
+        assertEquals(1, season.getRounds().size());
+    }
+
     // ── withdrawTeam ──────────────────────────────────────────────────────────
 
     @Test

@@ -170,6 +170,40 @@ public class SeasonService {
                 .toList();
     }
 
+    /** Removes a match that has not been played; FINISHED matches carry results and cannot be deleted. */
+    public void deleteFixture(UUID seasonId, UUID roundId, UUID fixtureId) {
+        Season season = requireSeason(seasonId);
+        Round round = requireRound(season, roundId);
+        Fixture fixture = round.getFixtures().stream()
+                .filter(f -> f.getId().equals(fixtureId))
+                .findFirst()
+                .orElseThrow(() -> new EntityNotFoundException("Fixture", fixtureId));
+        if (fixture.isFinished()) {
+            throw new IllegalStateException("A finished match cannot be deleted; correct its result instead.");
+        }
+        round.removeFixture(fixture);
+        seasonRepository.save(season);
+    }
+
+    /** Removes a round with its unplayed matches; refused if any match in it is FINISHED. */
+    public void deleteRound(UUID seasonId, UUID roundId) {
+        Season season = requireSeason(seasonId);
+        Round round = requireRound(season, roundId);
+        if (round.getFixtures().stream().anyMatch(Fixture::isFinished)) {
+            throw new IllegalStateException(
+                    round.getName() + " has finished matches and cannot be deleted.");
+        }
+        season.removeRound(round);
+        seasonRepository.save(season);
+    }
+
+    private Round requireRound(Season season, UUID roundId) {
+        return season.getRounds().stream()
+                .filter(r -> r.getId().equals(roundId))
+                .findFirst()
+                .orElseThrow(() -> new EntityNotFoundException("Round", roundId));
+    }
+
     // ── Queries ───────────────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)

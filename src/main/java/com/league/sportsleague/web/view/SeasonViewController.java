@@ -124,6 +124,37 @@ public class SeasonViewController {
         return "redirect:/leagues/" + leagueId + "/seasons/" + id + "/calendar";
     }
 
+    @PostMapping("/{id}/rounds/{roundId}/delete")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String deleteRound(@PathVariable UUID leagueId,
+                              @PathVariable UUID id,
+                              @PathVariable UUID roundId,
+                              RedirectAttributes ra) {
+        try {
+            seasonService.deleteRound(id, roundId);
+            ra.addFlashAttribute("flashMsg", "Round deleted.");
+        } catch (IllegalStateException e) {
+            ra.addFlashAttribute("errorMsg", e.getMessage());
+        }
+        return "redirect:/leagues/" + leagueId + "/seasons/" + id + "/calendar";
+    }
+
+    @PostMapping("/{id}/rounds/{roundId}/fixtures/{fixtureId}/delete")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String deleteFixture(@PathVariable UUID leagueId,
+                                @PathVariable UUID id,
+                                @PathVariable UUID roundId,
+                                @PathVariable UUID fixtureId,
+                                RedirectAttributes ra) {
+        try {
+            seasonService.deleteFixture(id, roundId, fixtureId);
+            ra.addFlashAttribute("flashMsg", "Match deleted.");
+        } catch (IllegalStateException e) {
+            ra.addFlashAttribute("errorMsg", e.getMessage());
+        }
+        return "redirect:/leagues/" + leagueId + "/seasons/" + id + "/calendar";
+    }
+
     // ── ADMIN: create ─────────────────────────────────────────────────────────
 
     @GetMapping("/new")
