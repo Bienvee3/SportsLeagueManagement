@@ -166,7 +166,6 @@ All features implemented and verified with 326/326 tests:
 - Application services + DTOs ✅
 - Round-Robin scheduler + `Season.clearRounds()` for regeneration ✅
 - Spring Security 7 (3 roles, JDBC user store) ✅
-- `SwitchUserFilter` dev role preview (switch to test-official / test-viewer from topbar) ✅
 - REST API (Leagues, Teams, Seasons, Fixtures) + OpenAPI/Swagger UI ✅
 - Standings engine (5-level tie-break) ✅
 - AI Chronicle via Gemini API + stub fallback on API failure (no more 500) ✅
@@ -176,7 +175,7 @@ All features implemented and verified with 326/326 tests:
 
 **Testcontainers**: `mvnw verify -Pintegration` — requires Docker Desktop running.
 **AI Chronicle**: set `GEMINI_API_KEY` env var; falls back to stub if key invalid/missing.
-**Dev role switcher**: `test-official` / `test-viewer` seeded at startup; switch via topbar user menu.
+**Accounts**: `ADMIN_*`, `OFFICIAL_*`, `VIEWER_*` variables in `.env` (see `.env.example`); created at startup when absent, never overwritten.
 **Next**: Push `main` to origin / open PR (awaiting explicit user authorization per AGENTS.md §6.4).
 
 ## 7. Session 2026-11-07
@@ -217,3 +216,4 @@ All features implemented and verified with 326/326 tests:
   - Retained `ResultAudit` and `Correct Result` in Actions tab to preserve Course P39 LO4 audit rubric compliance.
   - Rebranded card to "Administrative Result Correction" / "Administrativni ispravak rezultata" with explanatory subtitle clarifying that standard goals are managed via match events while this form is for official audited score overrides.
   - Test suite: 376/376 passing (`BUILD SUCCESS`).
+- Real role accounts (`6e3cc69`, `e8846ab`): OFFICIAL and VIEWER logins are created at startup from `OFFICIAL_USERNAME/PASSWORD` and `VIEWER_USERNAME/PASSWORD` in `.env` (same mechanism as the admin; `InitialUserSeeder` now takes 8 env values, skips unset roles, fails fast if a username is set without a password). The "View as" switcher is gone: `SwitchUserFilter`, `/dev/switch*`, `ROLE_SWITCH_USER`, JS/CSS and `common.viewas`. V7 migration deletes `ROLE_SWITCH_USER` and the old `test-official`/`test-viewer` accounts. Topbar always shows the role pill. Verified live: official/viewer/admin logins, old `test-*` login rejected, DB has exactly 3 users. Tests: 375/375.
