@@ -70,15 +70,15 @@
     });
   }
 
-  /* ---- app language toggle (EN/HR) ---- */
-  const langToggle = document.getElementById('langToggle');
-  if (langToggle) {
-    langToggle.addEventListener('change', () => {
+  /* ---- app language (EN/HR buttons) ---- */
+  document.querySelectorAll('[data-app-lang]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.classList.contains('active')) return;
       const url = new URL(window.location.href);
-      url.searchParams.set('appLang', langToggle.checked ? 'hr' : 'en');
+      url.searchParams.set('appLang', btn.dataset.appLang);
       window.location.assign(url.toString());
     });
-  }
+  });
 
 
   /* ---- AI chronicle (inline, all roles) ---- */
@@ -89,7 +89,7 @@
     chronicleCard.querySelectorAll('[data-chronicle-lang]').forEach(btn => {
       btn.addEventListener('click', async () => {
         out.className = 'chronicle-text mb-0 text-secondary';
-        out.textContent = 'Generating chronicle…';
+        out.textContent = document.body.dataset.msgGenerating;
         chronicleCard.querySelectorAll('button').forEach(b => b.disabled = true);
         try {
           const res = await fetch(chronicleCard.dataset.url + '?lang=' + btn.dataset.chronicleLang, {
@@ -101,7 +101,7 @@
           out.textContent = data.text;
         } catch (e) {
           out.className = 'chronicle-text mb-0 text-danger';
-          out.textContent = 'Could not generate the chronicle (' + e.message + ').';
+          out.textContent = document.body.dataset.msgChronicleError + ' (' + e.message + ')';
         } finally {
           chronicleCard.querySelectorAll('button').forEach(b => b.disabled = false);
         }
