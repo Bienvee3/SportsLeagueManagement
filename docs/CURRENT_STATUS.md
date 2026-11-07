@@ -2,7 +2,7 @@
 
 **Last Updated**: 2026-11-07
 **Active Branch**: `main`
-**Latest Local Commit**: `b018bdc feat(web): add REST endpoints to list, create and delete rounds and matches`
+**Latest Local Commit**: `b880110 feat(domain): synchronize fixture score from goal events`
 **Git Working Tree**: Clean.
 **Push to origin**: Not yet — awaiting explicit user authorization per AGENTS.md §6.4.
 
@@ -93,16 +93,16 @@ Milestone 1 is 100% complete. Architecture restructuring Phases 1–5 are comple
 
 ---
 
-## 4. Test Suite — 355/355
+## 4. Test Suite — 376/376
 
 ```
 cmd.exe /c "cd /d C:\Users\Bienve\dev\Java\SportsLeagueManagement && mvnw.cmd test"
-Tests run: 355, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS (2026-11-07)
+Tests run: 376, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS (2026-11-07)
 ```
 
 | Test Class | Count | Type |
 |---|---|---|
-| `FixtureServiceTest` | 12 | Mockito unit |
+| `FixtureServiceTest` | 18 | Mockito unit |
 | `SeasonServiceTest` | 17 | Mockito unit |
 | `LeagueServiceTest` | 11 | Mockito unit |
 | `TeamServiceTest` | 6 | Mockito unit |
@@ -206,3 +206,10 @@ All features implemented and verified with 326/326 tests:
   - Web UI: in the Actions tab under "Record Match Event", all recorded events are listed with a red trash button (with confirmation prompt). Flash message `fixtures.flash.eventDeleted`.
   - Score-mismatch guard: an amber alert banner appears in the Actions tab of finished matches whenever total recorded goal events (`GOAL`, `PENALTY`, `OWN_GOAL`) do not equal `homeScore + awayScore`. Non-blocking informative warning. Fully translated (EN + HR).
   - Test suite: 374/374 passing (`BUILD SUCCESS`).
+- Automatic score synchronization from match events:
+  - Domain model: `Fixture.java` automatically updates `homeScore` and `awayScore` whenever goal events (`GOAL`, `PENALTY`, `OWN_GOAL`) are added via `addMatchEvent` or removed via `removeMatchEvent`.
+  - Own goals: an `OWN_GOAL` attributed to `homeTeam` increments `awayGoals`, and vice-versa.
+  - Non-goal events (`YELLOW_CARD`, `RED_CARD`, `SUBSTITUTION`) never alter the score. Fixtures with manual scores and zero goal events retain their score.
+  - Aggregate test updated in `DomainModelTest.java` (3 goal events added to match final 2-1 score).
+  - Mockito unit tests in `FixtureServiceTest.java`: 2 new tests covering own goals and non-goal events, plus score assertions on addition and deletion. Total tests: 376/376.
+  - Live browser smoke verified: adding an away goal immediately updated the score header from 3-1 to 3-2 without warning banner; deleting it immediately dropped the score back to 3-1.
