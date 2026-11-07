@@ -2,7 +2,7 @@
 
 **Last Updated**: 2026-11-07
 **Active Branch**: `main`
-**Latest Local Commit**: `c08fab5 feat(domain): add sport type to teams with V5 migration, sport dropdown, list filter and league sport guard`
+**Latest Local Commit**: `18e94be feat(service): let admins create rounds and add matches one by one from the calendar`
 **Git Working Tree**: Clean.
 **Push to origin**: Not yet — awaiting explicit user authorization per AGENTS.md §6.4.
 
@@ -93,11 +93,11 @@ Milestone 1 is 100% complete. Architecture restructuring Phases 1–5 are comple
 
 ---
 
-## 4. Test Suite — 334/334
+## 4. Test Suite — 339/339
 
 ```
 cmd.exe /c "cd /d C:\Users\Bienve\dev\Java\SportsLeagueManagement && mvnw.cmd test"
-Tests run: 334, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS (2026-11-07)
+Tests run: 339, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS (2026-11-07)
 ```
 
 | Test Class | Count | Type |
@@ -188,3 +188,7 @@ All features implemented and verified with 326/326 tests:
 - `b730d41`: root cause of dead dropdown/tabs/role switch = invalid SRI hash on `bootstrap.bundle.js` (script blocked). Removed; topbar now has visible segmented "View as Admin/Official/Viewer" switcher (JS: exit then switch via fetch) and a Sign out button.
 - `c08fab5`: `Team.sportType` (immutable, default FOOTBALL, V5 migration), sport dropdown on create, sport column + filter pills in `/teams`, season team dropdown limited to league sport, `SeasonService.registerTeam` rejects sport mismatch. +6 tests.
 - Browser-verified with real clicks: role switch, Actions tab, season Teams tab, team creation, Sign out.
+- `210d94c`: stadium/city marked required in team form.
+- `9f7ddea`: AI chronicle now available to VIEWER (REST `@PreAuthorize` widened) and rendered inline on the fixture page (no raw JSON tab).
+- `18e94be`: `SeasonService.createRound/addFixture/findRounds`; calendar page lets ADMIN create the next round and add matches one by one (teams must be CONFIRMED and free in that round; blocked on COMPLETED seasons). Busy-team check compares ids (Hibernate proxies broke `equals`). +5 tests.
+- Not yet in UI: delete/edit a round or a match; REST endpoints for round/match creation.
