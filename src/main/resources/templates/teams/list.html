@@ -6,15 +6,12 @@
       layout:decorate="~{layout/layout}">
 <head><title>Teams</title></head>
 <body>
-<th:block layout:fragment="breadcrumb">
-  <li class="breadcrumb-item active">Teams</li>
-</th:block>
 <th:block layout:fragment="content">
 
-  <div class="d-flex align-items-center justify-content-between mb-4">
+  <div class="page-header">
     <div>
       <h1 class="h3 fw-bold mb-1">Teams</h1>
-      <p class="text-muted mb-0 small">All registered clubs</p>
+      <p class="text-secondary mb-0 small">All registered clubs</p>
     </div>
     <a sec:authorize="hasRole('ADMIN')"
        th:href="@{/teams/new}" class="btn btn-primary">
@@ -22,15 +19,15 @@
     </a>
   </div>
 
-  <div class="card shadow-sm">
-    <div th:if="${#lists.isEmpty(teams)}" class="card-body text-center py-5">
-      <i class="bi bi-people display-5 text-muted mb-3 d-block"></i>
-      <p class="text-muted mb-0">No teams registered yet.</p>
+  <div class="sport-card">
+    <div th:if="${#lists.isEmpty(teams)}" class="text-center py-5">
+      <i class="bi bi-people display-5 text-secondary mb-3 d-block"></i>
+      <p class="text-secondary mb-0">No teams registered yet.</p>
     </div>
 
     <div th:if="${not #lists.isEmpty(teams)}" class="table-responsive">
       <table class="table table-hover align-middle mb-0">
-        <thead class="table-light">
+        <thead>
           <tr>
             <th>Code</th>
             <th>Name</th>
@@ -42,14 +39,18 @@
         </thead>
         <tbody>
           <tr th:each="t : ${teams}">
-            <td><span class="badge bg-dark font-mono" th:text="${t.shortCode}">DZG</span></td>
+            <td>
+              <span class="badge font-monospace"
+                    style="background:rgba(249,115,22,.15);color:#f97316;border:1px solid rgba(249,115,22,.4);letter-spacing:.06em"
+                    th:text="${t.shortCode}">DZG</span>
+            </td>
             <td>
               <a th:href="@{/teams/{id}(id=${t.id})}"
                  class="fw-semibold text-decoration-none" th:text="${t.name}">Name</a>
             </td>
-            <td class="text-muted" th:text="${t.stadiumName}">—</td>
-            <td class="text-muted" th:text="${t.city}">—</td>
-            <td class="font-mono text-muted small" th:text="${t.foundedYear}">—</td>
+            <td class="text-secondary" th:text="${t.stadiumName}">—</td>
+            <td class="text-secondary" th:text="${t.city}">—</td>
+            <td class="font-monospace text-secondary small" th:text="${t.foundedYear}">—</td>
             <td>
               <div class="d-flex gap-1 justify-content-end">
                 <a th:href="@{/teams/{id}(id=${t.id})}"

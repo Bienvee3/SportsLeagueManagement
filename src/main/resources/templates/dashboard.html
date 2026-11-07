@@ -7,16 +7,14 @@
 <head><title>Dashboard</title></head>
 <body>
 
-<th:block layout:fragment="breadcrumb">
-  <li class="breadcrumb-item active">Dashboard</li>
-</th:block>
-
 <th:block layout:fragment="content">
 
-  <div class="d-flex align-items-center justify-content-between mb-4">
+  <div class="page-header">
     <div>
       <h1 class="h3 fw-bold mb-1">Dashboard</h1>
-      <p class="text-muted mb-0 small">All leagues at a glance</p>
+      <p class="text-secondary mb-0 small">
+        Welcome back, <span class="fw-semibold" sec:authentication="name">user</span>
+      </p>
     </div>
     <a sec:authorize="hasRole('ADMIN')"
        th:href="@{/leagues/new}" class="btn btn-primary">
@@ -24,17 +22,47 @@
     </a>
   </div>
 
-  <!-- Empty state -->
-  <div th:if="${#lists.isEmpty(leagues)}" class="card text-center py-5">
-    <div class="card-body">
-      <i class="bi bi-trophy display-5 text-muted mb-3 d-block"></i>
-      <h5 class="card-title">No leagues yet</h5>
-      <p class="card-text text-muted">Create your first league to get started.</p>
-      <a sec:authorize="hasRole('ADMIN')"
-         th:href="@{/leagues/new}" class="btn btn-primary">
-        <i class="bi bi-plus-lg me-1"></i>Create League
-      </a>
+  <!-- KPI row -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+      <div class="kpi-card">
+        <div class="kpi-icon">🏆</div>
+        <div class="kpi-value" th:text="${#lists.size(leagues)}">0</div>
+        <div class="kpi-label">Leagues</div>
+      </div>
     </div>
+    <div class="col-6 col-lg-3">
+      <div class="kpi-card">
+        <div class="kpi-icon">🗓</div>
+        <div class="kpi-value" th:text="${seasonCount}">0</div>
+        <div class="kpi-label">Seasons</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="kpi-card">
+        <div class="kpi-icon">👥</div>
+        <div class="kpi-value" th:text="${teamCount}">0</div>
+        <div class="kpi-label">Teams</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="kpi-card">
+        <div class="kpi-icon">🔥</div>
+        <div class="kpi-value" th:text="${activeSeasonCount}">0</div>
+        <div class="kpi-label">Active seasons</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty state -->
+  <div th:if="${#lists.isEmpty(leagues)}" class="sport-card text-center py-5">
+    <i class="bi bi-trophy display-4 text-secondary mb-3 d-block"></i>
+    <h5>No leagues yet</h5>
+    <p class="text-secondary">Create your first league to get started.</p>
+    <a sec:authorize="hasRole('ADMIN')"
+       th:href="@{/leagues/new}" class="btn btn-primary">
+      <i class="bi bi-plus-lg me-1"></i>Create League
+    </a>
   </div>
 
   <!-- League cards -->
@@ -42,19 +70,19 @@
        class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
     <div class="col" th:each="l : ${leagues}">
       <a th:href="@{/leagues/{id}(id=${l.id})}"
-         class="card h-100 text-decoration-none text-dark shadow-sm">
-        <div class="card-body">
+         class="sport-card d-block h-100 text-decoration-none">
+        <div class="p-3">
           <div class="d-flex align-items-start justify-content-between mb-2">
-            <h5 class="card-title mb-0 fw-semibold" th:text="${l.name}">League Name</h5>
+            <h5 class="mb-0 fw-semibold text-light" th:text="${l.name}">League Name</h5>
             <span class="badge bg-secondary ms-2 text-uppercase" style="font-size:.65rem;"
                   th:text="${l.sportType}">FOOTBALL</span>
           </div>
-          <p class="text-muted small mb-0">
+          <p class="text-secondary small mb-0">
             <i class="bi bi-geo-alt me-1"></i>
             <span th:text="${l.country}">Country</span>
           </p>
         </div>
-        <div class="card-footer bg-transparent small text-muted d-flex align-items-center gap-1">
+        <div class="px-3 py-2 border-top border-secondary-subtle small text-secondary d-flex align-items-center gap-1">
           <i class="bi bi-arrow-right-circle"></i> View seasons &amp; standings
         </div>
       </a>

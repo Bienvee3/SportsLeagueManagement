@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" data-bs-theme="dark" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,31 +14,41 @@
 </head>
 <body>
 
-<div class="login-wrapper">
+<div class="login-split">
 
-  <!-- Branding panel (hidden on mobile) -->
-  <div class="login-branding">
+  <!-- Visual panel (60%, hidden on mobile) -->
+  <div class="login-visual">
+    <div class="d-flex align-items-center gap-2 text-white-50 small text-uppercase fw-semibold"
+         style="letter-spacing:.12em">
+      <i class="bi bi-dribbble" style="color:var(--orange)"></i> Sports league management
+    </div>
+
     <div>
-      <div class="d-flex align-items-center gap-3 mb-4">
-        <div class="brand-mark" style="width:40px;height:40px;border-radius:8px;background:#fff;color:#212529;display:grid;place-items:center;font-weight:700;font-size:14px;">LO</div>
-        <span class="fs-5 fw-bold">League Ops</span>
-      </div>
-      <p class="text-white-50 mb-4" style="max-width:36ch;line-height:1.6;">
-        Sports league management platform. Manage leagues, seasons, fixtures, standings, and AI-generated match chronicles.
+      <div class="login-hero-brand">LeagueOps</div>
+      <p class="login-tagline">
+        Run the whole season: leagues, fixtures, live results, standings and AI-written match chronicles.
       </p>
-      <div style="font-family:ui-monospace,monospace;font-size:.8rem;color:rgba(255,255,255,.45);line-height:1.9;">
+    </div>
+
+    <div>
+      <div class="login-feature">
         <div>League → Season → Round → Fixture</div>
         <div>5-level tie-break standings engine</div>
         <div>Spring Boot 4 · PostgreSQL 17</div>
       </div>
+      <div class="text-white-50 small mt-3">P39 · Algebra Bernays University 2026/2027</div>
     </div>
-    <div class="text-white-50 small">P39 · Algebra Bernays University 2026/2027</div>
   </div>
 
-  <!-- Login form -->
-  <div class="d-flex align-items-center justify-content-center bg-light p-4">
-    <div style="width:min(380px,100%)">
-      <h1 class="fs-3 fw-bold mb-1">Sign in</h1>
+  <!-- Login form panel (40%) -->
+  <div class="login-panel">
+
+    <div class="login-logo">
+      <i class="bi bi-dribbble"></i>LeagueOps
+    </div>
+
+    <div class="login-card">
+      <h1 class="fs-4 fw-bold mb-1">Sign in</h1>
       <p class="text-muted small mb-4">Enter your credentials to continue.</p>
 
       <!-- Error message -->

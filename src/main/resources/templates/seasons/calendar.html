@@ -2,6 +2,7 @@
 <html lang="en"
       xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
       layout:decorate="~{layout/layout}">
 <head><title th:text="${season.name} + ' — Calendar'">Calendar</title></head>
 <body>
@@ -18,22 +19,24 @@
 </th:block>
 <th:block layout:fragment="content">
 
-  <div class="d-flex align-items-center gap-3 mb-4">
-    <a th:href="@{/leagues/{lid}/seasons/{sid}(lid=${league.id},sid=${season.id})}"
-       class="btn btn-sm btn-outline-secondary">
-      <i class="bi bi-arrow-left"></i>
-    </a>
-    <div>
-      <h1 class="h3 fw-bold mb-1">Calendar</h1>
-      <div class="text-muted small" th:text="${league.name} + ' · ' + ${season.name}">League · Season</div>
+  <div class="page-header">
+    <div class="d-flex align-items-center gap-3">
+      <a th:href="@{/leagues/{lid}/seasons/{sid}(lid=${league.id},sid=${season.id})}"
+         class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <div>
+        <h1 class="h3 fw-bold mb-1">Calendar</h1>
+        <div class="text-secondary small" th:text="${league.name} + ' · ' + ${season.name}">League · Season</div>
+      </div>
     </div>
   </div>
 
   <!-- Empty -->
-  <div th:if="${#lists.isEmpty(fixtures)}" class="card shadow-sm">
-    <div class="card-body text-center py-5">
-      <i class="bi bi-calendar-x display-5 text-muted mb-3 d-block"></i>
-      <p class="text-muted mb-0">No fixtures scheduled yet.</p>
+  <div th:if="${#lists.isEmpty(fixtures)}" class="sport-card">
+    <div class="text-center py-5">
+      <i class="bi bi-calendar-x display-4 text-secondary mb-3 d-block"></i>
+      <p class="text-secondary mb-0">No fixtures scheduled yet.</p>
     </div>
   </div>
 
@@ -42,30 +45,48 @@
     <th:block th:each="f, stat : ${fixtures}">
       <div th:if="${stat.first or fixtures[stat.index - 1].roundNumber != f.roundNumber}"
            class="d-flex align-items-center gap-2 mt-4 mb-2">
-        <span class="badge bg-primary" th:text="'Round ' + ${f.roundNumber}">Round 1</span>
-        <span class="text-muted small font-mono"
+        <span class="badge px-3 py-2" style="background:#f97316"
+              th:text="'Round ' + ${f.roundNumber}">Round 1</span>
+        <span class="text-secondary small font-monospace"
               th:text="${f.scheduledTime.toString().substring(0,10)}">Date</span>
       </div>
-      <div class="card shadow-sm mb-2">
-        <a th:href="@{/fixtures/{id}(id=${f.id})}"
-           class="card-body py-2 px-3 text-decoration-none text-dark d-flex align-items-center gap-3">
-          <div class="text-end flex-grow-1 fw-medium text-truncate" th:text="${f.homeTeamName}">Home</div>
-          <div class="text-center flex-shrink-0" style="min-width:80px">
-            <th:block th:if="${f.homeScore != null}">
-              <span class="score-box">
-                <span th:text="${f.homeScore}">0</span>
-                <span class="text-muted">–</span>
-                <span th:text="${f.awayScore}">0</span>
-              </span>
-            </th:block>
-            <th:block th:if="${f.homeScore == null}">
-              <span class="badge" th:classappend="'badge-' + ${f.status}"
-                    th:text="${f.status}">SCH</span>
-            </th:block>
+      <div class="sport-card mb-2">
+        <div class="py-2 px-3 d-flex align-items-center gap-3 flex-wrap">
+          <a th:href="@{/fixtures/{id}(id=${f.id})}"
+             class="d-flex align-items-center gap-3 flex-grow-1 text-decoration-none text-reset"
+             style="min-width:260px">
+            <div class="text-end flex-grow-1 fw-semibold text-truncate" style="flex-basis:0" th:text="${f.homeTeamName}">Home</div>
+            <div class="text-center flex-shrink-0" style="min-width:90px">
+              <th:block th:if="${f.homeScore != null}">
+                <span class="fw-bold font-monospace fs-5">
+                  <span th:text="${f.homeScore}">0</span>
+                  <span class="text-secondary">–</span>
+                  <span th:text="${f.awayScore}">0</span>
+                </span>
+              </th:block>
+              <th:block th:if="${f.homeScore == null}">
+                <span class="text-secondary small fw-semibold">vs</span>
+              </th:block>
+            </div>
+            <div class="flex-grow-1 fw-semibold text-truncate" style="flex-basis:0" th:text="${f.awayTeamName}">Away</div>
+          </a>
+          <div class="text-secondary small font-monospace flex-shrink-0">
+            <i class="bi bi-clock me-1"></i><span th:text="${f.scheduledTime.toString().substring(0,16).replace('T',' ')}">2026-01-01 15:00</span>
           </div>
-          <div class="flex-grow-1 fw-medium text-truncate" th:text="${f.awayTeamName}">Away</div>
-          <i class="bi bi-chevron-right text-muted flex-shrink-0"></i>
-        </a>
+          <span class="badge flex-shrink-0" th:classappend="'badge-' + ${f.status}"
+                th:text="${f.status}">SCHEDULED</span>
+          <div class="flex-shrink-0 d-flex gap-1">
+            <a sec:authorize="hasAnyRole('ADMIN','OFFICIAL')"
+               th:if="${f.status == 'SCHEDULED' or f.status == 'IN_PROGRESS'}"
+               th:href="@{/fixtures/{id}(id=${f.id})}"
+               class="btn btn-sm btn-outline-warning">
+              <i class="bi bi-pencil-square me-1"></i>Record result
+            </a>
+            <a th:href="@{/fixtures/{id}(id=${f.id})}" class="btn btn-sm btn-outline-secondary" title="Details">
+              <i class="bi bi-chevron-right"></i>
+            </a>
+          </div>
+        </div>
       </div>
     </th:block>
   </th:block>

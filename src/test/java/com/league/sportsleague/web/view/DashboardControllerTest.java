@@ -21,6 +21,8 @@ class DashboardControllerTest {
 
     @Autowired MockMvc mockMvc;
     @MockitoBean LeagueService leagueService;
+    @MockitoBean com.league.sportsleague.application.service.SeasonService seasonService;
+    @MockitoBean com.league.sportsleague.application.service.TeamService teamService;
     @MockitoBean DataSource dataSource;
 
     @Test
@@ -31,7 +33,10 @@ class DashboardControllerTest {
         mockMvc.perform(get("/"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("dashboard"))
-                .andExpect(model().attributeExists("leagues"));
+                .andExpect(model().attributeExists("leagues"))
+                .andExpect(model().attribute("seasonCount", 0))
+                .andExpect(model().attribute("activeSeasonCount", 0L))
+                .andExpect(model().attribute("teamCount", 0));
     }
 
     @Test
