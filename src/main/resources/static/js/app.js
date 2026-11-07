@@ -85,28 +85,39 @@
   const chronicleCard = document.getElementById('chronicle-card');
   if (chronicleCard) {
     const out = document.getElementById('chronicle-text');
+    const button = chronicleCard.querySelector('[data-chronicle-lang]');
+    const lang = button.dataset.chronicleLang;
     const csrf = document.querySelector('meta[name="_csrf"]').content;
-    chronicleCard.querySelectorAll('[data-chronicle-lang]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        out.className = 'chronicle-text mb-0 text-secondary';
-        out.textContent = document.body.dataset.msgGenerating;
-        chronicleCard.querySelectorAll('button').forEach(b => b.disabled = true);
-        try {
-          const res = await fetch(chronicleCard.dataset.url + '?lang=' + btn.dataset.chronicleLang, {
-            method: 'POST', credentials: 'same-origin', headers: {'X-CSRF-TOKEN': csrf}
-          });
-          if (!res.ok) throw new Error('HTTP ' + res.status);
-          const data = await res.json();
-          out.className = 'chronicle-text mb-0';
-          out.textContent = data.text;
-        } catch (e) {
-          out.className = 'chronicle-text mb-0 text-danger';
-          out.textContent = document.body.dataset.msgChronicleError + ' (' + e.message + ')';
-        } finally {
-          chronicleCard.querySelectorAll('button').forEach(b => b.disabled = false);
+    const hintHtml = out.innerHTML;
+    const setBusy = busy => chronicleCard.querySelectorAll('button').forEach(b => b.disabled = busy);
+
+    async function run(method) {
+      out.className = 'chronicle-text mb-0 text-secondary';
+      out.textContent = document.body.dataset.msgGenerating;
+      setBusy(true);
+      try {
+        const res = await fetch(chronicleCard.dataset.url + '?lang=' + lang, {
+          method, credentials: 'same-origin', headers: {'X-CSRF-TOKEN': csrf}
+        });
+        if (res.status === 204) {            // nothing generated yet
+          out.className = 'chronicle-text mb-0 text-secondary small';
+          out.innerHTML = hintHtml;
+          return;
         }
-      });
-    });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        out.className = 'chronicle-text mb-0';
+        out.textContent = data.text;
+      } catch (e) {
+        out.className = 'chronicle-text mb-0 text-danger';
+        out.textContent = document.body.dataset.msgChronicleError + ' (' + e.message + ')';
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    button.addEventListener('click', () => run('POST'));   // write a new chronicle
+    run('GET');                                            // show stored one, translating if needed
   }
   /* ---- confirm dangerous actions ---- */
   document.querySelectorAll('[data-confirm]').forEach(btn => {
