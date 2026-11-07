@@ -4,6 +4,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
@@ -84,5 +87,23 @@ class SecurityAccessTest {
                 .andExpect(status().isNotFound());
         mockMvc.perform(get("/official/fixtures"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("ADMIN with SWITCH_USER can preview OFFICIAL — redirects to / instead of 500")
+    void adminCanSwitchToOfficial() throws Exception {
+        mockMvc.perform(post("/dev/switch").param("username", "test-official")
+                        .with(csrf())
+                        .with(user("admin").roles("ADMIN", "SWITCH_USER")))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("ADMIN without SWITCH_USER cannot switch role")
+    void adminWithoutSwitchAuthorityIsForbidden() throws Exception {
+        mockMvc.perform(post("/dev/switch").param("username", "test-viewer").with(csrf()))
+                .andExpect(status().isForbidden());
     }
 }

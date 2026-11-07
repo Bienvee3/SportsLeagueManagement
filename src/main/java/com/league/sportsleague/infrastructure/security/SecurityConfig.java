@@ -13,6 +13,8 @@ import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.switchuser.SwitchUserFilter;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 
 @Configuration
 public class SecurityConfig {
@@ -24,7 +26,8 @@ public class SecurityConfig {
         switchUserFilter.setUserDetailsService(userDetailsService);
         switchUserFilter.setSwitchUserUrl("/dev/switch");
         switchUserFilter.setExitUserUrl("/dev/switch-exit");
-        switchUserFilter.setTargetUrl("/");
+        switchUserFilter.setSuccessHandler(new SimpleUrlAuthenticationSuccessHandler("/"));
+        switchUserFilter.setFailureHandler(new SimpleUrlAuthenticationFailureHandler("/"));
 
         http.authorizeHttpRequests(auth -> auth
                         .requestMatchers("/login", "/css/**", "/js/**", "/images/**", "/error",
