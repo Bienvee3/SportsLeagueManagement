@@ -9,6 +9,9 @@ public record CreateTeamRequest(
         @NotBlank(message = "Short code must not be blank")
         String shortCode,
 
+        @NotBlank(message = "Sport must be selected")
+        String sportType,
+
         @NotBlank(message = "Stadium name must not be blank")
         String stadiumName,
 

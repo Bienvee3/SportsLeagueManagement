@@ -1,6 +1,8 @@
 package com.league.sportsleague.web.view;
 
 import com.league.sportsleague.application.dto.CreateTeamRequest;
+import com.league.sportsleague.application.dto.TeamResponse;
+import com.league.sportsleague.domain.model.Team;
 import com.league.sportsleague.application.dto.UpdateTeamRequest;
 import com.league.sportsleague.application.service.TeamService;
 import jakarta.validation.Valid;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.UUID;
@@ -28,8 +31,14 @@ public class TeamViewController {
     }
 
     @GetMapping
-    public String list(Model model) {
-        model.addAttribute("teams", teamService.findAll());
+    public String list(@RequestParam(required = false) String sport, Model model) {
+        var all = teamService.findAll();
+        String selected = (sport == null || sport.isBlank()) ? null : sport.toUpperCase();
+        var teams = selected == null ? all
+                : all.stream().filter(t -> t.sportType().equalsIgnoreCase(selected)).toList();
+        model.addAttribute("teams", teams);
+        model.addAttribute("sports", all.stream().map(TeamResponse::sportType).distinct().sorted().toList());
+        model.addAttribute("selectedSport", selected);
         model.addAttribute("currentPage", "teams");
         return "teams/list";
     }
@@ -44,7 +53,7 @@ public class TeamViewController {
     @GetMapping("/new")
     @PreAuthorize("hasRole('ADMIN')")
     public String newForm(Model model) {
-        model.addAttribute("form", new CreateTeamRequest("", "", "", "", null));
+        model.addAttribute("form", new CreateTeamRequest("", "", Team.DEFAULT_SPORT, "", "", null));
         model.addAttribute("editMode", false);
         model.addAttribute("currentPage", "teams");
         return "teams/form";
@@ -66,6 +75,7 @@ public class TeamViewController {
             UUID id = teamService.createTeam(new CreateTeamRequest(
                     form.name(),
                     form.shortCode() != null ? form.shortCode().toUpperCase() : "",
+                    form.sportType(),
                     form.stadiumName(),
                     form.city(),
                     form.foundedYear()));

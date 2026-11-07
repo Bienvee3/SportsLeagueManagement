@@ -27,6 +27,7 @@ public class TeamService {
         Team team = new Team(
                 request.name(),
                 request.shortCode(),
+                request.sportType(),
                 request.stadiumName(),
                 request.city(),
                 request.foundedYear()

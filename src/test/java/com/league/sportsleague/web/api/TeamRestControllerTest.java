@@ -39,7 +39,7 @@ class TeamRestControllerTest {
     private static final UUID ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
 
     private TeamResponse sample() {
-        return new TeamResponse(ID, "Dinamo Zagreb", "DZG", "Maksimir", "Zagreb", 1945);
+        return new TeamResponse(ID, "Dinamo Zagreb", "DZG", "FOOTBALL", "Maksimir", "Zagreb", 1945);
     }
 
     @Test
@@ -77,7 +77,7 @@ class TeamRestControllerTest {
     @DisplayName("POST /api/teams returns 201 with Location")
     void create() throws Exception {
         when(teamService.createTeam(any())).thenReturn(ID);
-        var request = new CreateTeamRequest("Dinamo Zagreb", "DZG", "Maksimir", "Zagreb", 1945);
+        var request = new CreateTeamRequest("Dinamo Zagreb", "DZG", "FOOTBALL", "Maksimir", "Zagreb", 1945);
         mockMvc.perform(post("/api/teams").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -89,7 +89,7 @@ class TeamRestControllerTest {
     @WithMockUser(roles = "VIEWER")
     @DisplayName("POST /api/teams returns 403 for VIEWER")
     void createForbiddenForViewer() throws Exception {
-        var request = new CreateTeamRequest("Team", "TM", "Stadium", "City", null);
+        var request = new CreateTeamRequest("Team", "TM", "FOOTBALL", "Stadium", "City", null);
         mockMvc.perform(post("/api/teams").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -100,7 +100,7 @@ class TeamRestControllerTest {
     @WithMockUser(roles = "ADMIN")
     @DisplayName("POST /api/teams returns 400 when name is blank")
     void createValidationFails() throws Exception {
-        var request = new CreateTeamRequest("", "DZG", "Maksimir", "Zagreb", 1945);
+        var request = new CreateTeamRequest("", "DZG", "FOOTBALL", "Maksimir", "Zagreb", 1945);
         mockMvc.perform(post("/api/teams").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -112,7 +112,7 @@ class TeamRestControllerTest {
     @WithMockUser(roles = "ADMIN")
     @DisplayName("PUT /api/teams/{id} returns 204")
     void update() throws Exception {
-        var request = new CreateTeamRequest("Dinamo Zagreb", "DZG", "Maksimir", "Zagreb", 1945);
+        var request = new CreateTeamRequest("Dinamo Zagreb", "DZG", "FOOTBALL", "Maksimir", "Zagreb", 1945);
         mockMvc.perform(put("/api/teams/{id}", ID).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))

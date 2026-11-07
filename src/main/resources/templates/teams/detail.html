@@ -60,6 +60,13 @@
         <div class="fs-5 fw-bold mt-1 font-monospace" style="color:#f97316" th:text="${team.shortCode}">—</div>
       </div>
     </div>
+    <div class="col-6 col-lg-3">
+      <div class="kpi-card">
+        <div class="kpi-label"><i class="bi bi-trophy me-1"></i>Sport</div>
+        <div class="fs-5 fw-semibold mt-1 text-capitalize"
+             th:text="${#strings.toLowerCase(team.sportType)}">football</div>
+      </div>
+    </div>
   </div>
 
 </th:block>

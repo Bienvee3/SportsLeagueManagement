@@ -70,6 +70,12 @@ public class SeasonService {
         Season season = requireSeason(seasonId);
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new EntityNotFoundException("Team", teamId));
+        String leagueSport = season.getLeague().getSportType();
+        if (!team.getSportType().equalsIgnoreCase(leagueSport)) {
+            throw new IllegalArgumentException(
+                    "%s plays %s but this league is %s.".formatted(
+                            team.getName(), team.getSportType(), leagueSport));
+        }
         // If the team was previously withdrawn, reinstate its existing entry instead of
         // creating a new row (uk_season_teams_season_team prevents duplicate inserts).
         season.getSeasonTeams().stream()

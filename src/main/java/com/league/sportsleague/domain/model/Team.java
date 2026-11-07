@@ -21,6 +21,8 @@ import java.util.UUID;
 @Table(name = "teams")
 public class Team {
 
+    public static final String DEFAULT_SPORT = "FOOTBALL";
+
     @Id
     @Column(updatable = false)
     private UUID id;
@@ -29,6 +31,9 @@ public class Team {
 
     @Column(unique = true, updatable = false)
     private TeamCode shortCode;
+
+    @Column(nullable = false, updatable = false)
+    private String sportType = DEFAULT_SPORT;
 
     private String stadiumName;
 
@@ -47,12 +52,18 @@ public class Team {
     }
 
     public Team(String name, String shortCode, String stadiumName, String city, Integer foundedYear) {
+        this(name, shortCode, null, stadiumName, city, foundedYear);
+    }
+
+    public Team(String name, String shortCode, String sportType, String stadiumName, String city, Integer foundedYear) {
         this();
         if (name == null || name.isBlank())
             throw new IllegalArgumentException("Team name must not be blank");
         Objects.requireNonNull(shortCode, "Short code must not be null");
         this.name = name;
         this.shortCode = new TeamCode(shortCode);
+        this.sportType = (sportType == null || sportType.isBlank())
+                ? DEFAULT_SPORT : sportType.trim().toUpperCase();
         this.stadiumName = stadiumName;
         this.city = city;
         this.foundedYear = foundedYear;
@@ -89,6 +100,10 @@ public class Team {
 
     public TeamCode getShortCode() {
         return shortCode;
+    }
+
+    public String getSportType() {
+        return sportType;
     }
 
     public String getStadiumName() {

@@ -41,12 +41,25 @@ class TeamServiceTest {
         when(teamRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         UUID id = teamService.createTeam(
-                new CreateTeamRequest("GNK Dinamo Zagreb", "DIN", "Maksimir", "Zagreb", 1911));
+                new CreateTeamRequest("GNK Dinamo Zagreb", "DIN", "FOOTBALL", "Maksimir", "Zagreb", 1911));
 
         assertNotNull(id);
         ArgumentCaptor<Team> captor = ArgumentCaptor.forClass(Team.class);
         verify(teamRepository).save(captor.capture());
         assertEquals("DIN", captor.getValue().getShortCode().value());
+    }
+
+    @Test
+    @DisplayName("createTeam stores the chosen sport on the team")
+    void createTeamPersistsSportType() {
+        when(teamRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        teamService.createTeam(
+                new CreateTeamRequest("Cibona", "CIB", "basketball", "Drazen Petrovic Hall", "Zagreb", 1946));
+
+        ArgumentCaptor<Team> captor = ArgumentCaptor.forClass(Team.class);
+        verify(teamRepository).save(captor.capture());
+        assertEquals("BASKETBALL", captor.getValue().getSportType());
     }
 
     @Test

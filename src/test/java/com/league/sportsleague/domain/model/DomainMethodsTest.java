@@ -103,6 +103,30 @@ class DomainMethodsTest {
         }
     }
 
+    @Nested
+    @DisplayName("Team.sportType")
+    class TeamSportType {
+
+        @Test
+        @DisplayName("defaults to FOOTBALL when not specified")
+        void defaultsToFootball() {
+            assertEquals("FOOTBALL", team("DIN").getSportType());
+        }
+
+        @Test
+        @DisplayName("is normalised to upper case and trimmed")
+        void normalisesSport() {
+            Team t = new Team("Cibona", "CIB", " basketball ", "Hall", "Zagreb", 1946);
+            assertEquals("BASKETBALL", t.getSportType());
+        }
+
+        @Test
+        @DisplayName("blank sport falls back to FOOTBALL")
+        void blankSportFallsBack() {
+            assertEquals("FOOTBALL", new Team("X", "XXX", "  ", "S", "C", 2000).getSportType());
+        }
+    }
+
     // ── Fixture.correctResult() ────────────────────────────────────────────────
 
     @Nested

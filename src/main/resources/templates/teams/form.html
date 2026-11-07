@@ -49,6 +49,23 @@
           </div>
         </div>
 
+        <!-- Sport (fixed after creation) -->
+        <div class="mb-3">
+          <label for="sportType" class="form-label fw-medium">Sport <span class="text-danger">*</span></label>
+          <select th:if="${not editMode}" id="sportType" class="form-select"
+                  th:field="*{sportType}"
+                  th:classappend="${#fields.hasErrors('sportType')} ? ' is-invalid'" required>
+            <option value="FOOTBALL">Football</option>
+            <option value="BASKETBALL">Basketball</option>
+            <option value="VOLLEYBALL">Volleyball</option>
+            <option value="HANDBALL">Handball</option>
+          </select>
+          <input th:if="${editMode}" type="text" class="form-control" disabled
+                 th:value="${team.sportType}">
+          <div class="invalid-feedback" th:if="${not editMode}" th:errors="*{sportType}">Required</div>
+          <div class="form-text" th:if="${editMode}">Sport cannot be changed after the team is created.</div>
+        </div>
+
         <div class="row g-3 mb-3">
           <!-- Stadium -->
           <div class="col-12 col-md-7">

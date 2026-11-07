@@ -45,13 +45,17 @@ public class SeasonViewController {
                          @PathVariable UUID id,
                          Model model) {
         var season = seasonService.findById(id);
+        var league = leagueService.findById(leagueId);
         var standings = seasonService.getStandings(id);
         var registeredTeams = seasonService.findRegisteredTeams(id);
         var allTeams        = teamService.findAll();
         var registeredIds   = seasonService.findAllSeasonTeamIds(id);
-        var availableTeams  = allTeams.stream().filter(t -> !registeredIds.contains(t.id())).toList();
+        var availableTeams  = allTeams.stream()
+                .filter(t -> !registeredIds.contains(t.id()))
+                .filter(t -> t.sportType().equalsIgnoreCase(league.sportType()))
+                .toList();
         model.addAttribute("season", season);
-        model.addAttribute("league", leagueService.findById(leagueId));
+        model.addAttribute("league", league);
         model.addAttribute("standings", standings);
         model.addAttribute("registeredTeams", registeredTeams);
         model.addAttribute("availableTeams", availableTeams);

@@ -8,6 +8,7 @@ public record TeamResponse(
         UUID id,
         String name,
         String shortCode,
+        String sportType,
         String stadiumName,
         String city,
         Integer foundedYear
@@ -17,6 +18,7 @@ public record TeamResponse(
                 team.getId(),
                 team.getName(),
                 team.getShortCode().value(),
+                team.getSportType(),
                 team.getStadiumName(),
                 team.getCity(),
                 team.getFoundedYear()

@@ -157,6 +157,18 @@ class SeasonServiceTest {
                 () -> seasonService.registerTeam(season.getId(), UUID.randomUUID(), 0));
     }
 
+    @Test
+    @DisplayName("registerTeam rejects a team whose sport differs from the league sport")
+    void registerTeamRejectsSportMismatch() {
+        Team basketTeam = new Team("Cibona", "CIB", "BASKETBALL", "Hall", "Zagreb", 1946);
+        when(seasonRepository.findById(season.getId())).thenReturn(Optional.of(season));
+        when(teamRepository.findById(basketTeam.getId())).thenReturn(Optional.of(basketTeam));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> seasonService.registerTeam(season.getId(), basketTeam.getId(), 1));
+        verify(seasonRepository, never()).save(any());
+    }
+
     // ── withdrawTeam ──────────────────────────────────────────────────────────
 
     @Test

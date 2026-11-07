@@ -19,6 +19,15 @@
     </a>
   </div>
 
+  <!-- Sport filter -->
+  <div class="d-flex flex-wrap gap-2 mb-3" th:if="${not #lists.isEmpty(sports)}">
+    <a th:href="@{/teams}" class="btn btn-sm"
+       th:classappend="${selectedSport == null} ? 'btn-primary' : 'btn-outline-secondary'">All sports</a>
+    <a th:each="s : ${sports}" th:href="@{/teams(sport=${s})}" class="btn btn-sm text-capitalize"
+       th:classappend="${s == selectedSport} ? 'btn-primary' : 'btn-outline-secondary'"
+       th:text="${#strings.capitalize(#strings.toLowerCase(s))}">Football</a>
+  </div>
+
   <div class="sport-card">
     <div th:if="${#lists.isEmpty(teams)}" class="text-center py-5">
       <i class="bi bi-people display-5 text-secondary mb-3 d-block"></i>
@@ -31,6 +40,7 @@
           <tr>
             <th>Code</th>
             <th>Name</th>
+            <th>Sport</th>
             <th>Stadium</th>
             <th>City</th>
             <th>Founded</th>
@@ -47,6 +57,9 @@
             <td>
               <a th:href="@{/teams/{id}(id=${t.id})}"
                  class="fw-semibold text-decoration-none" th:text="${t.name}">Name</a>
+            </td>
+            <td>
+              <span class="badge bg-secondary text-uppercase" th:text="${t.sportType}">FOOTBALL</span>
             </td>
             <td class="text-secondary" th:text="${t.stadiumName}">—</td>
             <td class="text-secondary" th:text="${t.city}">—</td>
