@@ -1,8 +1,8 @@
 # Current Project Status — Sports League Management
 
-**Last Updated**: 2026-11-06
+**Last Updated**: 2026-11-07
 **Active Branch**: `main`
-**Latest Local Commit**: `2402773 feat(web,security): schedule regeneration, Gemini fallback, SwitchUserFilter dev role preview, richer UI`
+**Latest Local Commit**: `1d0f69b feat(web): redesign UI as dark sports dashboard with topbar nav, real dashboard KPIs and fixed fixture minute expression`
 **Git Working Tree**: Clean.
 **Push to origin**: Not yet — awaiting explicit user authorization per AGENTS.md §6.4.
 
@@ -93,11 +93,11 @@ Milestone 1 is 100% complete. Architecture restructuring Phases 1–5 are comple
 
 ---
 
-## 4. Test Suite — 326/326
+## 4. Test Suite — 328/328
 
 ```
 cmd.exe /c "cd /d C:\Users\Bienve\dev\Java\SportsLeagueManagement && mvnw.cmd test"
-Tests run: 326, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS (2026-11-06)
+Tests run: 328, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS (2026-11-07)
 ```
 
 | Test Class | Count | Type |
@@ -178,3 +178,10 @@ All features implemented and verified with 326/326 tests:
 **AI Chronicle**: set `GEMINI_API_KEY` env var; falls back to stub if key invalid/missing.
 **Dev role switcher**: `test-official` / `test-viewer` seeded at startup; switch via topbar user menu.
 **Next**: Push `main` to origin / open PR (awaiting explicit user authorization per AGENTS.md §6.4).
+
+## 7. Session 2026-11-07
+- Audit fixes `4ad9503`, `fde7829`: V4 migration (`ROLE_SWITCH_USER`), schedule `flush()`, button guard, error handlers, Calendar link for all roles.
+- `af43a6c`: `SwitchUserFilter` success/failure handlers (Security 7 NPE → 500 on role switch); +2 tests in `SecurityAccessTest`.
+- `1d0f69b`: full UI redesign (dark sports theme, fixed topbar, no sidebar, per-role views); `DashboardController` real KPIs; fixed `fixtures/detail` minute expression (500 on any fixture with events).
+- Smoke-verified at runtime: all pages 200 as ADMIN/OFFICIAL/VIEWER; OFFICIAL/VIEWER get 403 on create routes; switch/exit round-trip OK.
+- Dev DB: `league_admin` password aligned with `.env` (`leagueadmin`); `application.yml` dev default (`league_dev_secret`) still differs from `.env`.
