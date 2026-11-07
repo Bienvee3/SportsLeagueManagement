@@ -32,8 +32,12 @@ public class GeminiChronicleAdapter implements ChroniclePort {
             String text = chatClient.prompt(prompt).call().content();
             return new ChronicleResult(text, request.language());
         } catch (Exception ex) {
-            log.warn("Gemini API call failed — returning stub chronicle. Cause: {}", ex.getMessage());
-            return new StubChronicleAdapter().generate(request);
+            Throwable root = ex;
+            while (root.getCause() != null) root = root.getCause();
+            log.warn("Gemini API call failed: {} (root cause: {})", ex.getMessage(), root.getMessage());
+            String text = "The AI provider is temporarily unavailable, please try again in a moment. Match: %s %d-%d %s."
+                    .formatted(request.homeTeam(), request.homeScore(), request.awayScore(), request.awayTeam());
+            return new ChronicleResult(text, request.language());
         }
     }
 
