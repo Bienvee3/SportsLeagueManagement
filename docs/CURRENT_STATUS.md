@@ -2,7 +2,7 @@
 
 **Last Updated**: 2026-11-07
 **Active Branch**: `main`
-**Latest Local Commit**: `86d900a feat(service): let admins delete unplayed matches and rounds from the calendar`
+**Latest Local Commit**: `b018bdc feat(web): add REST endpoints to list, create and delete rounds and matches`
 **Git Working Tree**: Clean.
 **Push to origin**: Not yet — awaiting explicit user authorization per AGENTS.md §6.4.
 
@@ -93,11 +93,11 @@ Milestone 1 is 100% complete. Architecture restructuring Phases 1–5 are comple
 
 ---
 
-## 4. Test Suite — 343/343
+## 4. Test Suite — 355/355
 
 ```
 cmd.exe /c "cd /d C:\Users\Bienve\dev\Java\SportsLeagueManagement && mvnw.cmd test"
-Tests run: 343, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS (2026-11-07)
+Tests run: 355, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS (2026-11-07)
 ```
 
 | Test Class | Count | Type |
@@ -194,3 +194,5 @@ All features implemented and verified with 326/326 tests:
 - Not yet in UI: delete/edit a round or a match; REST endpoints for round/match creation.
 - `8c5375a`: season Teams tab explains an empty "Add team" list (only unregistered teams of the league's sport are offered).
 - `86d900a`: `SeasonService.deleteFixture/deleteRound` + calendar trash buttons (ADMIN). FINISHED matches (and rounds containing them) cannot be deleted; round numbers are not renumbered after a delete (gaps allowed). +4 tests.
+- `68f7437`: rounds are auto-numbered (`createRound(seasonId, startDate)`, no name field); `deleteRound` flushes the delete then renumbers later rounds one by one (`Round.renumber`, default "Round N" names follow). Verified on PostgreSQL.
+- `b018bdc`: REST `GET/POST /api/leagues/{l}/seasons/{s}/rounds`, `DELETE .../rounds/{r}`, `POST .../rounds/{r}/fixtures`, `DELETE .../fixtures/{f}`; `RestExceptionHandler` maps `IllegalStateException`→409 and `IllegalArgumentException`→400.
