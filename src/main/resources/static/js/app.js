@@ -42,34 +42,6 @@
     if (window.innerWidth >= 992) closeSidebar();
   });
 
-  /* ---- role preview switcher (dev) ---- */
-  const roleSwitch = document.querySelector('.role-switch');
-  if (roleSwitch) {
-    const csrf = document.querySelector('meta[name="_csrf"]').content;
-    const previewing = roleSwitch.dataset.previewing === 'true';
-    const post = (url, body) => fetch(url, {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-TOKEN': csrf},
-      body
-    });
-    roleSwitch.querySelectorAll('[data-role-switch]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        if (btn.classList.contains('active')) return;
-        roleSwitch.classList.add('busy');
-        try {
-          if (previewing) await post('/dev/switch-exit', '');
-          const target = btn.dataset.roleSwitch;
-          if (target !== 'ADMIN') {
-            await post('/dev/switch', 'username=' + encodeURIComponent(target));
-          }
-        } finally {
-          window.location.assign('/');
-        }
-      });
-    });
-  }
-
   /* ---- app language (EN/HR buttons) ---- */
   document.querySelectorAll('[data-app-lang]').forEach(btn => {
     btn.addEventListener('click', () => {

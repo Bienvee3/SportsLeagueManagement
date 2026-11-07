@@ -45,7 +45,7 @@
     </a>
   </nav>
 
-  <!-- Role switcher (dev preview) + user menu -->
+  <!-- Language switch + role / user menu -->
   <div class="app-nav-right">
     <div class="lang-switch" role="group" th:attr="aria-label=#{common.lang.title},title=#{common.lang.title}">
       <button type="button" data-app-lang="en" class="lang-btn"
@@ -54,19 +54,7 @@
               th:classappend="${#locale.language == 'hr'} ? 'active' : ''">HR</button>
     </div>
 
-    <div class="role-switch" role="group" aria-label="Preview as role"
-         sec:authorize="hasAnyRole('SWITCH_USER','PREVIOUS_ADMINISTRATOR')"
-         th:attr="data-previewing=${#authorization.expression('hasRole(''PREVIOUS_ADMINISTRATOR'')')}">
-      <span class="role-switch-label"><i class="bi bi-eye me-1"></i><span th:text="#{common.viewas}">View as</span></span>
-      <button type="button" data-role-switch="ADMIN" class="role-switch-btn"
-              th:classappend="${#authorization.expression('hasRole(''ADMIN'')')} ? 'active' : ''" th:text="#{common.role.admin}">Admin</button>
-      <button type="button" data-role-switch="test-official" class="role-switch-btn"
-              th:classappend="${#authorization.expression('hasRole(''OFFICIAL'')')} ? 'active' : ''" th:text="#{common.role.official}">Official</button>
-      <button type="button" data-role-switch="test-viewer" class="role-switch-btn"
-              th:classappend="${#authorization.expression('hasRole(''VIEWER'')')} ? 'active' : ''" th:text="#{common.role.viewer}">Viewer</button>
-    </div>
-
-    <span class="role-pill" sec:authorize="!hasAnyRole('SWITCH_USER','PREVIOUS_ADMINISTRATOR')"
+    <span class="role-pill"
           th:text="${#authorization.expression('hasRole(''ADMIN'')')} ? #{common.role.admin} : (${#authorization.expression('hasRole(''OFFICIAL'')')} ? #{common.role.official} : #{common.role.viewer})">ROLE</span>
 
     <span class="app-user-name d-none d-md-inline">
