@@ -42,6 +42,22 @@ public class RestExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    ProblemDetail handleIllegalState(IllegalStateException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setType(URI.create("urn:sports-league:error:conflict"));
+        problem.setTitle("Conflict");
+        return problem;
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    ProblemDetail handleIllegalArgument(IllegalArgumentException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setType(URI.create("urn:sports-league:error:bad-request"));
+        problem.setTitle("Bad Request");
+        return problem;
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ProblemDetail handleValidation(MethodArgumentNotValidException ex) {
         List<Map<String, String>> violations = ex.getBindingResult().getAllErrors().stream()

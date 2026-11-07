@@ -117,6 +117,99 @@ class SeasonRestControllerTest {
                 .andExpect(jsonPath("$.title").value("Invalid State Transition"));
     }
 
+
+    private static final UUID ROUND_ID = UUID.fromString("55555555-5555-5555-5555-555555555555");
+    private static final UUID FIXTURE_ID = UUID.fromString("44444444-4444-4444-4444-444444444444");
+
+    @Test
+    @WithMockUser(roles = "VIEWER")
+    @DisplayName("GET rounds returns 200 with list")
+    void listRounds() throws Exception {
+        when(seasonService.findRounds(SEASON_ID)).thenReturn(List.of(
+                new com.league.sportsleague.application.dto.RoundResponse(ROUND_ID, 1, "Round 1", "SCHEDULED", null, 0)));
+        mockMvc.perform(get("/api/leagues/{l}/seasons/{s}/rounds", LEAGUE_ID, SEASON_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].roundNumber").value(1));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("POST rounds creates the next round and returns 201")
+    void createRound() throws Exception {
+        when(seasonService.createRound(eq(SEASON_ID), any())).thenReturn(ROUND_ID);
+        mockMvc.perform(post("/api/leagues/{l}/seasons/{s}/rounds", LEAGUE_ID, SEASON_ID).with(csrf()))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", org.hamcrest.Matchers.containsString(ROUND_ID.toString())));
+    }
+
+    @Test
+    @WithMockUser(roles = "OFFICIAL")
+    @DisplayName("POST rounds returns 403 for non-admin")
+    void createRoundForbidden() throws Exception {
+        mockMvc.perform(post("/api/leagues/{l}/seasons/{s}/rounds", LEAGUE_ID, SEASON_ID).with(csrf()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("DELETE round returns 204")
+    void deleteRound() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .delete("/api/leagues/{l}/seasons/{s}/rounds/{r}", LEAGUE_ID, SEASON_ID, ROUND_ID).with(csrf()))
+                .andExpect(status().isNoContent());
+        org.mockito.Mockito.verify(seasonService).deleteRound(SEASON_ID, ROUND_ID);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("DELETE round returns 409 when it holds a finished match")
+    void deleteRoundConflict() throws Exception {
+        doThrow(new IllegalStateException("Round 1 has finished matches and cannot be deleted."))
+                .when(seasonService).deleteRound(SEASON_ID, ROUND_ID);
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .delete("/api/leagues/{l}/seasons/{s}/rounds/{r}", LEAGUE_ID, SEASON_ID, ROUND_ID).with(csrf()))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("POST round fixtures adds a match and returns 201")
+    void addFixture() throws Exception {
+        var body = java.util.Map.of(
+                "homeTeamId", "22222222-2222-2222-2222-222222222201",
+                "awayTeamId", "22222222-2222-2222-2222-222222222202",
+                "scheduledTime", "2026-12-05T18:30:00Z");
+        mockMvc.perform(post("/api/leagues/{l}/seasons/{s}/rounds/{r}/fixtures", LEAGUE_ID, SEASON_ID, ROUND_ID)
+                        .with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isCreated());
+        org.mockito.Mockito.verify(seasonService).addFixture(eq(SEASON_ID), eq(ROUND_ID),
+                eq(UUID.fromString("22222222-2222-2222-2222-222222222201")),
+                eq(UUID.fromString("22222222-2222-2222-2222-222222222202")),
+                eq(java.time.Instant.parse("2026-12-05T18:30:00Z")));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("POST round fixtures returns 400 when a team id is missing")
+    void addFixtureValidation() throws Exception {
+        var body = java.util.Map.of("scheduledTime", "2026-12-05T18:30:00Z");
+        mockMvc.perform(post("/api/leagues/{l}/seasons/{s}/rounds/{r}/fixtures", LEAGUE_ID, SEASON_ID, ROUND_ID)
+                        .with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("DELETE fixture returns 204")
+    void deleteFixture() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .delete("/api/leagues/{l}/seasons/{s}/rounds/{r}/fixtures/{f}",
+                                LEAGUE_ID, SEASON_ID, ROUND_ID, FIXTURE_ID).with(csrf()))
+                .andExpect(status().isNoContent());
+        org.mockito.Mockito.verify(seasonService).deleteFixture(SEASON_ID, ROUND_ID, FIXTURE_ID);
+    }
     @Test
     @DisplayName("GET seasons returns 401 for anonymous")
     void anonymousIsUnauthorized() throws Exception {

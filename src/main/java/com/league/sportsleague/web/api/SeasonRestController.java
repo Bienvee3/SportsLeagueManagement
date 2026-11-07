@@ -1,7 +1,9 @@
 package com.league.sportsleague.web.api;
 
+import com.league.sportsleague.application.dto.AddFixtureRequest;
 import com.league.sportsleague.application.dto.CreateSeasonRequest;
 import com.league.sportsleague.application.dto.RegisterTeamRequest;
+import com.league.sportsleague.application.dto.RoundResponse;
 import com.league.sportsleague.application.dto.SeasonResponse;
 import com.league.sportsleague.application.dto.StandingsResponse;
 import com.league.sportsleague.application.service.SeasonService;
@@ -18,9 +20,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 
 import java.net.URI;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -107,6 +113,57 @@ public class SeasonRestController {
                                                   @PathVariable UUID id,
                                                   @RequestParam Instant firstMatchTime) {
         seasonService.generateSchedule(id, firstMatchTime);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/rounds")
+    @Operation(summary = "List the rounds of a season, ordered by number")
+    public List<RoundResponse> listRounds(@PathVariable UUID leagueId, @PathVariable UUID id) {
+        return seasonService.findRounds(id);
+    }
+
+    @PostMapping("/{id}/rounds")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Create the next round; the number is assigned automatically (ADMIN)")
+    public ResponseEntity<Void> createRound(@PathVariable UUID leagueId,
+                                            @PathVariable UUID id,
+                                            @RequestParam(required = false)
+                                            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate) {
+        UUID roundId = seasonService.createRound(id, startDate);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{roundId}").buildAndExpand(roundId).toUri();
+        return ResponseEntity.created(location).build();
+    }
+
+    @DeleteMapping("/{id}/rounds/{roundId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Delete a round without finished matches; later rounds are renumbered (ADMIN)")
+    public ResponseEntity<Void> deleteRound(@PathVariable UUID leagueId,
+                                            @PathVariable UUID id,
+                                            @PathVariable UUID roundId) {
+        seasonService.deleteRound(id, roundId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/rounds/{roundId}/fixtures")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Add one match to a round (ADMIN)")
+    public ResponseEntity<Void> addFixture(@PathVariable UUID leagueId,
+                                           @PathVariable UUID id,
+                                           @PathVariable UUID roundId,
+                                           @Valid @RequestBody AddFixtureRequest request) {
+        seasonService.addFixture(id, roundId, request.homeTeamId(), request.awayTeamId(), request.scheduledTime());
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @DeleteMapping("/{id}/rounds/{roundId}/fixtures/{fixtureId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Delete a match that has not been played (ADMIN)")
+    public ResponseEntity<Void> deleteFixture(@PathVariable UUID leagueId,
+                                              @PathVariable UUID id,
+                                              @PathVariable UUID roundId,
+                                              @PathVariable UUID fixtureId) {
+        seasonService.deleteFixture(id, roundId, fixtureId);
         return ResponseEntity.noContent().build();
     }
 }
