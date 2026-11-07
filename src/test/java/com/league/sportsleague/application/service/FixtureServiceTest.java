@@ -32,6 +32,7 @@ class FixtureServiceTest {
 
     @Mock FixtureRepository fixtureRepository;
     @Mock TeamRepository teamRepository;
+    @Mock com.league.sportsleague.domain.repository.ChronicleRepository chronicleRepository;
     @InjectMocks FixtureService fixtureService;
 
     private League league;
@@ -74,6 +75,32 @@ class FixtureServiceTest {
         when(fixtureRepository.findById(any())).thenReturn(Optional.empty());
         assertThrows(EntityNotFoundException.class,
                 () -> fixtureService.recordResult(UUID.randomUUID(), new RecordResultRequest(1, 0)));
+    }
+
+    @Test
+    @DisplayName("recordResult discards stored AI chronicles of the fixture (they would be stale)")
+    void recordResultDiscardsChronicles() {
+        UUID id = fixture.getId();
+        when(fixtureRepository.findById(id)).thenReturn(Optional.of(fixture));
+        when(fixtureRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        fixtureService.recordResult(id, new RecordResultRequest(1, 0));
+
+        verify(chronicleRepository).deleteByFixtureId(id);
+    }
+
+    @Test
+    @DisplayName("correctResult discards stored AI chronicles of the fixture")
+    void correctResultDiscardsChronicles() {
+        UUID id = fixture.getId();
+        fixture.recordResult(new com.league.sportsleague.domain.valueobject.Score(1, 0));
+        when(fixtureRepository.findById(id)).thenReturn(Optional.of(fixture));
+        when(fixtureRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        fixtureService.correctResult(id,
+                new com.league.sportsleague.application.dto.CorrectResultRequest(2, 1, "VAR"), "admin");
+
+        verify(chronicleRepository).deleteByFixtureId(id);
     }
 
     // ── correctResult ─────────────────────────────────────────────────────────

@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 
 import java.util.UUID;
 
@@ -23,6 +25,18 @@ public class ChronicleRestController {
 
     public ChronicleRestController(ChronicleService chronicleService) {
         this.chronicleService = chronicleService;
+    }
+
+    @GetMapping("/{id}/chronicle")
+    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL','VIEWER')")
+    @Operation(summary = "Get the stored chronicle in the requested language, translating an existing one "
+            + "from the other language if needed. 204 when none was generated yet.")
+    public ResponseEntity<ChronicleResult> getChronicle(
+            @PathVariable UUID id,
+            @RequestParam(defaultValue = "ENGLISH") Language lang) {
+        return chronicleService.findChronicle(id, lang)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
     @PostMapping("/{id}/chronicle")

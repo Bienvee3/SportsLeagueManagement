@@ -3,21 +3,27 @@ package com.league.sportsleague.infrastructure.ai;
 import com.league.sportsleague.domain.ai.ChroniclePort;
 import com.league.sportsleague.domain.ai.ChronicleRequest;
 import com.league.sportsleague.domain.ai.ChronicleResult;
+import com.league.sportsleague.domain.ai.Language;
+import com.league.sportsleague.domain.exception.ChronicleUnavailableException;
 
 /**
- * Fallback adapter used when the Gemini adapter is not configured
- * (e.g. tests, {@code spring.ai.model.chat=none}).
+ * Fallback adapter used when no AI provider is configured
+ * (e.g. tests, {@code spring.ai.model.chat=none}). It never invents a chronicle: both operations
+ * report the provider as unavailable so nothing gets stored.
  * Registered as a bean only when no other {@link ChroniclePort} bean is present
  * — see {@link ChronicleAdapterConfig}.
  */
 public class StubChronicleAdapter implements ChroniclePort {
 
+    private static final String MESSAGE = "AI provider not configured";
+
     @Override
     public ChronicleResult generate(ChronicleRequest request) {
-        String text = "Chronicle unavailable: AI provider not configured. " +
-                "Match: %s %d-%d %s.".formatted(
-                        request.homeTeam(), request.homeScore(),
-                        request.awayScore(), request.awayTeam());
-        return new ChronicleResult(text, request.language());
+        throw new ChronicleUnavailableException(MESSAGE);
+    }
+
+    @Override
+    public ChronicleResult translate(ChronicleResult source, Language target) {
+        throw new ChronicleUnavailableException(MESSAGE);
     }
 }

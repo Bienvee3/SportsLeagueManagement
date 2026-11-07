@@ -9,6 +9,9 @@ import com.league.sportsleague.domain.model.League;
 import com.league.sportsleague.domain.model.Round;
 import com.league.sportsleague.domain.model.Season;
 import com.league.sportsleague.domain.model.Team;
+import com.league.sportsleague.domain.exception.ChronicleUnavailableException;
+import com.league.sportsleague.domain.model.MatchChronicle;
+import com.league.sportsleague.domain.repository.ChronicleRepository;
 import com.league.sportsleague.domain.repository.FixtureRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,16 +27,21 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ChronicleServiceTest {
 
     @Mock FixtureRepository fixtureRepository;
+    @Mock ChronicleRepository chronicleRepository;
     @Mock ChroniclePort chroniclePort;
 
     @InjectMocks ChronicleService chronicleService;
@@ -109,5 +117,83 @@ class ChronicleServiceTest {
 
         assertNotNull(result);
         assertEquals("Great match!", result.text());
+    }
+
+    // ── stored chronicles and translation ─────────────────────────────────────
+
+    @Test
+    @DisplayName("generateChronicle stores the new text and drops older versions")
+    void generateStoresAndReplacesOlderVersions() {
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+        when(chroniclePort.generate(any())).thenReturn(new ChronicleResult("Fresh report.", Language.ENGLISH));
+
+        chronicleService.generateChronicle(fixture.getId(), Language.ENGLISH);
+
+        verify(chronicleRepository).deleteByFixtureId(fixture.getId());
+        var saved = ArgumentCaptor.forClass(MatchChronicle.class);
+        verify(chronicleRepository).save(saved.capture());
+        assertEquals("Fresh report.", saved.getValue().getContent());
+        assertEquals(Language.ENGLISH, saved.getValue().getLanguage());
+    }
+
+    @Test
+    @DisplayName("findChronicle returns the stored text in the requested language without calling the AI")
+    void findReturnsStoredTextWithoutAi() {
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+        when(chronicleRepository.findByFixtureIdAndLanguage(fixture.getId(), Language.CROATIAN))
+                .thenReturn(Optional.of(new MatchChronicle(fixture.getId(), Language.CROATIAN, "Izvještaj.")));
+
+        var result = chronicleService.findChronicle(fixture.getId(), Language.CROATIAN);
+
+        assertEquals("Izvještaj.", result.orElseThrow().text());
+        verifyNoInteractions(chroniclePort);
+    }
+
+    @Test
+    @DisplayName("findChronicle translates the stored other-language text and stores the translation")
+    void findTranslatesStoredOtherLanguage() {
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+        when(chronicleRepository.findByFixtureIdAndLanguage(fixture.getId(), Language.CROATIAN))
+                .thenReturn(Optional.empty());
+        when(chronicleRepository.findByFixtureId(fixture.getId()))
+                .thenReturn(java.util.List.of(new MatchChronicle(fixture.getId(), Language.ENGLISH, "English report.")));
+        when(chroniclePort.translate(any(), eq(Language.CROATIAN)))
+                .thenReturn(new ChronicleResult("Hrvatski izvještaj.", Language.CROATIAN));
+
+        var result = chronicleService.findChronicle(fixture.getId(), Language.CROATIAN);
+
+        assertEquals("Hrvatski izvještaj.", result.orElseThrow().text());
+        var source = ArgumentCaptor.forClass(ChronicleResult.class);
+        verify(chroniclePort).translate(source.capture(), eq(Language.CROATIAN));
+        assertEquals("English report.", source.getValue().text());
+        verify(chroniclePort, never()).generate(any());
+        var saved = ArgumentCaptor.forClass(MatchChronicle.class);
+        verify(chronicleRepository).save(saved.capture());
+        assertEquals(Language.CROATIAN, saved.getValue().getLanguage());
+    }
+
+    @Test
+    @DisplayName("findChronicle is empty when nothing has been generated yet")
+    void findEmptyWhenNothingStored() {
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+        when(chronicleRepository.findByFixtureIdAndLanguage(any(), any())).thenReturn(Optional.empty());
+        when(chronicleRepository.findByFixtureId(fixture.getId())).thenReturn(java.util.List.of());
+
+        assertTrue(chronicleService.findChronicle(fixture.getId(), Language.ENGLISH).isEmpty());
+        verifyNoInteractions(chroniclePort);
+    }
+
+    @Test
+    @DisplayName("a failed translation is reported and nothing is stored")
+    void failedTranslationStoresNothing() {
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+        when(chronicleRepository.findByFixtureIdAndLanguage(any(), any())).thenReturn(Optional.empty());
+        when(chronicleRepository.findByFixtureId(fixture.getId()))
+                .thenReturn(java.util.List.of(new MatchChronicle(fixture.getId(), Language.ENGLISH, "English report.")));
+        when(chroniclePort.translate(any(), any())).thenThrow(new ChronicleUnavailableException("503"));
+
+        assertThrows(ChronicleUnavailableException.class,
+                () -> chronicleService.findChronicle(fixture.getId(), Language.CROATIAN));
+        verify(chronicleRepository, never()).save(any());
     }
 }

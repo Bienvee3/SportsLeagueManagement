@@ -8,6 +8,7 @@ import com.league.sportsleague.domain.exception.EntityNotFoundException;
 import com.league.sportsleague.domain.model.Fixture;
 import com.league.sportsleague.domain.model.MatchEvent;
 import com.league.sportsleague.domain.model.Team;
+import com.league.sportsleague.domain.repository.ChronicleRepository;
 import com.league.sportsleague.domain.repository.FixtureRepository;
 import com.league.sportsleague.domain.repository.TeamRepository;
 import com.league.sportsleague.domain.valueobject.Score;
@@ -24,11 +25,14 @@ public class FixtureService {
 
     private final FixtureRepository fixtureRepository;
     private final TeamRepository teamRepository;
+    private final ChronicleRepository chronicleRepository;
 
     public FixtureService(FixtureRepository fixtureRepository,
-                          TeamRepository teamRepository) {
+                          TeamRepository teamRepository,
+                          ChronicleRepository chronicleRepository) {
         this.fixtureRepository = fixtureRepository;
         this.teamRepository = teamRepository;
+        this.chronicleRepository = chronicleRepository;
     }
 
     // ── Commands ──────────────────────────────────────────────────────────────
@@ -37,6 +41,7 @@ public class FixtureService {
         Fixture fixture = requireFixture(fixtureId);
         fixture.recordResult(new Score(request.homeScore(), request.awayScore()));
         fixtureRepository.save(fixture);
+        chronicleRepository.deleteByFixtureId(fixtureId);
     }
 
     public void correctResult(UUID fixtureId, CorrectResultRequest request, String correctedBy) {
@@ -47,6 +52,7 @@ public class FixtureService {
                 correctedBy
         );
         fixtureRepository.save(fixture);
+        chronicleRepository.deleteByFixtureId(fixtureId); // stored chronicles describe the old result
     }
 
     public void postponeFixture(UUID fixtureId, String reason) {
@@ -82,6 +88,7 @@ public class FixtureService {
         );
         fixture.addMatchEvent(event);
         fixtureRepository.save(fixture);
+        chronicleRepository.deleteByFixtureId(fixtureId);
         return event.getId();
     }
 

@@ -34,6 +34,14 @@ public class RestExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(com.league.sportsleague.domain.exception.ChronicleUnavailableException.class)
+    ProblemDetail handleChronicleUnavailable(com.league.sportsleague.domain.exception.ChronicleUnavailableException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+        problem.setType(URI.create("urn:sports-league:error:ai-unavailable"));
+        problem.setTitle("AI Provider Unavailable");
+        return problem;
+    }
+
     @ExceptionHandler(DuplicateTeamException.class)
     ProblemDetail handleDuplicate(DuplicateTeamException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());

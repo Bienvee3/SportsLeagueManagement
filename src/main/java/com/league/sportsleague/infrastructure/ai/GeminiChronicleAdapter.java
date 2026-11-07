@@ -8,6 +8,7 @@ import com.league.sportsleague.domain.ai.MatchEventSummary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import com.league.sportsleague.domain.exception.ChronicleUnavailableException;
 
 /**
  * Outbound adapter: calls Gemini (Google GenAI) via Spring AI ChatClient.
@@ -27,17 +28,33 @@ public class GeminiChronicleAdapter implements ChroniclePort {
 
     @Override
     public ChronicleResult generate(ChronicleRequest request) {
+        String text = call(buildPrompt(request));
+        return new ChronicleResult(text, request.language());
+    }
+
+    @Override
+    public ChronicleResult translate(ChronicleResult source, Language target) {
+        String prompt = "Translate the following football match chronicle into %s. Keep every name, number, "
+                .formatted(languageInstruction(target))
+                + "score and fact exactly as written, keep the paragraph structure, add nothing and omit "
+                + "nothing. Output only the translated text.\n\nCHRONICLE:\n" + source.text();
+        return new ChronicleResult(call(prompt), target);
+    }
+
+    private String call(String prompt) {
         try {
-            String prompt = buildPrompt(request);
             String text = chatClient.prompt(prompt).call().content();
-            return new ChronicleResult(text, request.language());
+            if (text == null || text.isBlank()) {
+                throw new ChronicleUnavailableException("The AI provider returned an empty answer");
+            }
+            return text;
+        } catch (ChronicleUnavailableException ex) {
+            throw ex;
         } catch (Exception ex) {
             Throwable root = ex;
             while (root.getCause() != null) root = root.getCause();
             log.warn("Gemini API call failed: {} (root cause: {})", ex.getMessage(), root.getMessage());
-            String text = "The AI provider is temporarily unavailable, please try again in a moment. Match: %s %d-%d %s."
-                    .formatted(request.homeTeam(), request.homeScore(), request.awayScore(), request.awayTeam());
-            return new ChronicleResult(text, request.language());
+            throw new ChronicleUnavailableException("The AI provider is temporarily unavailable: " + root.getMessage(), ex);
         }
     }
 

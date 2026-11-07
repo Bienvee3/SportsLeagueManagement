@@ -13,6 +13,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -78,6 +79,43 @@ class ChronicleRestControllerTest {
         mockMvc.perform(post("/api/fixtures/{id}/chronicle", FIXTURE_ID).with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.text").value("Dinamo won 2-1."));
+    }
+
+    @Test
+    @WithMockUser(roles = "VIEWER")
+    @DisplayName("GET /chronicle returns the stored or translated chronicle")
+    void getReturnsStoredChronicle() throws Exception {
+        when(chronicleService.findChronicle(eq(FIXTURE_ID), eq(Language.CROATIAN)))
+                .thenReturn(Optional.of(new ChronicleResult("Izvještaj.", Language.CROATIAN)));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .get("/api/fixtures/{id}/chronicle?lang=CROATIAN", FIXTURE_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.text").value("Izvještaj."));
+    }
+
+    @Test
+    @WithMockUser(roles = "VIEWER")
+    @DisplayName("GET /chronicle returns 204 when nothing was generated yet")
+    void getReturnsNoContentWhenNothingStored() throws Exception {
+        when(chronicleService.findChronicle(eq(FIXTURE_ID), any())).thenReturn(Optional.empty());
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .get("/api/fixtures/{id}/chronicle", FIXTURE_ID))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @WithMockUser(roles = "VIEWER")
+    @DisplayName("an unavailable AI provider is reported as 503 ProblemDetail")
+    void aiUnavailableIs503() throws Exception {
+        when(chronicleService.findChronicle(any(), any()))
+                .thenThrow(new com.league.sportsleague.domain.exception.ChronicleUnavailableException("busy"));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .get("/api/fixtures/{id}/chronicle", FIXTURE_ID))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.title").value("AI Provider Unavailable"));
     }
 
     @Test
