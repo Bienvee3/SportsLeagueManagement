@@ -5,7 +5,7 @@
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="_csrf" th:content="${_csrf.token}">
   <title layout:title-pattern="$CONTENT_TITLE — League Ops">League Ops</title>
   <!-- Bootstrap 5.3 -->
@@ -70,6 +70,19 @@
   </div>
 </header>
 <!-- ===== END TOPBAR ===== -->
+
+<!-- ===== MOBILE TAB BAR (shown < 768px) ===== -->
+<nav class="app-tabbar" aria-label="Main navigation">
+  <a th:href="@{/}" class="app-tab" th:classappend="${currentPage == 'dashboard'} ? ' active'">
+    <i class="bi bi-speedometer2"></i><span th:text="#{common.nav.dashboard}">Dashboard</span>
+  </a>
+  <a th:href="@{/leagues}" class="app-tab" th:classappend="${currentPage == 'leagues'} ? ' active'">
+    <i class="bi bi-trophy"></i><span th:text="#{common.nav.leagues}">Leagues</span>
+  </a>
+  <a th:href="@{/teams}" class="app-tab" th:classappend="${currentPage == 'teams'} ? ' active'">
+    <i class="bi bi-people"></i><span th:text="#{common.nav.teams}">Teams</span>
+  </a>
+</nav>
 
 <!-- ===== MAIN ===== -->
 <main class="app-content">

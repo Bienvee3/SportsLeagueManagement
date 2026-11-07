@@ -120,8 +120,8 @@
                 <th class="text-center" th:title="#{seasons.standings.wonTitle}" th:text="#{seasons.standings.won}" title="Won">W</th>
                 <th class="text-center" th:title="#{seasons.standings.drawnTitle}" th:text="#{seasons.standings.drawn}" title="Drawn">D</th>
                 <th class="text-center" th:title="#{seasons.standings.lostTitle}" th:text="#{seasons.standings.lost}" title="Lost">L</th>
-                <th class="text-center" th:title="#{seasons.standings.goalsForTitle}" th:text="#{seasons.standings.goalsFor}" title="Goals For">GF</th>
-                <th class="text-center" th:title="#{seasons.standings.goalsAgainstTitle}" th:text="#{seasons.standings.goalsAgainst}" title="Goals Against">GA</th>
+                <th class="text-center d-none d-sm-table-cell" th:title="#{seasons.standings.goalsForTitle}" th:text="#{seasons.standings.goalsFor}" title="Goals For">GF</th>
+                <th class="text-center d-none d-sm-table-cell" th:title="#{seasons.standings.goalsAgainstTitle}" th:text="#{seasons.standings.goalsAgainst}" title="Goals Against">GA</th>
                 <th class="text-center" th:title="#{seasons.standings.goalDifferenceTitle}" th:text="#{seasons.standings.goalDifference}" title="Goal Difference">GD</th>
                 <th class="text-center fw-bold" th:title="#{seasons.standings.pointsTitle}" th:text="#{seasons.standings.points}" title="Points">Pts</th>
               </tr>
@@ -134,13 +134,13 @@
                         th:style="${stat.count == 1} ? 'color:#fbbf24' : (${stat.count == 2} ? 'color:#cbd5e1' : (${stat.count == 3} ? 'color:#d97706' : 'color:var(--bs-secondary-color)'))"
                         th:text="${stat.count}">1</span>
                 </td>
-                <td class="fw-semibold" th:text="${e.teamName}">Team</td>
+                <td class="fw-semibold team-cell" th:text="${e.teamName}" th:title="${e.teamName}">Team</td>
                 <td class="text-center font-monospace small" th:text="${e.played}">0</td>
                 <td class="text-center font-monospace small text-success" th:text="${e.wins}">0</td>
                 <td class="text-center font-monospace small text-secondary" th:text="${e.draws}">0</td>
                 <td class="text-center font-monospace small text-danger" th:text="${e.losses}">0</td>
-                <td class="text-center font-monospace small" th:text="${e.goalsFor}">0</td>
-                <td class="text-center font-monospace small" th:text="${e.goalsAgainst}">0</td>
+                <td class="text-center font-monospace small d-none d-sm-table-cell" th:text="${e.goalsFor}">0</td>
+                <td class="text-center font-monospace small d-none d-sm-table-cell" th:text="${e.goalsAgainst}">0</td>
                 <td class="text-center font-monospace small"
                     th:text="${e.goalDifference > 0} ? ('+' + ${e.goalDifference}) : ${e.goalDifference}">0</td>
                 <td class="text-center fw-bold font-monospace fs-6" style="color:#f97316" th:text="${e.points}">0</td>

@@ -17,6 +17,7 @@
   --text: #f1f5f9;
   --muted: #64748b;
   --nav-height: 64px;
+  --tabbar-height: 60px;
   --radius: 10px;
   --shadow-sm: 0 1px 3px rgba(0,0,0,.4);
   --shadow-md: 0 4px 12px rgba(0,0,0,.45);
@@ -174,9 +175,30 @@ body {
 .app-nav .dropdown-item:focus { background: var(--bg-hover); }
 
 @media (max-width: 575.98px) {
-  .app-nav { padding: 0 .75rem; gap: .5rem; }
-  .app-nav-link span.label { display: none; }
   .role-pill { display: none; }
+}
+
+/* ---- mobile bottom tab bar ---- */
+.app-tabbar { display: none; }
+@media (max-width: 767.98px) {
+  .app-nav-center { display: none; }
+  .app-nav { padding: 0 .75rem; gap: .5rem; }
+  .app-tabbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 1000;
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    height: calc(var(--tabbar-height) + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    background: #0d0d16; border-top: 1px solid var(--border);
+  }
+  .app-tab {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .15rem;
+    color: rgba(255,255,255,.6); text-decoration: none; font-size: .7rem; font-weight: 600;
+    border-top: 2px solid transparent;
+  }
+  .app-tab i { font-size: 1.25rem; }
+  .app-tab.active { color: var(--orange); border-top-color: var(--orange); background: rgba(249,115,22,.08); }
+  .app-content { padding-bottom: calc(var(--tabbar-height) + 1.5rem + env(safe-area-inset-bottom)); }
+  #toast-container { bottom: calc(var(--tabbar-height) + .5rem); }
 }
 
 /* ---- content area ---- */
@@ -354,6 +376,10 @@ body {
 }
 .standings-table td.pts, .standings-table .fw-bold { color: var(--orange); }
 .standings-tied td:first-child { box-shadow: inset 3px 0 0 #f59e0b; }
+@media (max-width: 575.98px) {
+  .standings-table thead th, .standings-table tbody td { padding: .5rem .3rem; }
+  .standings-table .team-cell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 9rem; }
+}
 
 /* ---- forms ---- */
 .form-control, .form-select {
