@@ -71,10 +71,13 @@ class ChronicleRestControllerTest {
 
     @Test
     @WithMockUser(roles = "VIEWER")
-    @DisplayName("VIEWER is forbidden from /chronicle")
-    void viewerIsForbidden() throws Exception {
+    @DisplayName("VIEWER can read the AI chronicle")
+    void viewerCanReadChronicle() throws Exception {
+        when(chronicleService.generateChronicle(eq(FIXTURE_ID), any()))
+                .thenReturn(new ChronicleResult("Dinamo won 2-1.", Language.ENGLISH));
         mockMvc.perform(post("/api/fixtures/{id}/chronicle", FIXTURE_ID).with(csrf()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.text").value("Dinamo won 2-1."));
     }
 
     @Test

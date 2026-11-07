@@ -70,6 +70,34 @@
     });
   }
 
+
+  /* ---- AI chronicle (inline, all roles) ---- */
+  const chronicleCard = document.getElementById('chronicle-card');
+  if (chronicleCard) {
+    const out = document.getElementById('chronicle-text');
+    const csrf = document.querySelector('meta[name="_csrf"]').content;
+    chronicleCard.querySelectorAll('[data-chronicle-lang]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        out.className = 'chronicle-text mb-0 text-secondary';
+        out.textContent = 'Generating chronicle…';
+        chronicleCard.querySelectorAll('button').forEach(b => b.disabled = true);
+        try {
+          const res = await fetch(chronicleCard.dataset.url + '?lang=' + btn.dataset.chronicleLang, {
+            method: 'POST', credentials: 'same-origin', headers: {'X-CSRF-TOKEN': csrf}
+          });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const data = await res.json();
+          out.className = 'chronicle-text mb-0';
+          out.textContent = data.text;
+        } catch (e) {
+          out.className = 'chronicle-text mb-0 text-danger';
+          out.textContent = 'Could not generate the chronicle (' + e.message + ').';
+        } finally {
+          chronicleCard.querySelectorAll('button').forEach(b => b.disabled = false);
+        }
+      });
+    });
+  }
   /* ---- confirm dangerous actions ---- */
   document.querySelectorAll('[data-confirm]').forEach(btn => {
     btn.addEventListener('click', e => {

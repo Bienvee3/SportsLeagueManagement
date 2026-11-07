@@ -26,8 +26,8 @@ public class ChronicleRestController {
     }
 
     @PostMapping("/{id}/chronicle")
-    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
-    @Operation(summary = "Generate AI match chronicle (OFFICIAL). lang=ENGLISH (default) or CROATIAN.")
+    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL','VIEWER')")
+    @Operation(summary = "Generate AI match chronicle (any role). lang=ENGLISH (default) or CROATIAN.")
     public ChronicleResult generateChronicle(
             @PathVariable UUID id,
             @RequestParam(defaultValue = "ENGLISH") Language lang) {
