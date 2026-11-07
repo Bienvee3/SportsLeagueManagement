@@ -92,6 +92,18 @@ public class FixtureService {
         return event.getId();
     }
 
+    /** Removes an event recorded by mistake; stored AI chronicles described it, so they are discarded. */
+    public void deleteMatchEvent(UUID fixtureId, UUID eventId) {
+        Fixture fixture = requireFixture(fixtureId);
+        MatchEvent event = fixture.getEvents().stream()
+                .filter(e -> e.getId().equals(eventId))
+                .findFirst()
+                .orElseThrow(() -> new EntityNotFoundException("MatchEvent", eventId));
+        fixture.removeMatchEvent(event);
+        fixtureRepository.save(fixture);
+        chronicleRepository.deleteByFixtureId(fixtureId);
+    }
+
     // ── Queries ───────────────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)

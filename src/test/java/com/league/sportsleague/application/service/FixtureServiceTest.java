@@ -206,6 +206,32 @@ class FixtureServiceTest {
                 () -> fixtureService.recordMatchEvent(id, req));
     }
 
+    // ── deleteMatchEvent ──────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("deleteMatchEvent removes the event, saves and discards stale chronicles")
+    void deleteMatchEventRemovesEvent() {
+        MatchEvent goal = new MatchEvent(fixture, home, MatchEventType.GOAL, 23, "Bruno Petkovic");
+        fixture.addMatchEvent(goal);
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+        when(fixtureRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        fixtureService.deleteMatchEvent(fixture.getId(), goal.getId());
+
+        assertTrue(fixture.getEvents().isEmpty());
+        verify(fixtureRepository).save(fixture);
+        verify(chronicleRepository).deleteByFixtureId(fixture.getId());
+    }
+
+    @Test
+    @DisplayName("deleteMatchEvent throws EntityNotFoundException for an event of another fixture")
+    void deleteMatchEventThrowsWhenEventNotInFixture() {
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+        assertThrows(EntityNotFoundException.class,
+                () -> fixtureService.deleteMatchEvent(fixture.getId(), UUID.randomUUID()));
+        verify(fixtureRepository, never()).save(any());
+    }
+
     // ── findById ──────────────────────────────────────────────────────────────
 
     @Test
