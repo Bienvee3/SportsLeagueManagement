@@ -47,6 +47,16 @@
 
   <!-- Role switcher (dev preview) + user menu -->
   <div class="app-nav-right">
+    <div class="lang-switch" title="App language (also sets the AI chronicle language)">
+      <span th:class="${#locale.language != 'hr'} ? 'lang-label active' : 'lang-label'">EN</span>
+      <div class="form-check form-switch m-0 p-0">
+        <input class="form-check-input lang-toggle" type="checkbox" role="switch" id="langToggle"
+               aria-label="Switch app language between English and Croatian"
+               th:checked="${#locale.language == 'hr'}">
+      </div>
+      <span th:class="${#locale.language == 'hr'} ? 'lang-label active' : 'lang-label'">HR</span>
+    </div>
+
     <div class="role-switch" role="group" aria-label="Preview as role"
          sec:authorize="hasAnyRole('SWITCH_USER','PREVIOUS_ADMINISTRATOR')"
          th:attr="data-previewing=${#authorization.expression('hasRole(''PREVIOUS_ADMINISTRATOR'')')}">

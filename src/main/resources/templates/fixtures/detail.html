@@ -130,18 +130,15 @@
            th:attr="data-url=@{/api/fixtures/{id}/chronicle(id=${fixture.id})}">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 px-3 py-3 border-bottom border-secondary-subtle">
           <span class="fw-semibold"><i class="bi bi-stars me-2 text-warning"></i>AI Match Chronicle</span>
-          <div class="d-flex gap-2">
-            <button type="button" class="btn btn-sm btn-outline-light" data-chronicle-lang="ENGLISH">
-              <i class="bi bi-translate me-1"></i>English
-            </button>
-            <button type="button" class="btn btn-sm btn-outline-light" data-chronicle-lang="CROATIAN">
-              <i class="bi bi-translate me-1"></i>Croatian
-            </button>
-          </div>
+          <button type="button" class="btn btn-sm btn-outline-light"
+                  th:attr="data-chronicle-lang=${#locale.language == 'hr'} ? 'CROATIAN' : 'ENGLISH'">
+            <i class="bi bi-stars me-1"></i>
+            <span th:text="${#locale.language == 'hr'} ? 'Generate (Hrvatski)' : 'Generate (English)'">Generate</span>
+          </button>
         </div>
         <div class="p-3">
           <p id="chronicle-text" class="chronicle-text mb-0 text-secondary small">
-            <i class="bi bi-info-circle me-1"></i>Generated on demand by AI. Pick a language.
+            <i class="bi bi-info-circle me-1"></i>Generated on demand by AI in the app language (switch it in the top bar).
           </p>
         </div>
       </div>

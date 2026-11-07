@@ -70,6 +70,16 @@
     });
   }
 
+  /* ---- app language toggle (EN/HR) ---- */
+  const langToggle = document.getElementById('langToggle');
+  if (langToggle) {
+    langToggle.addEventListener('change', () => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('appLang', langToggle.checked ? 'hr' : 'en');
+      window.location.assign(url.toString());
+    });
+  }
+
 
   /* ---- AI chronicle (inline, all roles) ---- */
   const chronicleCard = document.getElementById('chronicle-card');
