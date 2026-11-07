@@ -71,7 +71,7 @@ public class LeagueViewController {
         }
         try {
             UUID id = leagueService.createLeague(form);
-            ra.addFlashAttribute("flashMsg", "League created.");
+            ra.addFlashAttribute("flashKey", "leagues.flash.created");
             return "redirect:/leagues/" + id;
         } catch (Exception e) {
             model.addAttribute("form", form);
@@ -111,7 +111,7 @@ public class LeagueViewController {
         }
         try {
             leagueService.rename(id, form);
-            ra.addFlashAttribute("flashMsg", "League updated.");
+            ra.addFlashAttribute("flashKey", "leagues.flash.updated");
             return "redirect:/leagues/" + id;
         } catch (Exception e) {
             model.addAttribute("league", leagueService.findById(id));
@@ -130,7 +130,7 @@ public class LeagueViewController {
     public String delete(@PathVariable UUID id, RedirectAttributes ra) {
         try {
             leagueService.delete(id);
-            ra.addFlashAttribute("flashMsg", "League deleted.");
+            ra.addFlashAttribute("flashKey", "leagues.flash.deleted");
             return "redirect:/leagues";
         } catch (Exception e) {
             ra.addFlashAttribute("errorMsg", "Cannot delete league: " + e.getMessage());

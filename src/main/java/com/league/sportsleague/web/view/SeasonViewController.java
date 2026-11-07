@@ -98,7 +98,7 @@ public class SeasonViewController {
                               RedirectAttributes ra) {
         try {
             seasonService.createRound(id, startDate);
-            ra.addFlashAttribute("flashMsg", "Round created. Now add its matches.");
+            ra.addFlashAttribute("flashKey", "seasons.flash.roundCreated");
         } catch (IllegalStateException | IllegalArgumentException e) {
             ra.addFlashAttribute("errorMsg", e.getMessage());
         }
@@ -116,7 +116,7 @@ public class SeasonViewController {
                              RedirectAttributes ra) {
         try {
             seasonService.addFixture(id, roundId, homeTeamId, awayTeamId, scheduledTime.toInstant(ZoneOffset.UTC));
-            ra.addFlashAttribute("flashMsg", "Match added.");
+            ra.addFlashAttribute("flashKey", "seasons.flash.matchAdded");
         } catch (IllegalStateException | IllegalArgumentException | DuplicateTeamException e) {
             ra.addFlashAttribute("errorMsg", e.getMessage());
         }
@@ -131,7 +131,7 @@ public class SeasonViewController {
                               RedirectAttributes ra) {
         try {
             seasonService.deleteRound(id, roundId);
-            ra.addFlashAttribute("flashMsg", "Round deleted.");
+            ra.addFlashAttribute("flashKey", "seasons.flash.roundDeleted");
         } catch (IllegalStateException e) {
             ra.addFlashAttribute("errorMsg", e.getMessage());
         }
@@ -147,7 +147,7 @@ public class SeasonViewController {
                                 RedirectAttributes ra) {
         try {
             seasonService.deleteFixture(id, roundId, fixtureId);
-            ra.addFlashAttribute("flashMsg", "Match deleted.");
+            ra.addFlashAttribute("flashKey", "seasons.flash.matchDeleted");
         } catch (IllegalStateException e) {
             ra.addFlashAttribute("errorMsg", e.getMessage());
         }
@@ -180,7 +180,7 @@ public class SeasonViewController {
         }
         try {
             UUID id = seasonService.createSeason(leagueId, form);
-            ra.addFlashAttribute("flashMsg", "Season created.");
+            ra.addFlashAttribute("flashKey", "seasons.flash.created");
             return "redirect:/leagues/" + leagueId + "/seasons/" + id;
         } catch (org.springframework.dao.DataIntegrityViolationException e) {
             model.addAttribute("league", leagueService.findById(leagueId));
@@ -205,7 +205,7 @@ public class SeasonViewController {
                            @PathVariable UUID id,
                            RedirectAttributes ra) {
         seasonService.activateSeason(id);
-        ra.addFlashAttribute("flashMsg", "Season activated.");
+        ra.addFlashAttribute("flashKey", "seasons.flash.activated");
         return "redirect:/leagues/" + leagueId + "/seasons/" + id;
     }
 
@@ -215,7 +215,7 @@ public class SeasonViewController {
                            @PathVariable UUID id,
                            RedirectAttributes ra) {
         seasonService.completeSeason(id);
-        ra.addFlashAttribute("flashMsg", "Season completed.");
+        ra.addFlashAttribute("flashKey", "seasons.flash.completed");
         return "redirect:/leagues/" + leagueId + "/seasons/" + id;
     }
 
@@ -226,7 +226,7 @@ public class SeasonViewController {
                          RedirectAttributes ra) {
         try {
             seasonService.deleteSeason(id);
-            ra.addFlashAttribute("flashMsg", "Season deleted.");
+            ra.addFlashAttribute("flashKey", "seasons.flash.deleted");
             return "redirect:/leagues/" + leagueId;
         } catch (Exception e) {
             ra.addFlashAttribute("errorMsg", "Cannot delete season: " + e.getMessage());
@@ -241,7 +241,7 @@ public class SeasonViewController {
                                    RedirectAttributes ra) {
         try {
             seasonService.generateSchedule(id, Instant.now());
-            ra.addFlashAttribute("flashMsg", "Schedule generated.");
+            ra.addFlashAttribute("flashKey", "seasons.flash.scheduleGenerated");
         } catch (Exception e) {
             ra.addFlashAttribute("errorMsg", "Could not generate schedule: " + e.getMessage());
         }
@@ -256,11 +256,11 @@ public class SeasonViewController {
                                BindingResult br,
                                RedirectAttributes ra) {
         if (br.hasErrors()) {
-            ra.addFlashAttribute("errorMsg", "Invalid team selection");
+            ra.addFlashAttribute("errorKey", "seasons.error.invalidTeam");
             return "redirect:/leagues/" + leagueId + "/seasons/" + id;
         }
         seasonService.registerTeam(id, form.teamId(), form.initialSeed());
-        ra.addFlashAttribute("flashMsg", "Team registered.");
+        ra.addFlashAttribute("flashKey", "seasons.flash.teamRegistered");
         return "redirect:/leagues/" + leagueId + "/seasons/" + id;
     }
 
@@ -271,7 +271,7 @@ public class SeasonViewController {
                                @PathVariable UUID teamId,
                                RedirectAttributes ra) {
         seasonService.withdrawTeam(id, teamId);
-        ra.addFlashAttribute("flashMsg", "Team withdrawn.");
+        ra.addFlashAttribute("flashKey", "seasons.flash.teamWithdrawn");
         return "redirect:/leagues/" + leagueId + "/seasons/" + id;
     }
 }

@@ -47,7 +47,7 @@ public class FixtureViewController {
             return "redirect:/fixtures/" + id;
         }
         fixtureService.recordResult(id, form);
-        ra.addFlashAttribute("flashMsg", "Result recorded.");
+        ra.addFlashAttribute("flashKey", "fixtures.flash.resultRecorded");
         return "redirect:/fixtures/" + id;
     }
 
@@ -63,7 +63,7 @@ public class FixtureViewController {
             return "redirect:/fixtures/" + id;
         }
         fixtureService.correctResult(id, form, user.getUsername());
-        ra.addFlashAttribute("flashMsg", "Result corrected.");
+        ra.addFlashAttribute("flashKey", "fixtures.flash.resultCorrected");
         return "redirect:/fixtures/" + id;
     }
 
@@ -78,7 +78,7 @@ public class FixtureViewController {
             return "redirect:/fixtures/" + id;
         }
         fixtureService.recordMatchEvent(id, form);
-        ra.addFlashAttribute("flashMsg", "Event recorded.");
+        ra.addFlashAttribute("flashKey", "fixtures.flash.eventRecorded");
         return "redirect:/fixtures/" + id;
     }
 
@@ -88,7 +88,7 @@ public class FixtureViewController {
                            String reason,
                            RedirectAttributes ra) {
         fixtureService.postponeFixture(id, reason);
-        ra.addFlashAttribute("flashMsg", "Fixture postponed.");
+        ra.addFlashAttribute("flashKey", "fixtures.flash.postponed");
         return "redirect:/fixtures/" + id;
     }
 
@@ -96,7 +96,7 @@ public class FixtureViewController {
     @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
     public String cancel(@PathVariable UUID id, RedirectAttributes ra) {
         fixtureService.cancelFixture(id);
-        ra.addFlashAttribute("flashMsg", "Fixture cancelled.");
+        ra.addFlashAttribute("flashKey", "fixtures.flash.cancelled");
         return "redirect:/fixtures/" + id;
     }
 }

@@ -4,21 +4,21 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
       layout:decorate="~{layout/layout}">
-<head><title>Dashboard</title></head>
+<head><title th:text="#{pages.dashboard.title}">Dashboard</title></head>
 <body>
 
 <th:block layout:fragment="content">
 
   <div class="page-header">
     <div>
-      <h1 class="h3 fw-bold mb-1">Dashboard</h1>
+      <h1 class="h3 fw-bold mb-1" th:text="#{pages.dashboard.heading}">Dashboard</h1>
       <p class="text-secondary mb-0 small">
-        Welcome back, <span class="fw-semibold" sec:authentication="name">user</span>
+        <span th:text="#{pages.dashboard.welcome(${#authentication.name})}">Welcome back, user</span>
       </p>
     </div>
     <a sec:authorize="hasRole('ADMIN')"
        th:href="@{/leagues/new}" class="btn btn-primary">
-      <i class="bi bi-plus-lg me-1"></i>New League
+      <i class="bi bi-plus-lg me-1"></i><span th:text="#{pages.dashboard.newLeague}">New League</span>
     </a>
   </div>
 
@@ -28,28 +28,28 @@
       <div class="kpi-card">
         <div class="kpi-icon">🏆</div>
         <div class="kpi-value" th:text="${#lists.size(leagues)}">0</div>
-        <div class="kpi-label">Leagues</div>
+        <div class="kpi-label" th:text="#{pages.dashboard.kpi.leagues}">Leagues</div>
       </div>
     </div>
     <div class="col-6 col-lg-3">
       <div class="kpi-card">
         <div class="kpi-icon">🗓</div>
         <div class="kpi-value" th:text="${seasonCount}">0</div>
-        <div class="kpi-label">Seasons</div>
+        <div class="kpi-label" th:text="#{pages.dashboard.kpi.seasons}">Seasons</div>
       </div>
     </div>
     <div class="col-6 col-lg-3">
       <div class="kpi-card">
         <div class="kpi-icon">👥</div>
         <div class="kpi-value" th:text="${teamCount}">0</div>
-        <div class="kpi-label">Teams</div>
+        <div class="kpi-label" th:text="#{pages.dashboard.kpi.teams}">Teams</div>
       </div>
     </div>
     <div class="col-6 col-lg-3">
       <div class="kpi-card">
         <div class="kpi-icon">🔥</div>
         <div class="kpi-value" th:text="${activeSeasonCount}">0</div>
-        <div class="kpi-label">Active seasons</div>
+        <div class="kpi-label" th:text="#{pages.dashboard.kpi.activeSeasons}">Active seasons</div>
       </div>
     </div>
   </div>
@@ -57,11 +57,11 @@
   <!-- Empty state -->
   <div th:if="${#lists.isEmpty(leagues)}" class="sport-card text-center py-5">
     <i class="bi bi-trophy display-4 text-secondary mb-3 d-block"></i>
-    <h5>No leagues yet</h5>
-    <p class="text-secondary">Create your first league to get started.</p>
+    <h5 th:text="#{pages.dashboard.empty.title}">No leagues yet</h5>
+    <p class="text-secondary" th:text="#{pages.dashboard.empty.text}">Create your first league to get started.</p>
     <a sec:authorize="hasRole('ADMIN')"
        th:href="@{/leagues/new}" class="btn btn-primary">
-      <i class="bi bi-plus-lg me-1"></i>Create League
+      <i class="bi bi-plus-lg me-1"></i><span th:text="#{pages.dashboard.empty.create}">Create League</span>
     </a>
   </div>
 
@@ -75,7 +75,7 @@
           <div class="d-flex align-items-start justify-content-between mb-2">
             <h5 class="mb-0 fw-semibold text-light" th:text="${l.name}">League Name</h5>
             <span class="badge bg-secondary ms-2 text-uppercase" style="font-size:.65rem;"
-                  th:text="${l.sportType}">FOOTBALL</span>
+                  th:text="#{'sport.' + ${l.sportType}}">FOOTBALL</span>
           </div>
           <p class="text-secondary small mb-0">
             <i class="bi bi-geo-alt me-1"></i>
@@ -83,7 +83,7 @@
           </p>
         </div>
         <div class="px-3 py-2 border-top border-secondary-subtle small text-secondary d-flex align-items-center gap-1">
-          <i class="bi bi-arrow-right-circle"></i> View seasons &amp; standings
+          <i class="bi bi-arrow-right-circle"></i> <span th:text="#{pages.dashboard.viewSeasons}">View seasons &amp; standings</span>
         </div>
       </a>
     </div>

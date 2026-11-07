@@ -4,7 +4,7 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layout/layout}">
 <head>
-  <title th:text="${editMode} ? 'Edit Team' : 'New Team'">Team Form</title>
+  <title th:text="${editMode} ? #{teams.form.editTitle} : #{teams.form.newTitle}">Team Form</title>
 </head>
 <body>
 <th:block layout:fragment="content">
@@ -18,7 +18,7 @@
           <i class="bi bi-arrow-left"></i>
         </a>
         <h1 class="h3 fw-bold mb-0"
-            th:text="${editMode} ? 'Edit Team' : 'New Team'">Team</h1>
+            th:text="${editMode} ? #{teams.form.editTitle} : #{teams.form.newTitle}">Team</h1>
       </div>
     </div>
 
@@ -30,78 +30,78 @@
         <div class="row g-3 mb-3">
           <!-- Name -->
           <div class="col-12 col-md-8">
-            <label for="name" class="form-label fw-medium">Club name <span class="text-danger">*</span></label>
+            <label for="name" class="form-label fw-medium"><span th:text="#{teams.form.name}">Club name</span> <span class="text-danger">*</span></label>
             <input type="text" id="name"
                    class="form-control" th:classappend="${#fields.hasErrors('name')} ? ' is-invalid'"
-                   th:field="*{name}" required maxlength="100" placeholder="e.g. Dinamo Zagreb">
+                   th:field="*{name}" required maxlength="100" th:placeholder="#{teams.form.name.placeholder}" placeholder="e.g. Dinamo Zagreb">
             <div class="invalid-feedback" th:errors="*{name}">Required</div>
           </div>
           <!-- Short code (create only) -->
           <div class="col-12 col-md-4" th:if="${not editMode}">
-            <label for="shortCode" class="form-label fw-medium">Code <span class="text-danger">*</span></label>
+            <label for="shortCode" class="form-label fw-medium"><span th:text="#{teams.form.code}">Code</span> <span class="text-danger">*</span></label>
             <input type="text" id="shortCode"
                    class="form-control font-monospace text-uppercase"
                    th:classappend="${#fields.hasErrors('shortCode')} ? ' is-invalid'"
                    th:field="*{shortCode}" required maxlength="10"
                    placeholder="DZG" style="letter-spacing:.08em">
             <div class="invalid-feedback" th:errors="*{shortCode}">Required</div>
-            <div class="form-text">2–10 uppercase letters</div>
+            <div class="form-text" th:text="#{teams.form.code.help}">2–10 uppercase letters</div>
           </div>
         </div>
 
         <!-- Sport (fixed after creation) -->
         <div class="mb-3">
-          <label for="sportType" class="form-label fw-medium">Sport <span class="text-danger">*</span></label>
+          <label for="sportType" class="form-label fw-medium"><span th:text="#{teams.form.sport}">Sport</span> <span class="text-danger">*</span></label>
           <select th:if="${not editMode}" id="sportType" class="form-select"
                   th:field="*{sportType}"
                   th:classappend="${#fields.hasErrors('sportType')} ? ' is-invalid'" required>
-            <option value="FOOTBALL">Football</option>
-            <option value="BASKETBALL">Basketball</option>
-            <option value="VOLLEYBALL">Volleyball</option>
-            <option value="HANDBALL">Handball</option>
+            <option value="FOOTBALL" th:text="#{sport.FOOTBALL}">Football</option>
+            <option value="BASKETBALL" th:text="#{sport.BASKETBALL}">Basketball</option>
+            <option value="VOLLEYBALL" th:text="#{sport.VOLLEYBALL}">Volleyball</option>
+            <option value="HANDBALL" th:text="#{sport.HANDBALL}">Handball</option>
           </select>
           <input th:if="${editMode}" type="text" class="form-control" disabled
-                 th:value="${team.sportType}">
+                 th:value="#{'sport.' + ${team.sportType}}">
           <div class="invalid-feedback" th:if="${not editMode}" th:errors="*{sportType}">Required</div>
-          <div class="form-text" th:if="${editMode}">Sport cannot be changed after the team is created.</div>
+          <div class="form-text" th:if="${editMode}" th:text="#{teams.form.sport.locked}">Sport cannot be changed after the team is created.</div>
         </div>
 
         <div class="row g-3 mb-3">
           <!-- Stadium -->
           <div class="col-12 col-md-7">
-            <label for="stadiumName" class="form-label fw-medium">Stadium <span class="text-danger">*</span></label>
+            <label for="stadiumName" class="form-label fw-medium"><span th:text="#{teams.form.stadium}">Stadium</span> <span class="text-danger">*</span></label>
             <input type="text" id="stadiumName"
                    class="form-control" th:classappend="${#fields.hasErrors('stadiumName')} ? ' is-invalid'"
-                   th:field="*{stadiumName}" required maxlength="100" placeholder="e.g. Maksimir">
+                   th:field="*{stadiumName}" required maxlength="100" th:placeholder="#{teams.form.stadium.placeholder}" placeholder="e.g. Maksimir">
             <div class="invalid-feedback" th:errors="*{stadiumName}">Invalid</div>
           </div>
           <!-- Founded year -->
           <div class="col-12 col-md-5">
-            <label for="foundedYear" class="form-label fw-medium">Founded</label>
+            <label for="foundedYear" class="form-label fw-medium" th:text="#{teams.form.founded}">Founded</label>
             <input type="number" id="foundedYear"
                    class="form-control" th:classappend="${#fields.hasErrors('foundedYear')} ? ' is-invalid'"
                    th:field="*{foundedYear}" min="1800" max="2026"
-                   placeholder="e.g. 1945">
+                   th:placeholder="#{teams.form.founded.placeholder}" placeholder="e.g. 1945">
             <div class="invalid-feedback" th:errors="*{foundedYear}">Invalid year</div>
           </div>
         </div>
 
         <!-- City -->
         <div class="mb-4">
-          <label for="city" class="form-label fw-medium">City <span class="text-danger">*</span></label>
+          <label for="city" class="form-label fw-medium"><span th:text="#{teams.form.city}">City</span> <span class="text-danger">*</span></label>
           <input type="text" id="city"
                  class="form-control" th:classappend="${#fields.hasErrors('city')} ? ' is-invalid'"
-                 th:field="*{city}" required maxlength="100" placeholder="e.g. Zagreb">
+                 th:field="*{city}" required maxlength="100" th:placeholder="#{teams.form.city.placeholder}" placeholder="e.g. Zagreb">
           <div class="invalid-feedback" th:errors="*{city}">Invalid</div>
         </div>
 
         <div class="d-flex gap-2">
           <button type="submit" class="btn btn-primary">
             <i class="bi bi-check-lg me-1"></i>
-            <span th:text="${editMode} ? 'Save changes' : 'Create Team'">Save</span>
+            <span th:text="${editMode} ? #{teams.form.save} : #{teams.form.create}">Save</span>
           </button>
           <a th:href="${editMode} ? @{/teams/{id}(id=${team.id})} : @{/teams}"
-             class="btn btn-outline-secondary">Cancel</a>
+             class="btn btn-outline-secondary" th:text="#{teams.form.cancel}">Cancel</a>
         </div>
       </form>
     </div>

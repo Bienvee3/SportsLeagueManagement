@@ -4,7 +4,7 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layout/layout}">
 <head>
-  <title th:text="${editMode} ? 'Edit League' : 'New League'">League Form</title>
+  <title th:text="${editMode} ? #{leagues.form.editTitle} : #{leagues.form.newTitle}">League Form</title>
 </head>
 <body>
 <th:block layout:fragment="content">
@@ -18,7 +18,7 @@
           <i class="bi bi-arrow-left"></i>
         </a>
         <h1 class="h3 fw-bold mb-0"
-            th:text="${editMode} ? 'Edit League' : 'New League'">League</h1>
+            th:text="${editMode} ? #{leagues.form.editTitle} : #{leagues.form.newTitle}">League</h1>
       </div>
     </div>
 
@@ -29,16 +29,16 @@
 
         <!-- Name -->
         <div class="mb-3">
-          <label for="name" class="form-label fw-medium">League name <span class="text-danger">*</span></label>
+          <label for="name" class="form-label fw-medium"><span th:text="#{leagues.form.name}">League name</span> <span class="text-danger">*</span></label>
           <input type="text" id="name"
                  class="form-control" th:classappend="${#fields.hasErrors('name')} ? ' is-invalid'"
-                 th:field="*{name}" required maxlength="100" placeholder="e.g. Premier League">
+                 th:field="*{name}" required maxlength="100" th:placeholder="#{leagues.form.name.placeholder}" placeholder="e.g. Premier League">
           <div class="invalid-feedback" th:errors="*{name}">Required</div>
         </div>
 
         <!-- Slug (create only) -->
         <div class="mb-3" th:if="${not editMode}">
-          <label for="slug" class="form-label fw-medium">URL slug <span class="text-danger">*</span></label>
+          <label for="slug" class="form-label fw-medium"><span th:text="#{leagues.form.slug}">URL slug</span> <span class="text-danger">*</span></label>
           <div class="input-group">
             <span class="input-group-text text-secondary">/leagues/</span>
             <input type="text" id="slug"
@@ -47,40 +47,40 @@
                    placeholder="premier-league" pattern="[a-z0-9\-]+">
             <div class="invalid-feedback" th:errors="*{slug}">Required</div>
           </div>
-          <div class="form-text">Lowercase letters, numbers and hyphens only.</div>
+          <div class="form-text" th:text="#{leagues.form.slug.help}">Lowercase letters, numbers and hyphens only.</div>
         </div>
 
         <!-- Sport Type -->
         <div class="mb-3">
-          <label for="sportType" class="form-label fw-medium">Sport <span class="text-danger">*</span></label>
+          <label for="sportType" class="form-label fw-medium"><span th:text="#{leagues.form.sport}">Sport</span> <span class="text-danger">*</span></label>
           <select id="sportType" class="form-select"
                   th:field="*{sportType}"
                   th:classappend="${#fields.hasErrors('sportType')} ? ' is-invalid'">
-            <option value="">Select sport…</option>
-            <option value="FOOTBALL">Football</option>
-            <option value="BASKETBALL">Basketball</option>
-            <option value="VOLLEYBALL">Volleyball</option>
-            <option value="HANDBALL">Handball</option>
+            <option value="" th:text="#{leagues.form.sport.select}">Select sport…</option>
+            <option value="FOOTBALL" th:text="#{sport.FOOTBALL}">Football</option>
+            <option value="BASKETBALL" th:text="#{sport.BASKETBALL}">Basketball</option>
+            <option value="VOLLEYBALL" th:text="#{sport.VOLLEYBALL}">Volleyball</option>
+            <option value="HANDBALL" th:text="#{sport.HANDBALL}">Handball</option>
           </select>
           <div class="invalid-feedback" th:errors="*{sportType}">Required</div>
         </div>
 
         <!-- Country -->
         <div class="mb-4">
-          <label for="country" class="form-label fw-medium">Country <span class="text-danger">*</span></label>
+          <label for="country" class="form-label fw-medium"><span th:text="#{leagues.form.country}">Country</span> <span class="text-danger">*</span></label>
           <input type="text" id="country"
                  class="form-control" th:classappend="${#fields.hasErrors('country')} ? ' is-invalid'"
-                 th:field="*{country}" required maxlength="100" placeholder="e.g. England">
+                 th:field="*{country}" required maxlength="100" th:placeholder="#{leagues.form.country.placeholder}" placeholder="e.g. England">
           <div class="invalid-feedback" th:errors="*{country}">Required</div>
         </div>
 
         <div class="d-flex gap-2">
           <button type="submit" class="btn btn-primary">
             <i class="bi bi-check-lg me-1"></i>
-            <span th:text="${editMode} ? 'Save changes' : 'Create League'">Save</span>
+            <span th:text="${editMode} ? #{leagues.form.save} : #{leagues.form.create}">Save</span>
           </button>
           <a th:href="${editMode} ? @{/leagues/{id}(id=${league.id})} : @{/leagues}"
-             class="btn btn-outline-secondary">Cancel</a>
+             class="btn btn-outline-secondary" th:text="#{leagues.form.cancel}">Cancel</a>
         </div>
       </form>
     </div>

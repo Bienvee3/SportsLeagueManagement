@@ -79,7 +79,7 @@ public class TeamViewController {
                     form.stadiumName(),
                     form.city(),
                     form.foundedYear()));
-            ra.addFlashAttribute("flashMsg", "Team created.");
+            ra.addFlashAttribute("flashKey", "teams.flash.created");
             return "redirect:/teams/" + id;
         } catch (Exception e) {
             model.addAttribute("form", form);
@@ -116,7 +116,7 @@ public class TeamViewController {
             return "teams/form";
         }
         teamService.updateProfile(id, form.name(), form.stadiumName(), form.city(), form.foundedYear());
-        ra.addFlashAttribute("flashMsg", "Team updated.");
+        ra.addFlashAttribute("flashKey", "teams.flash.updated");
         return "redirect:/teams/" + id;
     }
 
@@ -125,11 +125,10 @@ public class TeamViewController {
     public String delete(@PathVariable UUID id, RedirectAttributes ra) {
         try {
             teamService.deleteTeam(id);
-            ra.addFlashAttribute("flashMsg", "Team deleted.");
+            ra.addFlashAttribute("flashKey", "teams.flash.deleted");
             return "redirect:/teams";
         } catch (Exception e) {
-            ra.addFlashAttribute("errorMsg",
-                    "Cannot delete team — it may be registered in one or more seasons. Withdraw it from all seasons first.");
+            ra.addFlashAttribute("errorKey", "teams.error.deleteInUse");
             return "redirect:/teams/" + id;
         }
     }

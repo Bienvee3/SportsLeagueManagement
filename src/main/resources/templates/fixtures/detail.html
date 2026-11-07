@@ -5,14 +5,14 @@
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
       layout:decorate="~{layout/layout}">
 <head>
-  <title th:text="${fixture.homeTeamName} + ' vs ' + ${fixture.awayTeamName}">Fixture</title>
+  <title th:text="#{fixtures.detail.title(${fixture.homeTeamName}, ${fixture.awayTeamName})}">Fixture</title>
 </head>
 <body>
 <th:block layout:fragment="content">
 
   <!-- Back link -->
   <a href="javascript:history.back()" class="text-decoration-none small text-secondary d-inline-flex align-items-center gap-1 mb-3">
-    <i class="bi bi-arrow-left"></i>Back to calendar
+    <i class="bi bi-arrow-left"></i><span th:text="#{fixtures.back}">Back to calendar</span>
   </a>
 
   <!-- ===== MATCH SCOREBOARD ===== -->
@@ -20,9 +20,9 @@
     <div class="card-body py-4 px-3 px-md-5">
       <div class="text-center mb-3 d-flex justify-content-center gap-2 flex-wrap">
         <span class="badge bg-dark border">
-          <i class="bi bi-flag me-1"></i>Round <span th:text="${fixture.roundNumber}">1</span>
+          <i class="bi bi-flag me-1"></i><span th:text="#{fixtures.round(${fixture.roundNumber})}">Round 1</span>
         </span>
-        <span class="text-secondary small align-self-center" th:text="${fixture.roundName}">Round name</span>
+        <span class="text-secondary small align-self-center" th:unless="${fixture.roundName == 'Round ' + fixture.roundNumber}" th:text="${fixture.roundName}">Round name</span>
       </div>
 
       <div class="row align-items-center text-center g-3">
@@ -42,7 +42,7 @@
           <div th:if="${fixture.homeScore == null}" class="match-score font-monospace text-secondary">- vs -</div>
           <div class="mt-2 d-flex justify-content-center align-items-center gap-2 flex-wrap">
             <span class="badge" th:classappend="'badge-' + ${fixture.status}"
-                  th:text="${fixture.status}">SCHEDULED</span>
+                  th:text="#{'status.' + ${fixture.status}}">SCHEDULED</span>
             <span class="text-secondary small">
               <i class="bi bi-clock me-1"></i><span th:text="${fixture.scheduledTime.toString().substring(0,16).replace('T',' ')}">Date</span>
             </span>
@@ -64,14 +64,14 @@
       <button class="nav-link active" id="overview-tab"
               data-bs-toggle="tab" data-bs-target="#overview-pane"
               type="button" role="tab">
-        <i class="bi bi-info-circle me-1"></i>Overview
+        <i class="bi bi-info-circle me-1"></i><span th:text="#{fixtures.tab.overview}">Overview</span>
       </button>
     </li>
     <li class="nav-item" role="presentation" sec:authorize="hasAnyRole('ADMIN','OFFICIAL')">
       <button class="nav-link" id="actions-tab"
               data-bs-toggle="tab" data-bs-target="#actions-pane"
               type="button" role="tab">
-        <i class="bi bi-pencil-square me-1"></i>Actions
+        <i class="bi bi-pencil-square me-1"></i><span th:text="#{fixtures.tab.actions}">Actions</span>
       </button>
     </li>
   </ul>
@@ -83,14 +83,14 @@
 
       <div class="sport-card mb-4">
         <div class="d-flex align-items-center justify-content-between px-3 py-3 border-bottom border-secondary-subtle">
-          <span class="fw-semibold"><i class="bi bi-lightning-charge me-2 text-warning"></i>Match Events</span>
+          <span class="fw-semibold"><i class="bi bi-lightning-charge me-2 text-warning"></i><span th:text="#{fixtures.events.title}">Match Events</span></span>
           <span class="badge bg-secondary rounded-pill" th:text="${#lists.size(fixture.events)}">0</span>
         </div>
 
         <!-- Empty state -->
         <div th:if="${#lists.isEmpty(fixture.events)}" class="text-center py-5">
           <i class="bi bi-stopwatch display-6 text-secondary d-block mb-2"></i>
-          <p class="text-secondary small mb-0">No events recorded yet.</p>
+          <p class="text-secondary small mb-0" th:text="#{fixtures.events.empty}">No events recorded yet.</p>
         </div>
 
         <div th:if="${not #lists.isEmpty(fixture.events)}" class="p-3">
@@ -101,7 +101,7 @@
               <span class="badge bg-dark border font-monospace flex-shrink-0"
                     style="min-width:44px; text-align:center"
                     th:text="|${ev.minute}'|">45'</span>
-              <span class="flex-shrink-0 fs-5">
+              <span class="flex-shrink-0 fs-5" th:title="#{'fixtures.event.' + ${ev.eventType}}">
                 <th:block th:switch="${ev.eventType}">
                   <i th:case="'GOAL'"         class="bi bi-dribbble text-success"></i>
                   <i th:case="'OWN_GOAL'"     class="bi bi-dribbble text-danger"></i>
@@ -116,7 +116,7 @@
                 <span class="fw-medium" th:text="${ev.playerName}">Player</span>
                 <span th:if="${ev.assistingPlayer != null and not #strings.isEmpty(ev.assistingPlayer)}"
                       class="text-secondary small"
-                      th:text="' (assist: ' + ${ev.assistingPlayer} + ')'"></span>
+                      th:text="' ' + #{fixtures.event.assist(${ev.assistingPlayer})}"></span>
               </div>
               <span class="badge bg-secondary font-monospace flex-shrink-0"
                     th:text="${ev.teamCode}">TM</span>
@@ -129,16 +129,16 @@
       <div class="sport-card" th:if="${fixture.status == 'FINISHED'}" id="chronicle-card"
            th:attr="data-url=@{/api/fixtures/{id}/chronicle(id=${fixture.id})}">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 px-3 py-3 border-bottom border-secondary-subtle">
-          <span class="fw-semibold"><i class="bi bi-stars me-2 text-warning"></i>AI Match Chronicle</span>
+          <span class="fw-semibold"><i class="bi bi-stars me-2 text-warning"></i><span th:text="#{fixtures.chronicle.title}">AI Match Chronicle</span></span>
           <button type="button" class="btn btn-sm btn-outline-light"
                   th:attr="data-chronicle-lang=${#locale.language == 'hr'} ? 'CROATIAN' : 'ENGLISH'">
             <i class="bi bi-stars me-1"></i>
-            <span th:text="${#locale.language == 'hr'} ? 'Generate (Hrvatski)' : 'Generate (English)'">Generate</span>
+            <span th:text="#{fixtures.chronicle.generate}">Generate</span>
           </button>
         </div>
         <div class="p-3">
           <p id="chronicle-text" class="chronicle-text mb-0 text-secondary small">
-            <i class="bi bi-info-circle me-1"></i>Generated on demand by AI in the app language (switch it in the top bar).
+            <i class="bi bi-info-circle me-1"></i><span th:text="#{fixtures.chronicle.hint}">Generated on demand by AI in the app language (switch it in the top bar).</span>
           </p>
         </div>
       </div>
@@ -158,7 +158,7 @@
           <div class="sport-card h-100">
             <div class="px-3 py-3 border-bottom border-secondary-subtle fw-semibold">
               <i class="bi bi-pencil-square me-2 text-warning"></i>
-              <span th:text="${fixture.status == 'FINISHED'} ? 'Correct Result' : 'Record Result'">Record</span>
+              <span th:text="${fixture.status == 'FINISHED'} ? #{fixtures.result.correctTitle} : #{fixtures.result.recordTitle}">Record</span>
             </div>
             <div class="p-3">
               <form th:action="${fixture.status == 'FINISHED'} ? @{/fixtures/{id}/correct-result(id=${fixture.id})} : @{/fixtures/{id}/result(id=${fixture.id})}"
@@ -182,13 +182,13 @@
                   </div>
                 </div>
                 <div th:if="${fixture.status == 'FINISHED'}" class="mt-3">
-                  <label class="form-label small fw-medium">Reason</label>
+                  <label class="form-label small fw-medium" th:text="#{fixtures.result.reason}">Reason</label>
                   <input type="text" name="reason" class="form-control"
-                         placeholder="Reason for correction" required maxlength="255">
+                         th:placeholder="#{fixtures.result.reasonPlaceholder}" placeholder="Reason for correction" required maxlength="255">
                 </div>
                 <button type="submit" class="btn btn-primary w-100 mt-3">
                   <i class="bi bi-check-lg me-1"></i>
-                  <span th:text="${fixture.status == 'FINISHED'} ? 'Correct' : 'Save result'">Save</span>
+                  <span th:text="${fixture.status == 'FINISHED'} ? #{fixtures.result.correct} : #{fixtures.result.save}">Save</span>
                 </button>
               </form>
             </div>
@@ -200,25 +200,25 @@
              th:if="${fixture.status == 'SCHEDULED' or fixture.status == 'IN_PROGRESS'}">
           <div class="sport-card h-100">
             <div class="px-3 py-3 border-bottom border-secondary-subtle fw-semibold">
-              <i class="bi bi-calendar-x me-2 text-warning"></i>Manage
+              <i class="bi bi-calendar-x me-2 text-warning"></i><span th:text="#{fixtures.manage.title}">Manage</span>
             </div>
             <div class="p-3 d-flex flex-column gap-3">
               <form th:action="@{/fixtures/{id}/postpone(id=${fixture.id})}" method="post">
                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                <label class="form-label small fw-medium">Postpone</label>
+                <label class="form-label small fw-medium" th:text="#{fixtures.manage.postpone}">Postpone</label>
                 <div class="input-group">
                   <input type="text" name="reason" class="form-control"
-                         placeholder="Reason for postponement" required maxlength="255">
+                         th:placeholder="#{fixtures.manage.postponeReason}" placeholder="Reason for postponement" required maxlength="255">
                   <button type="submit" class="btn btn-warning">
-                    <i class="bi bi-pause-circle me-1"></i>Postpone
+                    <i class="bi bi-pause-circle me-1"></i><span th:text="#{fixtures.manage.postpone}">Postpone</span>
                   </button>
                 </div>
               </form>
               <form th:action="@{/fixtures/{id}/cancel(id=${fixture.id})}" method="post">
                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                 <button type="submit" class="btn btn-outline-danger w-100"
-                        data-confirm="Cancel this fixture? This cannot be undone.">
-                  <i class="bi bi-x-circle me-1"></i>Cancel fixture
+                        th:attr="data-confirm=#{fixtures.manage.cancelConfirm}" data-confirm="Cancel this fixture? This cannot be undone.">
+                  <i class="bi bi-x-circle me-1"></i><span th:text="#{fixtures.manage.cancel}">Cancel fixture</span>
                 </button>
               </form>
             </div>
@@ -230,49 +230,49 @@
              th:if="${fixture.status == 'IN_PROGRESS' or fixture.status == 'FINISHED'}">
           <div class="sport-card">
             <div class="px-3 py-3 border-bottom border-secondary-subtle fw-semibold">
-              <i class="bi bi-lightning-charge me-2 text-warning"></i>Record Match Event
+              <i class="bi bi-lightning-charge me-2 text-warning"></i><span th:text="#{fixtures.recordEvent.title}">Record Match Event</span>
             </div>
             <div class="p-3">
               <form th:action="@{/fixtures/{id}/events(id=${fixture.id})}" method="post">
                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                 <div class="row g-3 align-items-end">
                   <div class="col-6 col-md-2">
-                    <label class="form-label small fw-medium">Team</label>
+                    <label class="form-label small fw-medium" th:text="#{fixtures.recordEvent.team}">Team</label>
                     <select name="teamId" class="form-select" required>
                       <option th:value="${fixture.homeTeamId}" th:text="${fixture.homeTeamName}">Home</option>
                       <option th:value="${fixture.awayTeamId}" th:text="${fixture.awayTeamName}">Away</option>
                     </select>
                   </div>
                   <div class="col-6 col-md-2">
-                    <label class="form-label small fw-medium">Minute</label>
+                    <label class="form-label small fw-medium" th:text="#{fixtures.recordEvent.minute}">Minute</label>
                     <input type="number" name="matchMinute"
                            class="form-control font-monospace"
                            min="1" max="130" placeholder="45" required>
                   </div>
                   <div class="col-6 col-md-2">
-                    <label class="form-label small fw-medium">Type</label>
+                    <label class="form-label small fw-medium" th:text="#{fixtures.recordEvent.type}">Type</label>
                     <select name="eventType" class="form-select" required>
-                      <option value="GOAL">Goal</option>
-                      <option value="OWN_GOAL">Own goal</option>
-                      <option value="YELLOW_CARD">Yellow card</option>
-                      <option value="RED_CARD">Red card</option>
-                      <option value="SUBSTITUTION">Substitution</option>
-                      <option value="PENALTY">Penalty</option>
+                      <option value="GOAL" th:text="#{fixtures.event.GOAL}">Goal</option>
+                      <option value="OWN_GOAL" th:text="#{fixtures.event.OWN_GOAL}">Own goal</option>
+                      <option value="YELLOW_CARD" th:text="#{fixtures.event.YELLOW_CARD}">Yellow card</option>
+                      <option value="RED_CARD" th:text="#{fixtures.event.RED_CARD}">Red card</option>
+                      <option value="SUBSTITUTION" th:text="#{fixtures.event.SUBSTITUTION}">Substitution</option>
+                      <option value="PENALTY" th:text="#{fixtures.event.PENALTY}">Penalty</option>
                     </select>
                   </div>
                   <div class="col-6 col-md-3">
-                    <label class="form-label small fw-medium">Player</label>
+                    <label class="form-label small fw-medium" th:text="#{fixtures.recordEvent.player}">Player</label>
                     <input type="text" name="playerName" class="form-control"
-                           placeholder="Player name" required maxlength="100">
+                           th:placeholder="#{fixtures.recordEvent.playerPlaceholder}" placeholder="Player name" required maxlength="100">
                   </div>
                   <div class="col-12 col-md-3">
-                    <label class="form-label small fw-medium">Assist (optional)</label>
+                    <label class="form-label small fw-medium" th:text="#{fixtures.recordEvent.assist}">Assist (optional)</label>
                     <input type="text" name="assistingPlayer" class="form-control"
-                           placeholder="Assisting player" maxlength="100">
+                           th:placeholder="#{fixtures.recordEvent.assistPlaceholder}" placeholder="Assisting player" maxlength="100">
                   </div>
                   <div class="col-12">
                     <button type="submit" class="btn btn-primary">
-                      <i class="bi bi-plus-lg me-1"></i>Add Event
+                      <i class="bi bi-plus-lg me-1"></i><span th:text="#{fixtures.recordEvent.add}">Add Event</span>
                     </button>
                   </div>
                 </div>

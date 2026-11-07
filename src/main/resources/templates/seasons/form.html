@@ -3,15 +3,8 @@
       xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layout/layout}">
-<head><title>New Season</title></head>
+<head><title th:text="#{seasons.form.title}">New Season</title></head>
 <body>
-<th:block layout:fragment="breadcrumb">
-  <li class="breadcrumb-item"><a th:href="@{/leagues}">Leagues</a></li>
-  <li class="breadcrumb-item">
-    <a th:href="@{/leagues/{id}(id=${league.id})}" th:text="${league.name}">League</a>
-  </li>
-  <li class="breadcrumb-item active">New Season</li>
-</th:block>
 <th:block layout:fragment="content">
 
   <div class="row justify-content-center">
@@ -24,7 +17,7 @@
             <i class="bi bi-arrow-left"></i>
           </a>
           <div>
-            <h1 class="h3 fw-bold mb-0">New Season</h1>
+            <h1 class="h3 fw-bold mb-0" th:text="#{seasons.form.title}">New Season</h1>
             <div class="text-secondary small" th:text="${league.name}">League</div>
           </div>
         </div>
@@ -37,18 +30,18 @@
 
           <!-- Season name -->
           <div class="mb-3">
-            <label for="name" class="form-label fw-medium">Season name <span class="text-danger">*</span></label>
+            <label for="name" class="form-label fw-medium"><span th:text="#{seasons.form.name}">Season name</span> <span class="text-danger">*</span></label>
             <input type="text" id="name"
                    class="form-control" th:classappend="${#fields.hasErrors('name')} ? ' is-invalid'"
                    th:field="*{name}" required maxlength="100"
-                   placeholder="e.g. 2026/2027 Season">
+                   th:placeholder="#{seasons.form.namePlaceholder}" placeholder="e.g. 2026/2027 Season">
             <div class="invalid-feedback" th:errors="*{name}">Required</div>
           </div>
 
           <div class="row g-3 mb-4">
             <!-- Year start -->
             <div class="col-6">
-              <label for="yearStart" class="form-label fw-medium">Start year <span class="text-danger">*</span></label>
+              <label for="yearStart" class="form-label fw-medium"><span th:text="#{seasons.form.yearStart}">Start year</span> <span class="text-danger">*</span></label>
               <input type="number" id="yearStart"
                      class="form-control font-monospace"
                      th:classappend="${#fields.hasErrors('yearStart')} ? ' is-invalid'"
@@ -58,7 +51,7 @@
             </div>
             <!-- Year end -->
             <div class="col-6">
-              <label for="yearEnd" class="form-label fw-medium">End year <span class="text-danger">*</span></label>
+              <label for="yearEnd" class="form-label fw-medium"><span th:text="#{seasons.form.yearEnd}">End year</span> <span class="text-danger">*</span></label>
               <input type="number" id="yearEnd"
                      class="form-control font-monospace"
                      th:classappend="${#fields.hasErrors('yearEnd')} ? ' is-invalid'"
@@ -70,10 +63,10 @@
 
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-primary">
-              <i class="bi bi-check-lg me-1"></i>Create Season
+              <i class="bi bi-check-lg me-1"></i><span th:text="#{seasons.form.submit}">Create Season</span>
             </button>
             <a th:href="@{/leagues/{id}(id=${league.id})}"
-               class="btn btn-outline-secondary">Cancel</a>
+               class="btn btn-outline-secondary" th:text="#{seasons.form.cancel}">Cancel</a>
           </div>
         </form>
       </div>

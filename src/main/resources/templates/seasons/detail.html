@@ -6,14 +6,6 @@
       layout:decorate="~{layout/layout}">
 <head><title th:text="${season.name}">Season</title></head>
 <body>
-<th:block layout:fragment="breadcrumb">
-  <li class="breadcrumb-item"><a th:href="@{/leagues}">Leagues</a></li>
-  <li class="breadcrumb-item">
-    <a th:href="@{/leagues/{id}(id=${league.id})}" th:text="${league.name}">League</a>
-  </li>
-  <li class="breadcrumb-item active" th:text="${season.name}">Season</li>
-</th:block>
-
 <th:block layout:fragment="content">
 
   <!-- Header -->
@@ -26,7 +18,7 @@
         <h1 class="h3 fw-bold mb-1" th:text="${season.name}">Season</h1>
         <div class="d-flex align-items-center gap-2">
           <span class="badge" th:classappend="'badge-' + ${season.status}"
-                th:text="${season.status}">UPCOMING</span>
+                th:text="#{'status.' + ${season.status}}">UPCOMING</span>
           <span class="text-secondary small font-monospace">
             <i class="bi bi-calendar-range me-1"></i><span th:text="${season.yearStart}">2026</span>/<span th:text="${season.yearEnd}">2027</span>
           </span>
@@ -37,7 +29,7 @@
     <div class="d-flex flex-wrap align-items-center gap-2">
       <a th:href="@{/leagues/{lid}/seasons/{sid}/calendar(lid=${league.id},sid=${season.id})}"
          class="btn btn-outline-light btn-sm">
-        <i class="bi bi-calendar3 me-1"></i>Calendar
+        <i class="bi bi-calendar3 me-1"></i><span th:text="#{seasons.detail.calendar}">Calendar</span>
       </a>
 
       <!-- Season state actions (ADMIN only) -->
@@ -47,7 +39,7 @@
               method="post" class="d-inline">
           <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
           <button type="submit" class="btn btn-success btn-sm">
-            <i class="bi bi-play-fill me-1"></i>Activate
+            <i class="bi bi-play-fill me-1"></i><span th:text="#{seasons.detail.activate}">Activate</span>
           </button>
         </form>
 
@@ -56,12 +48,12 @@
               method="post" class="d-inline">
           <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
           <button type="submit" class="btn btn-primary btn-sm">
-            <i class="bi bi-calendar-week me-1"></i>Generate Schedule
+            <i class="bi bi-calendar-week me-1"></i><span th:text="#{seasons.detail.generateSchedule}">Generate Schedule</span>
           </button>
         </form>
         <span th:if="${season.hasSchedule}" class="badge bg-success">
           <i class="bi bi-check-circle-fill me-1"></i>
-          <span th:text="${season.roundCount} + ' rounds scheduled'">0 rounds</span>
+          <span th:text="#{seasons.detail.roundsScheduled(${season.roundCount})}">0 rounds</span>
         </span>
 
         <form th:if="${season.status == 'ACTIVE'}"
@@ -69,16 +61,16 @@
               method="post" class="d-inline">
           <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
           <button type="submit" class="btn btn-secondary btn-sm"
-                  data-confirm="Mark this season as complete?">
-            <i class="bi bi-flag-fill me-1"></i>Complete
+                  th:attr="data-confirm=#{seasons.detail.confirmComplete}" data-confirm="Mark this season as complete?">
+            <i class="bi bi-flag-fill me-1"></i><span th:text="#{seasons.detail.complete}">Complete</span>
           </button>
         </form>
         <form th:action="@{/leagues/{lid}/seasons/{sid}/delete(lid=${league.id},sid=${season.id})}"
               method="post" class="d-inline">
           <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
           <button type="submit" class="btn btn-sm btn-outline-danger"
-                  data-confirm="Delete this season? All fixtures and rounds will be permanently removed.">
-            <i class="bi bi-trash me-1"></i>Delete
+                  th:attr="data-confirm=#{seasons.detail.confirmDelete}" data-confirm="Delete this season? All fixtures and rounds will be permanently removed.">
+            <i class="bi bi-trash me-1"></i><span th:text="#{seasons.detail.delete}">Delete</span>
           </button>
         </form>
       </div>
@@ -91,14 +83,14 @@
       <button class="nav-link active" id="standings-tab"
               data-bs-toggle="tab" data-bs-target="#standings-pane"
               type="button" role="tab">
-        <i class="bi bi-bar-chart-line me-1"></i>Standings
+        <i class="bi bi-bar-chart-line me-1"></i><span th:text="#{seasons.detail.tabStandings}">Standings</span>
       </button>
     </li>
     <li class="nav-item" role="presentation">
       <button class="nav-link" id="teams-tab"
               data-bs-toggle="tab" data-bs-target="#teams-pane"
               type="button" role="tab">
-        <i class="bi bi-people me-1"></i>Teams
+        <i class="bi bi-people me-1"></i><span th:text="#{seasons.detail.tabTeams}">Teams</span>
         <span class="badge bg-secondary ms-1 rounded-pill"
               th:text="${#lists.size(registeredTeams)}">0</span>
       </button>
@@ -114,7 +106,7 @@
         <div th:if="${standings == null or #lists.isEmpty(standings.entries)}"
              class="text-center py-5 px-3">
           <i class="bi bi-bar-chart display-4 text-secondary mb-3 d-block"></i>
-          <p class="text-secondary mb-0">No standings available yet. Activate the season and generate a schedule first.</p>
+          <p class="text-secondary mb-0" th:text="#{seasons.detail.noStandings}">No standings available yet. Activate the season and generate a schedule first.</p>
         </div>
 
         <div th:if="${standings != null and not #lists.isEmpty(standings.entries)}"
@@ -122,16 +114,16 @@
           <table class="table standings-table align-middle mb-0">
             <thead>
               <tr>
-                <th style="width:56px" class="text-center">Pos</th>
-                <th>Team</th>
-                <th class="text-center" title="Played">P</th>
-                <th class="text-center" title="Won">W</th>
-                <th class="text-center" title="Drawn">D</th>
-                <th class="text-center" title="Lost">L</th>
-                <th class="text-center" title="Goals For">GF</th>
-                <th class="text-center" title="Goals Against">GA</th>
-                <th class="text-center" title="Goal Difference">GD</th>
-                <th class="text-center fw-bold" title="Points">Pts</th>
+                <th style="width:56px" class="text-center" th:text="#{seasons.standings.pos}">Pos</th>
+                <th th:text="#{seasons.standings.team}">Team</th>
+                <th class="text-center" th:title="#{seasons.standings.playedTitle}" th:text="#{seasons.standings.played}" title="Played">P</th>
+                <th class="text-center" th:title="#{seasons.standings.wonTitle}" th:text="#{seasons.standings.won}" title="Won">W</th>
+                <th class="text-center" th:title="#{seasons.standings.drawnTitle}" th:text="#{seasons.standings.drawn}" title="Drawn">D</th>
+                <th class="text-center" th:title="#{seasons.standings.lostTitle}" th:text="#{seasons.standings.lost}" title="Lost">L</th>
+                <th class="text-center" th:title="#{seasons.standings.goalsForTitle}" th:text="#{seasons.standings.goalsFor}" title="Goals For">GF</th>
+                <th class="text-center" th:title="#{seasons.standings.goalsAgainstTitle}" th:text="#{seasons.standings.goalsAgainst}" title="Goals Against">GA</th>
+                <th class="text-center" th:title="#{seasons.standings.goalDifferenceTitle}" th:text="#{seasons.standings.goalDifference}" title="Goal Difference">GD</th>
+                <th class="text-center fw-bold" th:title="#{seasons.standings.pointsTitle}" th:text="#{seasons.standings.points}" title="Points">Pts</th>
               </tr>
             </thead>
             <tbody>
@@ -157,7 +149,7 @@
           </table>
           <div class="px-3 py-2 border-top border-secondary-subtle text-secondary small d-flex gap-1 align-items-center">
             <i class="bi bi-clock-history"></i>
-            Updated
+            <span th:text="#{seasons.detail.updated}">Updated</span>
             <span th:text="${standings.computedAt.toString().substring(0,16).replace('T',' ')}">now</span>
           </div>
         </div>
@@ -168,7 +160,7 @@
     <div class="tab-pane fade" id="teams-pane" role="tabpanel">
       <div class="sport-card overflow-hidden">
         <div class="px-3 py-3 border-bottom border-secondary-subtle d-flex align-items-center justify-content-between">
-          <h6 class="mb-0 fw-semibold"><i class="bi bi-people me-2"></i>Registered teams</h6>
+          <h6 class="mb-0 fw-semibold"><i class="bi bi-people me-2"></i><span th:text="#{seasons.detail.registeredTeams}">Registered teams</span></h6>
         </div>
 
         <!-- Register team form (ADMIN, UPCOMING or ACTIVE only) -->
@@ -180,36 +172,35 @@
                 method="post" class="d-flex align-items-end gap-2 flex-wrap">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
             <div class="flex-grow-1" style="min-width:200px">
-              <label for="teamId" class="form-label small fw-medium mb-1">Add team</label>
+              <label for="teamId" class="form-label small fw-medium mb-1" th:text="#{seasons.detail.addTeam}">Add team</label>
               <select id="teamId" name="teamId" class="form-select form-select-sm" required>
-                <option value="">Select team…</option>
+                <option value="" th:text="#{seasons.detail.selectTeam}">Select team…</option>
                 <option th:each="t : ${availableTeams}"
                         th:value="${t.id}"
                         th:text="${t.name}">Team</option>
               </select>
             </div>
             <div>
-              <label for="initialSeed" class="form-label small fw-medium mb-1">Seed</label>
+              <label for="initialSeed" class="form-label small fw-medium mb-1" th:text="#{seasons.detail.seed}">Seed</label>
               <input type="number" id="initialSeed" name="initialSeed"
                      class="form-control form-control-sm" value="0" min="0" style="width:80px">
             </div>
             <button type="submit" class="btn btn-primary btn-sm">
-              <i class="bi bi-plus-lg me-1"></i>Register
+              <i class="bi bi-plus-lg me-1"></i><span th:text="#{seasons.detail.register}">Register</span>
             </button>
           </form>
           <div th:if="${#lists.isEmpty(availableTeams)}" class="text-secondary small">
             <i class="bi bi-info-circle me-1"></i>
-            No teams available to add. Only
-            <strong class="text-capitalize" th:text="${#strings.toLowerCase(league.sportType)}">football</strong>
-            teams that are not yet registered can join this league.
-            <a th:href="@{/teams/new}">Create a team</a> of that sport,
-            or <a th:href="@{/leagues/new}">create a league</a> for another sport.
+            <span th:text="#{seasons.detail.noTeamsAvailable(${#strings.toLowerCase(#messages.msg('sport.' + league.sportType))})}">No teams available to add. Only football teams that are not yet registered can join this league.</span>
+            <a th:href="@{/teams/new}" th:text="#{seasons.detail.createTeam}">Create a team of that sport</a>
+            &middot;
+            <a th:href="@{/leagues/new}" th:text="#{seasons.detail.createLeague}">Create a league for another sport</a>
           </div>
         </div>
 
         <div th:if="${#lists.isEmpty(registeredTeams)}" class="text-center py-5 px-3">
           <i class="bi bi-people display-4 text-secondary mb-3 d-block"></i>
-          <p class="text-secondary mb-0">No teams registered yet.</p>
+          <p class="text-secondary mb-0" th:text="#{seasons.detail.noTeamsRegistered}">No teams registered yet.</p>
         </div>
 
         <ul th:if="${not #lists.isEmpty(registeredTeams)}" class="list-group list-group-flush">
@@ -227,8 +218,8 @@
                   method="post">
               <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
               <button type="submit" class="btn btn-sm btn-outline-danger"
-                      title="Withdraw"
-                      data-confirm="Withdraw this team from the season?">
+                      th:title="#{seasons.detail.withdraw}" title="Withdraw"
+                      th:attr="data-confirm=#{seasons.detail.confirmWithdraw}" data-confirm="Withdraw this team from the season?">
                 <i class="bi bi-x-lg"></i>
               </button>
             </form>
