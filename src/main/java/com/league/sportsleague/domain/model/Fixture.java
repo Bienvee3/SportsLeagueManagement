@@ -3,6 +3,7 @@ package com.league.sportsleague.domain.model;
 import com.league.sportsleague.domain.exception.DuplicateTeamException;
 import com.league.sportsleague.domain.exception.InvalidStateTransitionException;
 import com.league.sportsleague.domain.model.enums.FixtureStatus;
+import com.league.sportsleague.domain.model.enums.MatchEventType;
 import com.league.sportsleague.domain.valueobject.Score;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -163,11 +164,56 @@ public class Fixture {
     public void addMatchEvent(MatchEvent event) {
         events.add(event);
         event.setFixture(this);
+        if (isGoalEvent(event.getEventType())) {
+            syncScoreFromEvents();
+        }
     }
 
     public void removeMatchEvent(MatchEvent event) {
         events.remove(event);
         event.setFixture(null);
+        if (isGoalEvent(event.getEventType())) {
+            syncScoreFromEvents();
+        }
+    }
+
+    private boolean isGoalEvent(MatchEventType type) {
+        return type == MatchEventType.GOAL
+                || type == MatchEventType.PENALTY
+                || type == MatchEventType.OWN_GOAL;
+    }
+
+    public void syncScoreFromEvents() {
+        int homeGoals = 0;
+        int awayGoals = 0;
+        for (MatchEvent event : this.events) {
+            if (isGoalEvent(event.getEventType())) {
+                if (isSameTeam(event.getTeam(), this.homeTeam)) {
+                    if (event.getEventType() == MatchEventType.OWN_GOAL) {
+                        awayGoals++;
+                    } else {
+                        homeGoals++;
+                    }
+                } else if (isSameTeam(event.getTeam(), this.awayTeam)) {
+                    if (event.getEventType() == MatchEventType.OWN_GOAL) {
+                        homeGoals++;
+                    } else {
+                        awayGoals++;
+                    }
+                }
+            }
+        }
+        this.homeScore = homeGoals;
+        this.awayScore = awayGoals;
+    }
+
+    private boolean isSameTeam(Team a, Team b) {
+        if (a == b) return true;
+        if (a == null || b == null) return false;
+        if (a.getId() != null && b.getId() != null) {
+            return a.getId().equals(b.getId());
+        }
+        return a.equals(b);
     }
 
     public void addResultAudit(ResultAudit audit) {

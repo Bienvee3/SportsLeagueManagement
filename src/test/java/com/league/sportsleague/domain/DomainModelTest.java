@@ -56,10 +56,15 @@ class DomainModelTest {
         assertEquals(1, derby.getAwayScore());
 
         MatchEvent goal1 = new MatchEvent(derby, dinamo, MatchEventType.GOAL, 23, "Bruno Petkovic");
+        MatchEvent goal2 = new MatchEvent(derby, hajduk, MatchEventType.GOAL, 55, "Marko Livaja");
+        MatchEvent goal3 = new MatchEvent(derby, dinamo, MatchEventType.GOAL, 89, "Martin Baturina");
         derby.addMatchEvent(goal1);
-        assertEquals(1, derby.getEvents().size());
+        derby.addMatchEvent(goal2);
+        derby.addMatchEvent(goal3);
+        assertEquals(3, derby.getEvents().size());
         assertEquals(derby, goal1.getFixture());
-
+        assertEquals(2, derby.getHomeScore());
+        assertEquals(1, derby.getAwayScore());
         // 8. Result correction with audit — uses domain method correctResult()
         derby.correctResult(new Score(2, 2), "VAR review validated goal after final whistle", "Referee Official");
         assertEquals(1, derby.getAudits().size());

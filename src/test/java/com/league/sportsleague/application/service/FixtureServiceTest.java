@@ -190,6 +190,8 @@ class FixtureServiceTest {
         assertNotNull(eventId);
         assertEquals(1, fixture.getEvents().size());
         assertEquals("Bruno Petkovic", fixture.getEvents().get(0).getPlayerName());
+        assertEquals(1, fixture.getHomeScore());
+        assertEquals(0, fixture.getAwayScore());
         verify(fixtureRepository).save(fixture);
     }
 
@@ -219,6 +221,8 @@ class FixtureServiceTest {
         fixtureService.deleteMatchEvent(fixture.getId(), goal.getId());
 
         assertTrue(fixture.getEvents().isEmpty());
+        assertEquals(0, fixture.getHomeScore());
+        assertEquals(0, fixture.getAwayScore());
         verify(fixtureRepository).save(fixture);
         verify(chronicleRepository).deleteByFixtureId(fixture.getId());
     }
@@ -230,6 +234,40 @@ class FixtureServiceTest {
         assertThrows(EntityNotFoundException.class,
                 () -> fixtureService.deleteMatchEvent(fixture.getId(), UUID.randomUUID()));
         verify(fixtureRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("recordMatchEvent with OWN_GOAL increments opponent score")
+    void ownGoalIncrementsOpponentScore() {
+        UUID id = fixture.getId();
+        UUID teamId = home.getId();
+        when(fixtureRepository.findById(id)).thenReturn(Optional.of(fixture));
+        when(teamRepository.findById(teamId)).thenReturn(Optional.of(home));
+        when(fixtureRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        RecordMatchEventRequest req = new RecordMatchEventRequest(
+                teamId, MatchEventType.OWN_GOAL, 12, "Defender", null, null);
+        fixtureService.recordMatchEvent(id, req);
+
+        assertEquals(0, fixture.getHomeScore());
+        assertEquals(1, fixture.getAwayScore());
+    }
+
+    @Test
+    @DisplayName("recordMatchEvent with non-goal event does not change fixture score")
+    void nonGoalEventDoesNotChangeScore() {
+        UUID id = fixture.getId();
+        UUID teamId = home.getId();
+        when(fixtureRepository.findById(id)).thenReturn(Optional.of(fixture));
+        when(teamRepository.findById(teamId)).thenReturn(Optional.of(home));
+        when(fixtureRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        RecordMatchEventRequest req = new RecordMatchEventRequest(
+                teamId, MatchEventType.YELLOW_CARD, 40, "Midfielder", null, null);
+        fixtureService.recordMatchEvent(id, req);
+
+        assertNull(fixture.getHomeScore());
+        assertNull(fixture.getAwayScore());
     }
 
     // ── findById ──────────────────────────────────────────────────────────────
