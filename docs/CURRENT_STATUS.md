@@ -213,3 +213,7 @@ All features implemented and verified with 326/326 tests:
   - Aggregate test updated in `DomainModelTest.java` (3 goal events added to match final 2-1 score).
   - Mockito unit tests in `FixtureServiceTest.java`: 2 new tests covering own goals and non-goal events, plus score assertions on addition and deletion. Total tests: 376/376.
   - Live browser smoke verified: adding an away goal immediately updated the score header from 3-1 to 3-2 without warning banner; deleting it immediately dropped the score back to 3-1.
+- Administrative correction framing (`a0a6947`):
+  - Retained `ResultAudit` and `Correct Result` in Actions tab to preserve Course P39 LO4 audit rubric compliance.
+  - Rebranded card to "Administrative Result Correction" / "Administrativni ispravak rezultata" with explanatory subtitle clarifying that standard goals are managed via match events while this form is for official audited score overrides.
+  - Test suite: 376/376 passing (`BUILD SUCCESS`).
