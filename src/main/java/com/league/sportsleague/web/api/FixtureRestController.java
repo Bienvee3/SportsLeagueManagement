@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -109,5 +110,13 @@ public class FixtureRestController {
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{eventId}").buildAndExpand(eventId).toUri();
         return ResponseEntity.created(location).build();
+    }
+
+    @DeleteMapping("/{id}/events/{eventId}")
+    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
+    @Operation(summary = "Delete a match event recorded by mistake (OFFICIAL)")
+    public ResponseEntity<Void> deleteEvent(@PathVariable UUID id, @PathVariable UUID eventId) {
+        fixtureService.deleteMatchEvent(id, eventId);
+        return ResponseEntity.noContent().build();
     }
 }

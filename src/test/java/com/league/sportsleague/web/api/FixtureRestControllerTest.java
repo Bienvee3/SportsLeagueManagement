@@ -117,6 +117,26 @@ class FixtureRestControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "OFFICIAL")
+    @DisplayName("DELETE /api/fixtures/{id}/events/{eventId} returns 204")
+    void deleteEvent() throws Exception {
+        UUID eventId = UUID.fromString("99999999-9999-9999-9999-999999999999");
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .delete("/api/fixtures/{id}/events/{e}", FIXTURE_ID, eventId).with(csrf()))
+                .andExpect(status().isNoContent());
+        org.mockito.Mockito.verify(fixtureService).deleteMatchEvent(FIXTURE_ID, eventId);
+    }
+
+    @Test
+    @WithMockUser(roles = "VIEWER")
+    @DisplayName("DELETE event is forbidden for VIEWER")
+    void deleteEventForbiddenForViewer() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .delete("/api/fixtures/{id}/events/{e}", FIXTURE_ID, UUID.randomUUID()).with(csrf()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @DisplayName("GET /api/fixtures/{id} returns 401 for anonymous")
     void anonymousIsUnauthorized() throws Exception {
         mockMvc.perform(get("/api/fixtures/{id}", FIXTURE_ID))
