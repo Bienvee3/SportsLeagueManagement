@@ -4,31 +4,24 @@ import com.league.sportsleague.domain.ai.ChroniclePort;
 import com.league.sportsleague.domain.ai.ChronicleRequest;
 import com.league.sportsleague.domain.ai.ChronicleResult;
 import com.league.sportsleague.domain.ai.Language;
-import com.league.sportsleague.domain.ai.MatchEventSummary;
-import com.league.sportsleague.domain.exception.EntityNotFoundException;
-import com.league.sportsleague.domain.model.Fixture;
-import com.league.sportsleague.domain.model.MatchChronicle;
-import com.league.sportsleague.domain.repository.ChronicleRepository;
-import com.league.sportsleague.domain.repository.FixtureRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * AI match chronicles. Deliberately not {@code @Transactional}: the provider call is slow and paid, so
+ * it runs between two short transactions owned by {@link ChronicleStore} instead of holding a database
+ * connection, and nothing is deleted or stored unless the provider answered.
+ */
 @Service
 public class ChronicleService {
 
-    private final FixtureRepository fixtureRepository;
-    private final ChronicleRepository chronicleRepository;
+    private final ChronicleStore store;
     private final ChroniclePort chroniclePort;
 
-    public ChronicleService(FixtureRepository fixtureRepository,
-                            ChronicleRepository chronicleRepository,
-                            ChroniclePort chroniclePort) {
-        this.fixtureRepository = fixtureRepository;
-        this.chronicleRepository = chronicleRepository;
+    public ChronicleService(ChronicleStore store, ChroniclePort chroniclePort) {
+        this.store = store;
         this.chroniclePort = chroniclePort;
     }
 
@@ -38,59 +31,43 @@ public class ChronicleService {
      *
      * @param language output language (defaults to ENGLISH if null)
      */
-    @Transactional
     public ChronicleResult generateChronicle(UUID fixtureId, Language language) {
-        Language lang = (language != null) ? language : Language.ENGLISH;
-        Fixture fixture = requireFixture(fixtureId);
-
-        List<MatchEventSummary> events = fixture.getEvents().stream()
-                .map(e -> new MatchEventSummary(
-                        e.getMatchMinute().value(),
-                        e.getEventType().name(),
-                        e.getTeam().getName(),
-                        e.getPlayerName()))
-                .toList();
-
-        ChronicleRequest request = new ChronicleRequest(
-                fixture.getHomeTeam().getName(),
-                fixture.getAwayTeam().getName(),
-                fixture.getHomeScore() != null ? fixture.getHomeScore() : 0,
-                fixture.getAwayScore() != null ? fixture.getAwayScore() : 0,
-                events,
-                lang);
-
-        ChronicleResult result = chroniclePort.generate(request);
-        chronicleRepository.deleteByFixtureId(fixtureId);
-        chronicleRepository.save(new MatchChronicle(fixtureId, lang, result.text()));
+        Language lang = orDefault(language);
+        ChronicleRequest request = store.buildRequest(fixtureId, lang);   // transaction 1 (read)
+        ChronicleResult result = chroniclePort.generate(request);         // no transaction
+        store.replace(fixtureId, lang, result.text());                    // transaction 2 (write)
         return result;
     }
 
     /**
-     * Returns the chronicle in the requested language: the stored one, or — when it only exists in
-     * another language — a faithful translation of it (stored for next time). Empty when no chronicle
-     * has been generated yet; never invents a new story.
+     * The stored chronicle in the requested language, or empty. Read-only: it never calls the AI provider,
+     * so every role may use it.
      */
-    @Transactional
     public Optional<ChronicleResult> findChronicle(UUID fixtureId, Language language) {
-        Language lang = (language != null) ? language : Language.ENGLISH;
-        requireFixture(fixtureId);
-
-        Optional<MatchChronicle> exact = chronicleRepository.findByFixtureIdAndLanguage(fixtureId, lang);
-        if (exact.isPresent()) {
-            return exact.map(c -> new ChronicleResult(c.getContent(), c.getLanguage()));
-        }
-        Optional<MatchChronicle> other = chronicleRepository.findByFixtureId(fixtureId).stream().findFirst();
-        if (other.isEmpty()) {
-            return Optional.empty();
-        }
-        ChronicleResult source = new ChronicleResult(other.get().getContent(), other.get().getLanguage());
-        ChronicleResult translated = chroniclePort.translate(source, lang);
-        chronicleRepository.save(new MatchChronicle(fixtureId, lang, translated.text()));
-        return Optional.of(translated);
+        return store.findStored(fixtureId, orDefault(language));
     }
 
-    private Fixture requireFixture(UUID fixtureId) {
-        return fixtureRepository.findById(fixtureId)
-                .orElseThrow(() -> new EntityNotFoundException("Fixture", fixtureId));
+    /**
+     * The chronicle in the requested language: the stored one, or — when it only exists in another
+     * language — a faithful translation of that text (stored for next time). Empty when no chronicle
+     * has been generated yet; never invents a new story.
+     */
+    public Optional<ChronicleResult> translateChronicle(UUID fixtureId, Language language) {
+        Language lang = orDefault(language);
+        Optional<ChronicleResult> existing = store.findStored(fixtureId, lang);
+        if (existing.isPresent()) {
+            return existing;
+        }
+        Optional<ChronicleResult> source = store.findAnyStored(fixtureId);
+        if (source.isEmpty()) {
+            return Optional.empty();
+        }
+        ChronicleResult translated = chroniclePort.translate(source.get(), lang);   // no transaction
+        boolean stored = store.saveTranslation(fixtureId, source.get(), translated);
+        return stored ? Optional.of(translated) : Optional.empty();
+    }
+
+    private static Language orDefault(Language language) {
+        return language != null ? language : Language.ENGLISH;
     }
 }

@@ -127,18 +127,20 @@
 
       <!-- AI Chronicle -->
       <div class="sport-card" th:if="${fixture.status == 'FINISHED'}" id="chronicle-card"
-           th:attr="data-url=@{/api/fixtures/{id}/chronicle(id=${fixture.id})}">
+           th:attr="data-url=@{/api/fixtures/{id}/chronicle(id=${fixture.id})},data-chronicle-lang=${#locale.language == 'hr'} ? 'CROATIAN' : 'ENGLISH'">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 px-3 py-3 border-bottom border-secondary-subtle">
           <span class="fw-semibold"><i class="bi bi-stars me-2 text-warning"></i><span th:text="#{fixtures.chronicle.title}">AI Match Chronicle</span></span>
-          <button type="button" class="btn btn-sm btn-outline-light"
-                  th:attr="data-chronicle-lang=${#locale.language == 'hr'} ? 'CROATIAN' : 'ENGLISH'">
+          <button type="button" class="btn btn-sm btn-outline-light" data-chronicle-generate
+                  sec:authorize="hasAnyRole('ADMIN','OFFICIAL')">
             <i class="bi bi-stars me-1"></i>
             <span th:text="#{fixtures.chronicle.generate}">Generate</span>
           </button>
         </div>
         <div class="p-3">
           <p id="chronicle-text" class="chronicle-text mb-0 text-secondary small">
-            <i class="bi bi-info-circle me-1"></i><span th:text="#{fixtures.chronicle.hint}">Generated on demand by AI in the app language (switch it in the top bar).</span>
+            <i class="bi bi-info-circle me-1"></i>
+            <span sec:authorize="hasAnyRole('ADMIN','OFFICIAL')" th:text="#{fixtures.chronicle.hint}">Generated on demand by AI in the app language (switch it in the top bar).</span>
+            <span sec:authorize="!hasAnyRole('ADMIN','OFFICIAL')" th:text="#{fixtures.chronicle.viewerHint}">No chronicle is available in this language yet.</span>
           </p>
         </div>
       </div>

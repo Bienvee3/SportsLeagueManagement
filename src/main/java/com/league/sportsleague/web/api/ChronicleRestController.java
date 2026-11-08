@@ -5,14 +5,14 @@ import com.league.sportsleague.domain.ai.ChronicleResult;
 import com.league.sportsleague.domain.ai.Language;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
 
 import java.util.UUID;
 
@@ -29,8 +29,8 @@ public class ChronicleRestController {
 
     @GetMapping("/{id}/chronicle")
     @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL','VIEWER')")
-    @Operation(summary = "Get the stored chronicle in the requested language, translating an existing one "
-            + "from the other language if needed. 204 when none was generated yet.")
+    @Operation(summary = "Get the stored chronicle in the requested language (any role). Read-only: never calls "
+            + "the AI provider. 204 when none is stored in that language.")
     public ResponseEntity<ChronicleResult> getChronicle(
             @PathVariable UUID id,
             @RequestParam(defaultValue = "ENGLISH") Language lang) {
@@ -40,11 +40,24 @@ public class ChronicleRestController {
     }
 
     @PostMapping("/{id}/chronicle")
-    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL','VIEWER')")
-    @Operation(summary = "Generate AI match chronicle (any role). lang=ENGLISH (default) or CROATIAN.")
+    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
+    @Operation(summary = "Generate a new AI match chronicle (ADMIN/OFFICIAL; paid provider call, replaces the "
+            + "stored versions). lang=ENGLISH (default) or CROATIAN.")
     public ChronicleResult generateChronicle(
             @PathVariable UUID id,
             @RequestParam(defaultValue = "ENGLISH") Language lang) {
         return chronicleService.generateChronicle(id, lang);
+    }
+
+    @PostMapping("/{id}/chronicle/translate")
+    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
+    @Operation(summary = "Translate the stored chronicle into lang (ADMIN/OFFICIAL; paid provider call, stores "
+            + "the translation). 204 when no chronicle exists yet.")
+    public ResponseEntity<ChronicleResult> translateChronicle(
+            @PathVariable UUID id,
+            @RequestParam(defaultValue = "ENGLISH") Language lang) {
+        return chronicleService.translateChronicle(id, lang)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
     }
 }
