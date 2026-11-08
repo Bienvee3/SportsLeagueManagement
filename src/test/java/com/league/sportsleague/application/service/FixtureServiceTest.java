@@ -5,6 +5,7 @@ import com.league.sportsleague.application.dto.FixtureResponse;
 import com.league.sportsleague.application.dto.RecordMatchEventRequest;
 import com.league.sportsleague.application.dto.RecordResultRequest;
 import com.league.sportsleague.domain.exception.EntityNotFoundException;
+import com.league.sportsleague.domain.exception.InvalidStateTransitionException;
 import com.league.sportsleague.domain.model.*;
 import com.league.sportsleague.domain.model.enums.*;
 import com.league.sportsleague.domain.repository.*;
@@ -268,6 +269,94 @@ class FixtureServiceTest {
 
         assertNull(fixture.getHomeScore());
         assertNull(fixture.getAwayScore());
+    }
+
+    @Test
+    @DisplayName("recordMatchEvent rejects a goal on a FINISHED fixture: score kept, nothing saved, chronicles kept")
+    void recordGoalOnFinishedFixtureIsRejected() {
+        fixture.recordResult(new Score(2, 1));
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+        when(teamRepository.findById(home.getId())).thenReturn(Optional.of(home));
+
+        RecordMatchEventRequest req = new RecordMatchEventRequest(
+                home.getId(), MatchEventType.GOAL, 90, "Striker", null, null);
+
+        assertThrows(InvalidStateTransitionException.class,
+                () -> fixtureService.recordMatchEvent(fixture.getId(), req));
+
+        assertEquals(2, fixture.getHomeScore());
+        assertEquals(1, fixture.getAwayScore());
+        assertTrue(fixture.getEvents().isEmpty());
+        verify(fixtureRepository, never()).save(any());
+        verify(chronicleRepository, never()).deleteByFixtureId(any());
+    }
+
+    @Test
+    @DisplayName("recordMatchEvent still accepts a card on a FINISHED fixture and discards stale chronicles")
+    void recordCardOnFinishedFixtureIsAllowed() {
+        fixture.recordResult(new Score(2, 1));
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+        when(teamRepository.findById(away.getId())).thenReturn(Optional.of(away));
+        when(fixtureRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        fixtureService.recordMatchEvent(fixture.getId(), new RecordMatchEventRequest(
+                away.getId(), MatchEventType.YELLOW_CARD, 70, "Defender", null, null));
+
+        assertEquals(1, fixture.getEvents().size());
+        assertEquals(2, fixture.getHomeScore());
+        assertEquals(1, fixture.getAwayScore());
+        verify(chronicleRepository).deleteByFixtureId(fixture.getId());
+    }
+
+    @Test
+    @DisplayName("recordMatchEvent rejects an event whose team is neither home nor away")
+    void recordEventOfForeignTeamIsRejected() {
+        Team outsider = new Team("Rijeka", "RIJ", "Rujevica", "Rijeka", 1906);
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+        when(teamRepository.findById(outsider.getId())).thenReturn(Optional.of(outsider));
+
+        RecordMatchEventRequest req = new RecordMatchEventRequest(
+                outsider.getId(), MatchEventType.GOAL, 12, "Outsider", null, null);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> fixtureService.recordMatchEvent(fixture.getId(), req));
+
+        assertTrue(fixture.getEvents().isEmpty());
+        verify(fixtureRepository, never()).save(any());
+        verify(chronicleRepository, never()).deleteByFixtureId(any());
+    }
+
+    @Test
+    @DisplayName("deleteMatchEvent rejects removing a goal from a FINISHED fixture: event and score kept")
+    void deleteGoalOnFinishedFixtureIsRejected() {
+        MatchEvent goal = new MatchEvent(fixture, home, MatchEventType.GOAL, 23, "Bruno Petkovic");
+        fixture.addMatchEvent(goal);
+        fixture.recordResult(new Score(1, 0));
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+
+        assertThrows(InvalidStateTransitionException.class,
+                () -> fixtureService.deleteMatchEvent(fixture.getId(), goal.getId()));
+
+        assertEquals(1, fixture.getEvents().size());
+        assertEquals(1, fixture.getHomeScore());
+        verify(fixtureRepository, never()).save(any());
+        verify(chronicleRepository, never()).deleteByFixtureId(any());
+    }
+
+    @Test
+    @DisplayName("a score set by correctResult is not overwritten by a later event")
+    void correctedScoreIsNotOverwrittenByLaterEvents() {
+        fixture.recordResult(new Score(1, 0));
+        fixture.correctResult(new Score(3, 0), "Forfeit ruling", "admin");
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+        when(teamRepository.findById(away.getId())).thenReturn(Optional.of(away));
+        when(fixtureRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        fixtureService.recordMatchEvent(fixture.getId(), new RecordMatchEventRequest(
+                away.getId(), MatchEventType.RED_CARD, 80, "Defender", null, null));
+
+        assertEquals(3, fixture.getHomeScore());
+        assertEquals(0, fixture.getAwayScore());
     }
 
     // ── findById ──────────────────────────────────────────────────────────────

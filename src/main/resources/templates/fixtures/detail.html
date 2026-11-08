@@ -247,7 +247,7 @@
 
         <!-- Record match event -->
         <div class="col-12"
-             th:if="${fixture.status == 'IN_PROGRESS' or fixture.status == 'FINISHED'}">
+             th:if="${fixture.status == 'SCHEDULED' or fixture.status == 'IN_PROGRESS' or fixture.status == 'FINISHED'}">
           <div class="sport-card">
             <div class="px-3 py-3 border-bottom border-secondary-subtle fw-semibold">
               <i class="bi bi-lightning-charge me-2 text-warning"></i><span th:text="#{fixtures.recordEvent.title}">Record Match Event</span>
@@ -272,12 +272,12 @@
                   <div class="col-6 col-md-2">
                     <label class="form-label small fw-medium" th:text="#{fixtures.recordEvent.type}">Type</label>
                     <select name="eventType" class="form-select" required>
-                      <option value="GOAL" th:text="#{fixtures.event.GOAL}">Goal</option>
-                      <option value="OWN_GOAL" th:text="#{fixtures.event.OWN_GOAL}">Own goal</option>
+                      <option th:if="${fixture.status != 'FINISHED'}" value="GOAL" th:text="#{fixtures.event.GOAL}">Goal</option>
+                      <option th:if="${fixture.status != 'FINISHED'}" value="OWN_GOAL" th:text="#{fixtures.event.OWN_GOAL}">Own goal</option>
                       <option value="YELLOW_CARD" th:text="#{fixtures.event.YELLOW_CARD}">Yellow card</option>
                       <option value="RED_CARD" th:text="#{fixtures.event.RED_CARD}">Red card</option>
                       <option value="SUBSTITUTION" th:text="#{fixtures.event.SUBSTITUTION}">Substitution</option>
-                      <option value="PENALTY" th:text="#{fixtures.event.PENALTY}">Penalty</option>
+                      <option th:if="${fixture.status != 'FINISHED'}" value="PENALTY" th:text="#{fixtures.event.PENALTY}">Penalty</option>
                     </select>
                   </div>
                   <div class="col-6 col-md-3">
@@ -297,6 +297,9 @@
                   </div>
                 </div>
               </form>
+              <p th:if="${fixture.status == 'FINISHED'}" class="text-secondary small mt-3 mb-0">
+                <i class="bi bi-lock-fill me-1"></i><span th:text="#{fixtures.recordEvent.goalsLocked}">Goals are locked once the match is finished.</span>
+              </p>
 
               <!-- Recorded events: delete one added by mistake -->
               <div th:if="${not #lists.isEmpty(fixture.events)}" class="mt-4 pt-3 border-top border-secondary-subtle">
@@ -309,7 +312,8 @@
                     <span class="text-secondary small" th:if="${ev.assistingPlayer != null and not #strings.isEmpty(ev.assistingPlayer)}"
                           th:text="'(' + ${ev.assistingPlayer} + ')'"></span>
                     <span class="badge bg-secondary font-monospace ms-1" th:text="${ev.teamCode}">TM</span>
-                    <form th:action="@{/fixtures/{id}/events/{eid}/delete(id=${fixture.id},eid=${ev.id})}"
+                    <form th:if="${fixture.status != 'FINISHED' or not (ev.eventType == 'GOAL' or ev.eventType == 'OWN_GOAL' or ev.eventType == 'PENALTY')}"
+                          th:action="@{/fixtures/{id}/events/{eid}/delete(id=${fixture.id},eid=${ev.id})}"
                           method="post" class="ms-auto m-0">
                       <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                       <button type="submit" class="btn btn-sm btn-outline-danger"
@@ -318,6 +322,8 @@
                         <i class="bi bi-trash"></i>
                       </button>
                     </form>
+                    <i th:if="${fixture.status == 'FINISHED' and (ev.eventType == 'GOAL' or ev.eventType == 'OWN_GOAL' or ev.eventType == 'PENALTY')}"
+                       class="bi bi-lock-fill text-secondary ms-auto" th:title="#{fixtures.recordEvent.goalsLocked}"></i>
                   </li>
                 </ul>
               </div>

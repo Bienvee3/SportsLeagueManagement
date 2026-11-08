@@ -6,6 +6,7 @@ import com.league.sportsleague.domain.valueobject.Score;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -215,6 +216,140 @@ class DomainMethodsTest {
             Fixture f = finishedFixture(r, new Score(1, 0));
             assertThrows(NullPointerException.class,
                 () -> f.correctResult(null, "Reason", "Ref"));
+        }
+    }
+
+    // ── Fixture match events ───────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("Fixture match events")
+    class FixtureMatchEvents {
+
+        private final Team home = team("HOM");
+        private final Team away = team("AWY");
+
+        private Fixture scheduled() {
+            return new Fixture(scheduledRound(activeSeason()), home, away, Instant.now());
+        }
+
+        private Fixture inProgress() {
+            Fixture f = scheduled();
+            ReflectionTestUtils.setField(f, "status", FixtureStatus.IN_PROGRESS); // no domain transition reaches it yet
+            return f;
+        }
+
+        private MatchEvent event(Fixture f, Team team, MatchEventType type, int minute) {
+            return new MatchEvent(f, team, type, minute, "Player");
+        }
+
+        @Test
+        @DisplayName("goal events on a SCHEDULED fixture sync the score (own goal credits the opponent)")
+        void goalsOnScheduledSyncScore() {
+            Fixture f = scheduled();
+            f.addMatchEvent(event(f, home, MatchEventType.GOAL, 10));
+            f.addMatchEvent(event(f, away, MatchEventType.PENALTY, 20));
+            f.addMatchEvent(event(f, away, MatchEventType.OWN_GOAL, 30));
+
+            assertEquals(2, f.getHomeScore());
+            assertEquals(1, f.getAwayScore());
+        }
+
+        @Test
+        @DisplayName("goal events on an IN_PROGRESS fixture sync the score, removal re-syncs it")
+        void goalsOnInProgressSyncScore() {
+            Fixture f = inProgress();
+            MatchEvent goal = event(f, home, MatchEventType.GOAL, 10);
+            f.addMatchEvent(goal);
+            assertEquals(1, f.getHomeScore());
+
+            f.removeMatchEvent(goal);
+
+            assertEquals(0, f.getHomeScore());
+            assertEquals(0, f.getAwayScore());
+        }
+
+        @Test
+        @DisplayName("adding a goal to a FINISHED fixture throws and leaves score and events untouched")
+        void goalOnFinishedIsRejected() {
+            Fixture f = finishedFixture(scheduledRound(activeSeason()), new Score(2, 1));
+            Team t = f.getHomeTeam();
+
+            assertThrows(InvalidStateTransitionException.class,
+                    () -> f.addMatchEvent(event(f, t, MatchEventType.GOAL, 90)));
+
+            assertEquals(2, f.getHomeScore());
+            assertEquals(1, f.getAwayScore());
+            assertTrue(f.getEvents().isEmpty());
+        }
+
+        @Test
+        @DisplayName("removing a goal from a FINISHED fixture throws and keeps the event and the score")
+        void goalRemovalOnFinishedIsRejected() {
+            Fixture f = scheduled();
+            MatchEvent goal = event(f, home, MatchEventType.GOAL, 10);
+            f.addMatchEvent(goal);
+            f.recordResult(new Score(1, 0));
+
+            assertThrows(InvalidStateTransitionException.class, () -> f.removeMatchEvent(goal));
+
+            assertEquals(1, f.getEvents().size());
+            assertEquals(1, f.getHomeScore());
+            assertEquals(0, f.getAwayScore());
+        }
+
+        @Test
+        @DisplayName("goal events on POSTPONED and CANCELLED fixtures are rejected")
+        void goalOnPostponedOrCancelledIsRejected() {
+            Fixture postponed = scheduled();
+            postponed.postpone("Rain");
+            assertThrows(InvalidStateTransitionException.class,
+                    () -> postponed.addMatchEvent(event(postponed, home, MatchEventType.GOAL, 5)));
+
+            Fixture cancelled = scheduled();
+            cancelled.cancel();
+            assertThrows(InvalidStateTransitionException.class,
+                    () -> cancelled.addMatchEvent(event(cancelled, home, MatchEventType.OWN_GOAL, 5)));
+        }
+
+        @Test
+        @DisplayName("non-goal events stay allowed on a FINISHED fixture and never touch the score")
+        void nonGoalEventOnFinishedIsAllowed() {
+            Fixture f = finishedFixture(scheduledRound(activeSeason()), new Score(2, 1));
+            Team t = f.getAwayTeam();
+
+            f.addMatchEvent(event(f, t, MatchEventType.YELLOW_CARD, 70));
+
+            assertEquals(1, f.getEvents().size());
+            assertEquals(2, f.getHomeScore());
+            assertEquals(1, f.getAwayScore());
+        }
+
+        @Test
+        @DisplayName("an event of a team that does not play in the fixture is rejected")
+        void foreignTeamIsRejected() {
+            Fixture f = scheduled();
+
+            assertThrows(IllegalArgumentException.class,
+                    () -> f.addMatchEvent(event(f, team("OTH"), MatchEventType.YELLOW_CARD, 10)));
+
+            assertTrue(f.getEvents().isEmpty());
+        }
+
+        @Test
+        @DisplayName("a corrected score is not overwritten by later events; goals stay locked")
+        void correctedScoreSurvivesLaterEvents() {
+            Fixture f = scheduled();
+            f.addMatchEvent(event(f, home, MatchEventType.GOAL, 10));
+            f.recordResult(new Score(1, 0));
+            f.correctResult(new Score(3, 0), "Forfeit ruling", "admin");
+
+            f.addMatchEvent(event(f, away, MatchEventType.RED_CARD, 80));
+            assertThrows(InvalidStateTransitionException.class,
+                    () -> f.addMatchEvent(event(f, home, MatchEventType.GOAL, 85)));
+
+            assertEquals(3, f.getHomeScore());
+            assertEquals(0, f.getAwayScore());
+            assertEquals(1, f.getAudits().size());
         }
     }
 

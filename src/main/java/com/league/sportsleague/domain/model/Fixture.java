@@ -160,20 +160,49 @@ public class Fixture {
         this.postponementReason = null;
     }
 
-    // Bidirectional helper methods
+    // Match events
+
+    /**
+     * Adds a match event. Goal events (GOAL, PENALTY, OWN_GOAL) are only accepted while the fixture is
+     * SCHEDULED or IN_PROGRESS and keep the score in sync with the goals; once the fixture is FINISHED the
+     * only audited way to change the score is {@link #correctResult}. Other events (cards, substitutions)
+     * never touch the score and stay allowed in every status.
+     *
+     * @throws InvalidStateTransitionException for a goal event on a FINISHED, POSTPONED or CANCELLED fixture
+     * @throws IllegalArgumentException        if the event's team is neither the home nor the away team
+     */
     public void addMatchEvent(MatchEvent event) {
+        Objects.requireNonNull(event, "Match event must not be null");
+        boolean goal = isGoalEvent(event.getEventType());
+        if (goal) {
+            requireGoalEventsAllowed("addGoalEvent");
+        }
+        if (!isSameTeam(event.getTeam(), this.homeTeam) && !isSameTeam(event.getTeam(), this.awayTeam)) {
+            throw new IllegalArgumentException("Team of the event does not play in this fixture");
+        }
         events.add(event);
         event.setFixture(this);
-        if (isGoalEvent(event.getEventType())) {
+        if (goal) {
             syncScoreFromEvents();
         }
     }
 
+    /** Removes a match event. Removing a goal event follows the same status rule as adding one. */
     public void removeMatchEvent(MatchEvent event) {
+        boolean goal = isGoalEvent(event.getEventType());
+        if (goal) {
+            requireGoalEventsAllowed("removeGoalEvent");
+        }
         events.remove(event);
         event.setFixture(null);
-        if (isGoalEvent(event.getEventType())) {
+        if (goal) {
             syncScoreFromEvents();
+        }
+    }
+
+    private void requireGoalEventsAllowed(String operation) {
+        if (this.status != FixtureStatus.SCHEDULED && this.status != FixtureStatus.IN_PROGRESS) {
+            throw new InvalidStateTransitionException("Fixture", status.name(), operation);
         }
     }
 
@@ -183,7 +212,7 @@ public class Fixture {
                 || type == MatchEventType.OWN_GOAL;
     }
 
-    public void syncScoreFromEvents() {
+    private void syncScoreFromEvents() {
         int homeGoals = 0;
         int awayGoals = 0;
         for (MatchEvent event : this.events) {
