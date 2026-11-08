@@ -60,12 +60,17 @@ Copy the example and fill in your values:
 copy .env.example .env
 ```
 
-Edit `.env` — the minimum required:
+Edit `.env` — the minimum required (use strong, unique values; the database password is shared by
+`docker compose` and the application):
 
 ```env
 ADMIN_USERNAME=admin
-ADMIN_PASSWORD=choose-a-password
+ADMIN_PASSWORD=choose-a-strong-password
+SPRING_DATASOURCE_PASSWORD=choose-a-strong-db-password
 ```
+
+Optional: `OFFICIAL_USERNAME`/`OFFICIAL_PASSWORD`, `VIEWER_USERNAME`/`VIEWER_PASSWORD` (accounts created at
+startup when absent) and `GEMINI_API_KEY` (real AI chronicles).
 
 > `.env` is in `.gitignore` and is **never committed**. Keep your credentials there.
 
@@ -77,8 +82,16 @@ ADMIN_PASSWORD=choose-a-password
 docker compose up -d
 ```
 
-This starts a PostgreSQL 17 container on `localhost:5432`.  
+This starts a PostgreSQL 17 container reachable only from this machine (`127.0.0.1:5432`).
+Compose creates the database user with the `SPRING_DATASOURCE_USERNAME` / `SPRING_DATASOURCE_PASSWORD`
+from your `.env`; it refuses to start if the password is not set.
 Flyway runs all migrations automatically on first app start.
+
+> **Changing the DB password later:** Postgres only reads `POSTGRES_PASSWORD` when it first initialises
+> the data volume. If the `postgres_data` volume already exists it keeps the **old** password, so either
+> reset the data with `docker compose down -v` (deletes all data), or change it in place:
+> `docker exec -it sports_league_postgres psql -U league_admin -d sports_league_db`, then `\password league_admin`,
+> and put the same value in `.env`.
 
 ---
 
@@ -101,7 +114,8 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 
 ```cmd
 set ADMIN_USERNAME=admin
-set ADMIN_PASSWORD=choose-a-password
+set ADMIN_PASSWORD=choose-a-strong-password
+set SPRING_DATASOURCE_PASSWORD=choose-a-strong-db-password
 mvnw.cmd spring-boot:run
 ```
 
@@ -141,7 +155,7 @@ docker compose down
 ### Running Tests
 
 ```powershell
-# Standard test suite (325 tests, no Docker required)
+# Standard test suite (no Docker required)
 .\mvnw.cmd test
 
 # Integration tests with real PostgreSQL via Testcontainers (requires Docker)

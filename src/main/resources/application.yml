@@ -11,9 +11,9 @@ spring:
       on-profile: dev
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/sports_league_db
-    username: league_admin
-    password: league_dev_secret
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/sports_league_db}
+    username: ${SPRING_DATASOURCE_USERNAME:league_admin}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
       pool-name: SportsLeagueHikariCP

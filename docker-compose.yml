@@ -4,15 +4,17 @@ services:
     container_name: sports_league_postgres
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      # Loopback only: the database must never be reachable from other machines.
+      - "127.0.0.1:5432:5432"
     environment:
-      POSTGRES_DB: sports_league_db
-      POSTGRES_USER: league_admin
-      POSTGRES_PASSWORD: league_dev_secret
+      # Compose reads these from the untracked .env next to this file (see .env.example).
+      POSTGRES_DB: ${POSTGRES_DB:-sports_league_db}
+      POSTGRES_USER: ${SPRING_DATASOURCE_USERNAME:-league_admin}
+      POSTGRES_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:?set SPRING_DATASOURCE_PASSWORD in .env}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U league_admin -d sports_league_db"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -20,4 +22,3 @@ services:
 volumes:
   postgres_data:
     driver: local
-
