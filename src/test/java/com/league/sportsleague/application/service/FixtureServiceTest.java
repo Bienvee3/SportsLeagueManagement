@@ -565,6 +565,69 @@ class FixtureServiceTest {
         assertTrue(sheet.away().squad().isEmpty());
     }
 
+    // ── Suspensions ───────────────────────────────────────────────────────────
+
+    /** A finished match of the same season a week before {@code fixture}, in which {@code sentOff} saw red. */
+    private Fixture previousMatchWithRedCard(Player sentOff) {
+        Fixture previous = new Fixture(round, home, away, fixture.getScheduledTime().minus(java.time.Duration.ofDays(7)));
+        previous.kickOff();
+        previous.addMatchEvent(new MatchEvent(previous, home, MatchEventType.RED_CARD, 30, sentOff, null, null));
+        previous.finish();
+        return previous;
+    }
+
+    @Test
+    @DisplayName("submitLineup rejects a player suspended for this match and saves nothing")
+    void submitLineupRejectsSuspendedPlayer() {
+        List<Player> squad = populateSquad(home, 12);
+        Fixture previous = previousMatchWithRedCard(squad.get(3));
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+        when(fixtureRepository.findAllBySeasonWithTeams(any())).thenReturn(List.of(previous, fixture));
+        List<UUID> starters = squad.subList(0, 11).stream().map(Player::getId).toList(); // includes #4
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> fixtureService.submitLineup(fixture.getId(), home.getId(),
+                        new SubmitLineupRequest(starters, List.of(), null)));
+
+        assertEquals("DIN P4 is suspended for this match", ex.getMessage());
+        assertFalse(fixture.hasLineup(home));
+        verify(fixtureRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("kickOff is refused while a filed lineup still names a suspended player")
+    void kickOffRejectsSuspendedPlayerInLineup() {
+        List<Player> squad = populateSquad(home, 11);
+        fixture.submitLineup(home, squad, List.of(), null); // filed before the previous match ended
+        Fixture previous = previousMatchWithRedCard(squad.get(3));
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+        when(fixtureRepository.findAllBySeasonWithTeams(any())).thenReturn(List.of(previous, fixture));
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> fixtureService.kickOff(fixture.getId()));
+
+        assertTrue(ex.getMessage().endsWith("is suspended and must be removed from the lineup before kick-off"));
+        assertEquals(FixtureStatus.SCHEDULED, fixture.getStatus());
+        verify(fixtureRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("getMatchSheet marks the suspended player and lists him as suspended")
+    void getMatchSheetExposesSuspension() {
+        List<Player> squad = populateSquad(home, 12);
+        Fixture previous = previousMatchWithRedCard(squad.get(3));
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+        when(fixtureRepository.findAllBySeasonWithTeams(any())).thenReturn(List.of(previous, fixture));
+
+        MatchSheetResponse sheet = fixtureService.getMatchSheet(fixture.getId());
+
+        assertEquals("RED_CARD", sheet.home().squad().get(3).suspensionReason());
+        assertNull(sheet.home().squad().get(0).suspensionReason());
+        assertEquals(1, sheet.home().suspended().size());
+        assertEquals(squad.get(3).getId(), sheet.home().suspended().get(0).playerId());
+        assertTrue(sheet.away().suspended().isEmpty());
+    }
+
     // ── findById ──────────────────────────────────────────────────────────────
 
     @Test

@@ -10,12 +10,14 @@ import com.league.sportsleague.application.dto.RecordMatchEventRequest;
 import com.league.sportsleague.application.dto.RecordResultRequest;
 import com.league.sportsleague.application.dto.SubmitLineupRequest;
 import com.league.sportsleague.domain.LineupRules;
+import com.league.sportsleague.domain.SuspensionCalculator;
 import com.league.sportsleague.domain.exception.EntityNotFoundException;
 import com.league.sportsleague.domain.model.Fixture;
 import com.league.sportsleague.domain.model.LineupEntry;
 import com.league.sportsleague.domain.model.MatchEvent;
 import com.league.sportsleague.domain.model.Player;
 import com.league.sportsleague.domain.model.Team;
+import com.league.sportsleague.domain.model.enums.SuspensionReason;
 import com.league.sportsleague.domain.repository.ChronicleRepository;
 import com.league.sportsleague.domain.repository.FixtureRepository;
 import com.league.sportsleague.domain.repository.TeamRepository;
@@ -30,6 +32,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @Transactional
@@ -67,9 +70,25 @@ public class FixtureService {
         chronicleRepository.deleteByFixtureId(fixtureId); // stored chronicles describe the old result
     }
 
-    /** Starts the match: SCHEDULED → IN_PROGRESS. */
+    /**
+     * Starts the match: SCHEDULED → IN_PROGRESS. A lineup may have been filed before the previous match
+     * of the team ended, so suspended players are checked again here.
+     *
+     * @throws IllegalStateException if a filed lineup still names a suspended player
+     */
     public void kickOff(UUID fixtureId) {
         Fixture fixture = requireFixture(fixtureId);
+        List<Fixture> seasonFixtures = seasonFixtures(fixture);
+        for (Team team : List.of(fixture.getHomeTeam(), fixture.getAwayTeam())) {
+            Map<UUID, SuspensionReason> suspended = SuspensionCalculator.suspendedFor(fixture, team, seasonFixtures);
+            for (LineupEntry entry : fixture.getLineup(team)) {
+                if (suspended.containsKey(entry.getPlayer().getId())) {
+                    throw new IllegalStateException(
+                            "%s is suspended and must be removed from the lineup before kick-off"
+                                    .formatted(entry.getPlayer().getName()));
+                }
+            }
+        }
         fixture.kickOff();
         fixtureRepository.save(fixture);
     }
@@ -141,13 +160,24 @@ public class FixtureService {
         chronicleRepository.deleteByFixtureId(fixtureId);
     }
 
-    /** Files or replaces the lineup of one of the two teams; only possible before kick-off. */
+    /**
+     * Files or replaces the lineup of one of the two teams; only possible before kick-off.
+     *
+     * @throws IllegalArgumentException if a selected player is suspended for this fixture
+     */
     public void submitLineup(UUID fixtureId, UUID teamId, SubmitLineupRequest request) {
         Fixture fixture = requireFixture(fixtureId);
         Team team = requireFixtureTeam(fixture, teamId);
         List<Player> starters = request.starterIds().stream().map(id -> requirePlayer(team, id)).toList();
         List<Player> bench = request.benchIds().stream().map(id -> requirePlayer(team, id)).toList();
         Player captain = request.captainId() == null ? null : requirePlayer(team, request.captainId());
+        Map<UUID, SuspensionReason> suspended =
+                SuspensionCalculator.suspendedFor(fixture, team, seasonFixtures(fixture));
+        for (Player player : Stream.concat(starters.stream(), bench.stream()).toList()) {
+            if (suspended.containsKey(player.getId())) {
+                throw new IllegalArgumentException("%s is suspended for this match".formatted(player.getName()));
+            }
+        }
         fixture.submitLineup(team, starters, bench, captain);
         fixtureRepository.save(fixture);
     }
@@ -194,11 +224,12 @@ public class FixtureService {
     public MatchSheetResponse getMatchSheet(UUID fixtureId) {
         Fixture fixture = requireFixture(fixtureId);
         LineupRules rules = fixture.getLineupRules();
+        List<Fixture> seasonFixtures = seasonFixtures(fixture);
         return new MatchSheetResponse(
                 rules.starters(),
                 rules.maxBench(),
-                teamSheet(fixture, fixture.getHomeTeam()),
-                teamSheet(fixture, fixture.getAwayTeam()));
+                teamSheet(fixture, fixture.getHomeTeam(), seasonFixtures),
+                teamSheet(fixture, fixture.getAwayTeam(), seasonFixtures));
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
@@ -214,12 +245,17 @@ public class FixtureService {
         throw new IllegalArgumentException("Team does not play in this fixture");
     }
 
+    private List<Fixture> seasonFixtures(Fixture fixture) {
+        return fixtureRepository.findAllBySeasonWithTeams(fixture.getRound().getSeason().getId());
+    }
+
     private Player requirePlayer(Team team, UUID playerId) {
         return team.findPlayer(playerId)
                 .orElseThrow(() -> new EntityNotFoundException("Player", playerId));
     }
 
-    private TeamSheet teamSheet(Fixture fixture, Team team) {
+    private TeamSheet teamSheet(Fixture fixture, Team team, List<Fixture> seasonFixtures) {
+        Map<UUID, SuspensionReason> suspensions = SuspensionCalculator.suspendedFor(fixture, team, seasonFixtures);
         Map<UUID, LineupEntry> entryByPlayer = fixture.getLineup(team).stream()
                 .collect(Collectors.toMap(entry -> entry.getPlayer().getId(), Function.identity()));
         Comparator<LineupEntry> byShirtNumber = Comparator.comparingInt(entry -> entry.getPlayer().getShirtNumber());
@@ -243,7 +279,7 @@ public class FixtureService {
                             player.getPlayingPosition(),
                             entry == null ? null : entry.getLineupRole().name(),
                             entry != null && entry.isCaptain(),
-                            null);
+                            suspensions.containsKey(player.getId()) ? suspensions.get(player.getId()).name() : null);
                 })
                 .toList();
         List<SquadOption> suspended = squad.stream()
