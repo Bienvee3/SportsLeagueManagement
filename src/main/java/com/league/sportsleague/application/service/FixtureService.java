@@ -2,11 +2,19 @@ package com.league.sportsleague.application.service;
 
 import com.league.sportsleague.application.dto.CorrectResultRequest;
 import com.league.sportsleague.application.dto.FixtureResponse;
+import com.league.sportsleague.application.dto.MatchSheetResponse;
+import com.league.sportsleague.application.dto.MatchSheetResponse.LineupPlayer;
+import com.league.sportsleague.application.dto.MatchSheetResponse.SquadOption;
+import com.league.sportsleague.application.dto.MatchSheetResponse.TeamSheet;
 import com.league.sportsleague.application.dto.RecordMatchEventRequest;
 import com.league.sportsleague.application.dto.RecordResultRequest;
+import com.league.sportsleague.application.dto.SubmitLineupRequest;
+import com.league.sportsleague.domain.LineupRules;
 import com.league.sportsleague.domain.exception.EntityNotFoundException;
 import com.league.sportsleague.domain.model.Fixture;
+import com.league.sportsleague.domain.model.LineupEntry;
 import com.league.sportsleague.domain.model.MatchEvent;
+import com.league.sportsleague.domain.model.Player;
 import com.league.sportsleague.domain.model.Team;
 import com.league.sportsleague.domain.repository.ChronicleRepository;
 import com.league.sportsleague.domain.repository.FixtureRepository;
@@ -16,8 +24,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -88,19 +100,29 @@ public class FixtureService {
         fixtureRepository.save(fixture);
     }
 
+    /**
+     * Records a match event. With {@code playerId} the event is linked to that squad player (and
+     * {@code relatedPlayerId} to the assist provider or the player coming on); otherwise the free-text
+     * {@code playerName} is used, which is only accepted while the team has no lineup in this fixture.
+     */
     public UUID recordMatchEvent(UUID fixtureId, RecordMatchEventRequest request) {
         Fixture fixture = requireFixture(fixtureId);
         Team team = teamRepository.findById(request.teamId())
                 .orElseThrow(() -> new EntityNotFoundException("Team", request.teamId()));
-        MatchEvent event = new MatchEvent(
-                fixture,
-                team,
-                request.eventType(),
-                request.matchMinute(),
-                request.playerName(),
-                request.assistingPlayer(),
-                request.notes()
-        );
+        MatchEvent event;
+        if (request.playerId() != null) {
+            Player player = requirePlayer(team, request.playerId());
+            Player related = request.relatedPlayerId() == null
+                    ? null : requirePlayer(team, request.relatedPlayerId());
+            event = new MatchEvent(fixture, team, request.eventType(), request.matchMinute(),
+                    player, related, request.notes());
+        } else {
+            if (request.playerName() == null || request.playerName().isBlank()) {
+                throw new IllegalArgumentException("A player must be selected or named");
+            }
+            event = new MatchEvent(fixture, team, request.eventType(), request.matchMinute(),
+                    request.playerName(), request.assistingPlayer(), request.notes());
+        }
         fixture.addMatchEvent(event);
         fixtureRepository.save(fixture);
         chronicleRepository.deleteByFixtureId(fixtureId);
@@ -117,6 +139,24 @@ public class FixtureService {
         fixture.removeMatchEvent(event);
         fixtureRepository.save(fixture);
         chronicleRepository.deleteByFixtureId(fixtureId);
+    }
+
+    /** Files or replaces the lineup of one of the two teams; only possible before kick-off. */
+    public void submitLineup(UUID fixtureId, UUID teamId, SubmitLineupRequest request) {
+        Fixture fixture = requireFixture(fixtureId);
+        Team team = requireFixtureTeam(fixture, teamId);
+        List<Player> starters = request.starterIds().stream().map(id -> requirePlayer(team, id)).toList();
+        List<Player> bench = request.benchIds().stream().map(id -> requirePlayer(team, id)).toList();
+        Player captain = request.captainId() == null ? null : requirePlayer(team, request.captainId());
+        fixture.submitLineup(team, starters, bench, captain);
+        fixtureRepository.save(fixture);
+    }
+
+    /** Withdraws the lineup of one of the two teams; only possible before kick-off. */
+    public void clearLineup(UUID fixtureId, UUID teamId) {
+        Fixture fixture = requireFixture(fixtureId);
+        fixture.clearLineup(requireFixtureTeam(fixture, teamId));
+        fixtureRepository.save(fixture);
     }
 
     // ── Queries ───────────────────────────────────────────────────────────────
@@ -149,10 +189,73 @@ public class FixtureService {
                 .toList();
     }
 
+    /** The match sheet: both lineups plus the squads they are picked from. */
+    @Transactional(readOnly = true)
+    public MatchSheetResponse getMatchSheet(UUID fixtureId) {
+        Fixture fixture = requireFixture(fixtureId);
+        LineupRules rules = fixture.getLineupRules();
+        return new MatchSheetResponse(
+                rules.starters(),
+                rules.maxBench(),
+                teamSheet(fixture, fixture.getHomeTeam()),
+                teamSheet(fixture, fixture.getAwayTeam()));
+    }
+
     // ── Private helpers ───────────────────────────────────────────────────────
 
     private Fixture requireFixture(UUID id) {
         return fixtureRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Fixture", id));
+    }
+
+    private Team requireFixtureTeam(Fixture fixture, UUID teamId) {
+        if (fixture.getHomeTeam().getId().equals(teamId)) return fixture.getHomeTeam();
+        if (fixture.getAwayTeam().getId().equals(teamId)) return fixture.getAwayTeam();
+        throw new IllegalArgumentException("Team does not play in this fixture");
+    }
+
+    private Player requirePlayer(Team team, UUID playerId) {
+        return team.findPlayer(playerId)
+                .orElseThrow(() -> new EntityNotFoundException("Player", playerId));
+    }
+
+    private TeamSheet teamSheet(Fixture fixture, Team team) {
+        Map<UUID, LineupEntry> entryByPlayer = fixture.getLineup(team).stream()
+                .collect(Collectors.toMap(entry -> entry.getPlayer().getId(), Function.identity()));
+        Comparator<LineupEntry> byShirtNumber = Comparator.comparingInt(entry -> entry.getPlayer().getShirtNumber());
+        List<LineupPlayer> starters = entryByPlayer.values().stream()
+                .filter(LineupEntry::isStarter)
+                .sorted(byShirtNumber)
+                .map(FixtureService::lineupPlayer)
+                .toList();
+        List<LineupPlayer> bench = entryByPlayer.values().stream()
+                .filter(entry -> !entry.isStarter())
+                .sorted(byShirtNumber)
+                .map(FixtureService::lineupPlayer)
+                .toList();
+        List<SquadOption> squad = team.getActivePlayers().stream()
+                .map(player -> {
+                    LineupEntry entry = entryByPlayer.get(player.getId());
+                    return new SquadOption(
+                            player.getId(),
+                            player.getShirtNumber(),
+                            player.getName(),
+                            player.getPlayingPosition(),
+                            entry == null ? null : entry.getLineupRole().name(),
+                            entry != null && entry.isCaptain(),
+                            null);
+                })
+                .toList();
+        List<SquadOption> suspended = squad.stream()
+                .filter(option -> option.suspensionReason() != null)
+                .toList();
+        return new TeamSheet(team.getId(), team.getName(), !entryByPlayer.isEmpty(),
+                starters, bench, squad, suspended);
+    }
+
+    private static LineupPlayer lineupPlayer(LineupEntry entry) {
+        Player player = entry.getPlayer();
+        return new LineupPlayer(player.getId(), player.getShirtNumber(), player.getName(),
+                player.getPlayingPosition(), entry.isCaptain());
     }
 }

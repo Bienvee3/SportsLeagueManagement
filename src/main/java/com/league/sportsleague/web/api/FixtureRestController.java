@@ -2,8 +2,10 @@ package com.league.sportsleague.web.api;
 
 import com.league.sportsleague.application.dto.CorrectResultRequest;
 import com.league.sportsleague.application.dto.FixtureResponse;
+import com.league.sportsleague.application.dto.MatchSheetResponse;
 import com.league.sportsleague.application.dto.RecordMatchEventRequest;
 import com.league.sportsleague.application.dto.RecordResultRequest;
+import com.league.sportsleague.application.dto.SubmitLineupRequest;
 import com.league.sportsleague.application.service.FixtureService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -133,6 +136,30 @@ public class FixtureRestController {
     @Operation(summary = "Delete a match event recorded by mistake (OFFICIAL)")
     public ResponseEntity<Void> deleteEvent(@PathVariable UUID id, @PathVariable UUID eventId) {
         fixtureService.deleteMatchEvent(id, eventId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/lineups")
+    @Operation(summary = "Get the match sheet: lineups of both teams and their squads")
+    public MatchSheetResponse getLineups(@PathVariable UUID id) {
+        return fixtureService.getMatchSheet(id);
+    }
+
+    @PutMapping("/{id}/lineups/{teamId}")
+    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
+    @Operation(summary = "File or replace the lineup of one team before kick-off (OFFICIAL)")
+    public ResponseEntity<Void> submitLineup(@PathVariable UUID id,
+                                             @PathVariable UUID teamId,
+                                             @Valid @RequestBody SubmitLineupRequest request) {
+        fixtureService.submitLineup(id, teamId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{id}/lineups/{teamId}")
+    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
+    @Operation(summary = "Withdraw the lineup of one team before kick-off (OFFICIAL)")
+    public ResponseEntity<Void> clearLineup(@PathVariable UUID id, @PathVariable UUID teamId) {
+        fixtureService.clearLineup(id, teamId);
         return ResponseEntity.noContent().build();
     }
 }

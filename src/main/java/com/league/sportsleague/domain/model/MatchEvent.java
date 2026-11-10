@@ -44,6 +44,16 @@ public class MatchEvent {
     // Optional attribute required by LO4
     private String assistingPlayer;
 
+    /** Squad player the event belongs to; null for a legacy event recorded with a free-text name. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "player_id")
+    private Player player;
+
+    /** Assist provider of a GOAL/PENALTY, or the player coming on in a SUBSTITUTION. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "related_player_id")
+    private Player relatedPlayer;
+
     private String notes;
 
     @Column(updatable = false)
@@ -67,6 +77,23 @@ public class MatchEvent {
         this.playerName = playerName;
         this.assistingPlayer = assistingPlayer;
         this.notes = notes;
+    }
+
+    /**
+     * Event of a squad player. The name columns keep a snapshot of the names, so the event stays
+     * readable wherever only the text is used (chronicle, timeline).
+     *
+     * @param player        the scorer, the booked player, or the player going off in a SUBSTITUTION
+     * @param relatedPlayer assist provider (GOAL/PENALTY) or player coming on (SUBSTITUTION); may be null
+     */
+    public MatchEvent(Fixture fixture, Team team, MatchEventType eventType, int matchMinute,
+                      Player player, Player relatedPlayer, String notes) {
+        this(fixture, team, eventType, matchMinute,
+                Objects.requireNonNull(player, "Player must not be null").getName(),
+                relatedPlayer == null ? null : relatedPlayer.getName(),
+                notes);
+        this.player = player;
+        this.relatedPlayer = relatedPlayer;
     }
 
     @PrePersist
@@ -110,6 +137,14 @@ public class MatchEvent {
 
     public String getAssistingPlayer() {
         return assistingPlayer;
+    }
+
+    public Player getPlayer() {
+        return player;
+    }
+
+    public Player getRelatedPlayer() {
+        return relatedPlayer;
     }
 
     public String getNotes() {

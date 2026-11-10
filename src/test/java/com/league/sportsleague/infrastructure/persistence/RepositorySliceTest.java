@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -285,6 +286,65 @@ class RepositorySliceTest {
             assertEquals(2, fixtures.size());
             assertTrue(fixtures.stream().anyMatch(f -> f.getId().equals(FIXTURE1_ID)));
             assertTrue(fixtures.stream().anyMatch(f -> f.getId().equals(FIXTURE2_ID)));
+        }
+
+        @Test
+        @DisplayName("lineup and player-linked event round-trip on a fresh fixture")
+        void lineupAndPlayerEventRoundTrip() {
+            League l = new League("HNL 2", "hnl-2", "FOOTBALL", "Croatia");
+            leagueRepository.save(l);
+            Season s = new Season(l, "26/27", 2026, 2027, SeasonStatus.ACTIVE);
+            seasonRepository.save(s);
+            Round r = new Round(s, 1, "R1", LocalDate.now(), LocalDate.now().plusDays(2), RoundStatus.SCHEDULED);
+            roundRepository.save(r);
+
+            Team homeTeam = new Team("Home FC", "HFC", "Stadium", "City", 2000);
+            Team awayTeam = new Team("Away FC", "AFC", "Stadium", "City", 2000);
+            List<Player> starters = new java.util.ArrayList<>();
+            for (int i = 1; i <= 11; i++) {
+                starters.add(homeTeam.addPlayer("H" + i, i, i == 1 ? "GK" : "Player"));
+            }
+            Player sub = homeTeam.addPlayer("Sub 12", 12, "Mid");
+            teamRepository.save(homeTeam);
+            teamRepository.save(awayTeam);
+
+            Fixture f = new Fixture(r, homeTeam, awayTeam, Instant.now());
+            f.submitLineup(homeTeam, starters, List.of(sub), starters.get(0));
+            f.kickOff();
+            f.addMatchEvent(new MatchEvent(f, homeTeam, MatchEventType.GOAL, 10, starters.get(9), starters.get(8), "Left strike"));
+            fixtureRepository.save(f);
+            em.flush();
+            em.clear();
+
+            Fixture loaded = fixtureRepository.findById(f.getId()).orElseThrow();
+            assertEquals(12, loaded.getLineupEntries().size());
+            assertEquals(11, loaded.getLineup(loaded.getHomeTeam()).stream().filter(LineupEntry::isStarter).count());
+            LineupEntry captain = loaded.getLineup(loaded.getHomeTeam()).stream().filter(LineupEntry::isCaptain).findFirst().orElseThrow();
+            assertEquals("H1", captain.getPlayer().getName());
+            assertEquals(1, loaded.getEvents().size());
+            MatchEvent ev = loaded.getEvents().get(0);
+            assertNotNull(ev.getPlayer());
+            assertEquals("H10", ev.getPlayer().getName());
+            assertEquals("H9", ev.getRelatedPlayer().getName());
+
+            // Now test diff resubmission without flushing conflict: recreate a scheduled fixture to resubmit
+            Fixture f2 = new Fixture(r, homeTeam, awayTeam, Instant.now().plusSeconds(3600));
+            f2.submitLineup(homeTeam, starters, List.of(sub), starters.get(0));
+            fixtureRepository.save(f2);
+            em.flush();
+
+            // Resubmit keeping 10 starters, moving sub into starting XI, dropping H11, adding new sub H13
+            Player newSub = homeTeam.addPlayer("Sub 13", 13, "Def");
+            teamRepository.save(homeTeam);
+            List<Player> revisedStarters = new java.util.ArrayList<>(starters.subList(0, 10));
+            revisedStarters.add(sub);
+            f2.submitLineup(homeTeam, revisedStarters, List.of(newSub), starters.get(0));
+            fixtureRepository.save(f2);
+            em.flush(); // fails on uk_lineup_entries_fixture_player if a kept player were deleted and re-inserted
+            em.clear();
+
+            Fixture reloaded2 = fixtureRepository.findById(f2.getId()).orElseThrow();
+            assertEquals(11, reloaded2.getLineup(reloaded2.getHomeTeam()).stream().filter(LineupEntry::isStarter).count());
         }
 
         @Test

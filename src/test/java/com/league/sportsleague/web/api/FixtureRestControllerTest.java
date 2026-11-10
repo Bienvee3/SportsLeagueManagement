@@ -2,7 +2,9 @@ package com.league.sportsleague.web.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.league.sportsleague.application.dto.FixtureResponse;
+import com.league.sportsleague.application.dto.MatchSheetResponse;
 import com.league.sportsleague.application.dto.RecordResultRequest;
+import com.league.sportsleague.application.dto.SubmitLineupRequest;
 import com.league.sportsleague.application.service.FixtureService;
 import com.league.sportsleague.domain.exception.EntityNotFoundException;
 import com.league.sportsleague.domain.exception.InvalidStateTransitionException;
@@ -25,6 +27,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -180,6 +183,68 @@ class FixtureRestControllerTest {
     void finishForbiddenForViewer() throws Exception {
         mockMvc.perform(post("/api/fixtures/{id}/finish", FIXTURE_ID).with(csrf()))
                 .andExpect(status().isForbidden());
+    }
+
+    // ── Lineups ───────────────────────────────────────────────────────────────
+
+    @Test
+    @WithMockUser(roles = "VIEWER")
+    @DisplayName("GET /api/fixtures/{id}/lineups returns 200 with sheet")
+    void getLineups() throws Exception {
+        var sheet = new MatchSheetResponse(11, 12,
+                new MatchSheetResponse.TeamSheet(HOME_TEAM_ID, "Home FC", false, List.of(), List.of(), List.of(), List.of()),
+                new MatchSheetResponse.TeamSheet(AWAY_TEAM_ID, "Away FC", false, List.of(), List.of(), List.of(), List.of()));
+        when(fixtureService.getMatchSheet(FIXTURE_ID)).thenReturn(sheet);
+
+        mockMvc.perform(get("/api/fixtures/{id}/lineups", FIXTURE_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.startersRequired").value(11))
+                .andExpect(jsonPath("$.home.teamName").value("Home FC"));
+    }
+
+    @Test
+    @WithMockUser(roles = "OFFICIAL")
+    @DisplayName("PUT /api/fixtures/{id}/lineups/{teamId} returns 204 for OFFICIAL")
+    void submitLineup() throws Exception {
+        var request = new SubmitLineupRequest(List.of(UUID.randomUUID()), List.of(), null);
+        mockMvc.perform(put("/api/fixtures/{id}/lineups/{teamId}", FIXTURE_ID, HOME_TEAM_ID).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNoContent());
+        org.mockito.Mockito.verify(fixtureService).submitLineup(eq(FIXTURE_ID), eq(HOME_TEAM_ID), any());
+    }
+
+    @Test
+    @WithMockUser(roles = "VIEWER")
+    @DisplayName("PUT /api/fixtures/{id}/lineups/{teamId} returns 403 for VIEWER")
+    void submitLineupForbiddenForViewer() throws Exception {
+        var request = new SubmitLineupRequest(List.of(UUID.randomUUID()), List.of(), null);
+        mockMvc.perform(put("/api/fixtures/{id}/lineups/{teamId}", FIXTURE_ID, HOME_TEAM_ID).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "OFFICIAL")
+    @DisplayName("PUT /api/fixtures/{id}/lineups/{teamId} returns 400 when starters are empty")
+    void submitLineupValidationFails() throws Exception {
+        var request = new SubmitLineupRequest(List.of(), List.of(), null);
+        mockMvc.perform(put("/api/fixtures/{id}/lineups/{teamId}", FIXTURE_ID, HOME_TEAM_ID).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Validation Error"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("DELETE /api/fixtures/{id}/lineups/{teamId} returns 204 for ADMIN")
+    void clearLineup() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .delete("/api/fixtures/{id}/lineups/{teamId}", FIXTURE_ID, HOME_TEAM_ID).with(csrf()))
+                .andExpect(status().isNoContent());
+        org.mockito.Mockito.verify(fixtureService).clearLineup(FIXTURE_ID, HOME_TEAM_ID);
     }
 
     @Test

@@ -3,6 +3,7 @@ package com.league.sportsleague.web.view;
 import com.league.sportsleague.application.dto.CorrectResultRequest;
 import com.league.sportsleague.application.dto.RecordMatchEventRequest;
 import com.league.sportsleague.application.dto.RecordResultRequest;
+import com.league.sportsleague.application.dto.SubmitLineupRequest;
 import com.league.sportsleague.application.service.FixtureService;
 import jakarta.validation.Valid;
 import org.springframework.validation.BindingResult;
@@ -15,8 +16,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
 import java.util.UUID;
 
 @Controller
@@ -32,6 +35,7 @@ public class FixtureViewController {
     @GetMapping("/{id}")
     public String detail(@PathVariable UUID id, Model model) {
         model.addAttribute("fixture", fixtureService.findById(id));
+        model.addAttribute("sheet", fixtureService.getMatchSheet(id));
         model.addAttribute("currentPage", "calendar");
         return "fixtures/detail";
     }
@@ -118,6 +122,37 @@ public class FixtureViewController {
         try {
             fixtureService.deleteMatchEvent(id, eventId);
             ra.addFlashAttribute("flashKey", "fixtures.flash.eventDeleted");
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            ra.addFlashAttribute("errorMsg", e.getMessage());
+        }
+        return "redirect:/fixtures/" + id;
+    }
+
+    // ── Match sheet: lineups ──────────────────────────────────────────────────
+
+    @PostMapping("/{id}/lineups/{teamId}")
+    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
+    public String submitLineup(@PathVariable UUID id,
+                               @PathVariable UUID teamId,
+                               @RequestParam(required = false) List<UUID> starterIds,
+                               @RequestParam(required = false) List<UUID> benchIds,
+                               @RequestParam(required = false) UUID captainId,
+                               RedirectAttributes ra) {
+        try {
+            fixtureService.submitLineup(id, teamId, new SubmitLineupRequest(starterIds, benchIds, captainId));
+            ra.addFlashAttribute("flashKey", "fixtures.flash.lineupSaved");
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            ra.addFlashAttribute("errorMsg", e.getMessage());
+        }
+        return "redirect:/fixtures/" + id;
+    }
+
+    @PostMapping("/{id}/lineups/{teamId}/clear")
+    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
+    public String clearLineup(@PathVariable UUID id, @PathVariable UUID teamId, RedirectAttributes ra) {
+        try {
+            fixtureService.clearLineup(id, teamId);
+            ra.addFlashAttribute("flashKey", "fixtures.flash.lineupCleared");
         } catch (IllegalStateException | IllegalArgumentException e) {
             ra.addFlashAttribute("errorMsg", e.getMessage());
         }

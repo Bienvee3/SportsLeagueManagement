@@ -1,8 +1,10 @@
 package com.league.sportsleague.domain.model;
 
+import com.league.sportsleague.domain.LineupRules;
 import com.league.sportsleague.domain.exception.DuplicateTeamException;
 import com.league.sportsleague.domain.exception.InvalidStateTransitionException;
 import com.league.sportsleague.domain.model.enums.FixtureStatus;
+import com.league.sportsleague.domain.model.enums.LineupRole;
 import com.league.sportsleague.domain.model.enums.MatchEventType;
 import com.league.sportsleague.domain.valueobject.Score;
 import jakarta.persistence.CascadeType;
@@ -17,11 +19,14 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -57,11 +62,18 @@ public class Fixture {
     // Optional attribute required by LO4
     private String postponementReason;
 
+    // Batch-fetched: season-wide statistics and suspension checks walk the events and lineups of many
+    // fixtures, and two bags cannot be join-fetched in one query.
     @OneToMany(mappedBy = "fixture", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @BatchSize(size = 50)
     private List<MatchEvent> events = new ArrayList<>();
 
     @OneToMany(mappedBy = "fixture", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ResultAudit> audits = new ArrayList<>();
+
+    @OneToMany(mappedBy = "fixture", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @BatchSize(size = 50)
+    private List<LineupEntry> lineupEntries = new ArrayList<>();
 
     public Fixture() {
         this.id = UUID.randomUUID();
@@ -184,6 +196,115 @@ public class Fixture {
         this.postponementReason = null;
     }
 
+    // Lineups (match sheet)
+
+    /** The match-sheet rules of this fixture, taken from the sport of its teams. */
+    public LineupRules getLineupRules() {
+        return LineupRules.forSport(this.homeTeam.getSportType());
+    }
+
+    /**
+     * Files or replaces the lineup of one team. Only possible before kick-off (SCHEDULED); the number of
+     * starters and the bench size follow the sport ({@link LineupRules}).
+     *
+     * @param captain one of the starters, or null when no captain is named
+     * @throws InvalidStateTransitionException once the fixture is no longer SCHEDULED
+     * @throws IllegalArgumentException        for a team that does not play here, a wrong number of players,
+     *                                         a player listed twice, a player who is not an active member
+     *                                         of the team, or a captain who does not start
+     * @throws IllegalStateException           if events of this team already reference its players
+     */
+    public void submitLineup(Team team, List<Player> starters, List<Player> bench, Player captain) {
+        Objects.requireNonNull(starters, "Starters must not be null");
+        Objects.requireNonNull(bench, "Bench must not be null");
+        requireLineupEditable(team, "submitLineup");
+        LineupRules rules = getLineupRules();
+        if (starters.size() != rules.starters()) {
+            throw new IllegalArgumentException(
+                    "Exactly %d starters are required, got %d".formatted(rules.starters(), starters.size()));
+        }
+        if (bench.size() > rules.maxBench()) {
+            throw new IllegalArgumentException(
+                    "At most %d substitutes are allowed, got %d".formatted(rules.maxBench(), bench.size()));
+        }
+        Map<UUID, LineupRole> roles = new LinkedHashMap<>();
+        Map<UUID, Player> selected = new LinkedHashMap<>();
+        registerSelection(starters, LineupRole.STARTER, roles, selected);
+        registerSelection(bench, LineupRole.SUBSTITUTE, roles, selected);
+        for (Player player : selected.values()) {
+            if (!player.isActive() || !isSameTeam(player.getTeam(), team)) {
+                throw new IllegalArgumentException(
+                        "%s is not an active player of %s".formatted(player.getName(), team.getName()));
+            }
+        }
+        UUID captainId = captain == null ? null : captain.getId();
+        if (captainId != null && roles.get(captainId) != LineupRole.STARTER) {
+            throw new IllegalArgumentException("The captain must be one of the starters");
+        }
+
+        // Applied as a diff: an entry of a player who stays is updated in place. Deleting and re-inserting
+        // it would break uk_lineup_entries_fixture_player, because Hibernate flushes inserts before deletes.
+        for (LineupEntry entry : getLineup(team)) {
+            UUID playerId = entry.getPlayer().getId();
+            if (selected.remove(playerId) != null) {
+                entry.reassign(roles.get(playerId), playerId.equals(captainId));
+            } else {
+                lineupEntries.remove(entry);
+                entry.setFixture(null);
+            }
+        }
+        for (Player player : selected.values()) {
+            lineupEntries.add(new LineupEntry(this, player, roles.get(player.getId()),
+                    player.getId().equals(captainId)));
+        }
+    }
+
+    /** Withdraws the lineup of one team. Same conditions as {@link #submitLineup}. */
+    public void clearLineup(Team team) {
+        requireLineupEditable(team, "clearLineup");
+        for (LineupEntry entry : getLineup(team)) {
+            lineupEntries.remove(entry);
+            entry.setFixture(null);
+        }
+    }
+
+    private void requireLineupEditable(Team team, String operation) {
+        Objects.requireNonNull(team, "Team must not be null");
+        if (this.status != FixtureStatus.SCHEDULED) {
+            throw new InvalidStateTransitionException("Fixture", status.name(), operation);
+        }
+        if (!isSameTeam(team, this.homeTeam) && !isSameTeam(team, this.awayTeam)) {
+            throw new IllegalArgumentException("Team does not play in this fixture");
+        }
+        boolean hasPlayerEvents = events.stream()
+                .anyMatch(e -> e.getPlayer() != null && isSameTeam(e.getTeam(), team));
+        if (hasPlayerEvents) {
+            throw new IllegalStateException("The lineup cannot change: events are already recorded for this team");
+        }
+    }
+
+    private void registerSelection(List<Player> players, LineupRole role,
+                                   Map<UUID, LineupRole> roles, Map<UUID, Player> selected) {
+        for (Player player : players) {
+            Objects.requireNonNull(player, "Player must not be null");
+            if (roles.putIfAbsent(player.getId(), role) != null) {
+                throw new IllegalArgumentException("%s is listed more than once".formatted(player.getName()));
+            }
+            selected.put(player.getId(), player);
+        }
+    }
+
+    /** The lineup entries (starters and substitutes) of one team; empty when none has been filed. */
+    public List<LineupEntry> getLineup(Team team) {
+        return lineupEntries.stream()
+                .filter(entry -> isSameTeam(entry.getTeam(), team))
+                .toList();
+    }
+
+    public boolean hasLineup(Team team) {
+        return lineupEntries.stream().anyMatch(entry -> isSameTeam(entry.getTeam(), team));
+    }
+
     // Match events
 
     /**
@@ -193,9 +314,13 @@ public class Fixture {
      * {@link #correctResult}. Other events (cards, substitutions) never touch the score and stay allowed
      * in every other status.
      *
+     * <p>If the event's team filed a lineup, the event must reference players of that lineup. Without a
+     * lineup an event may still carry a free-text player name.
+     *
      * @throws InvalidStateTransitionException for any event on a SCHEDULED fixture and for a goal event
      *                                         on a FINISHED, POSTPONED or CANCELLED fixture
-     * @throws IllegalArgumentException        if the event's team is neither the home nor the away team
+     * @throws IllegalArgumentException        if the event's team is neither the home nor the away team,
+     *                                         or its players do not fit the team or its lineup
      */
     public void addMatchEvent(MatchEvent event) {
         Objects.requireNonNull(event, "Match event must not be null");
@@ -209,6 +334,7 @@ public class Fixture {
         if (!isSameTeam(event.getTeam(), this.homeTeam) && !isSameTeam(event.getTeam(), this.awayTeam)) {
             throw new IllegalArgumentException("Team of the event does not play in this fixture");
         }
+        requirePlayersFitTeam(event);
         events.add(event);
         event.setFixture(this);
         if (goal) {
@@ -232,6 +358,35 @@ public class Fixture {
     private void requireGoalEventsAllowed(String operation) {
         if (this.status != FixtureStatus.IN_PROGRESS) {
             throw new InvalidStateTransitionException("Fixture", status.name(), operation);
+        }
+    }
+
+    private void requirePlayersFitTeam(MatchEvent event) {
+        Team team = event.getTeam();
+        List<LineupEntry> lineup = getLineup(team);
+        if (!lineup.isEmpty()) {
+            if (event.getPlayer() == null) {
+                throw new IllegalArgumentException(
+                        "A lineup is registered for %s: select the player from it".formatted(team.getName()));
+            }
+            requireInLineup(lineup, event.getPlayer());
+            if (event.getRelatedPlayer() != null) {
+                requireInLineup(lineup, event.getRelatedPlayer());
+            }
+            return;
+        }
+        for (Player player : new Player[] {event.getPlayer(), event.getRelatedPlayer()}) {
+            if (player != null && !isSameTeam(player.getTeam(), team)) {
+                throw new IllegalArgumentException(
+                        "%s does not play for %s".formatted(player.getName(), team.getName()));
+            }
+        }
+    }
+
+    private void requireInLineup(List<LineupEntry> lineup, Player player) {
+        boolean listed = lineup.stream().anyMatch(entry -> entry.getPlayer().getId().equals(player.getId()));
+        if (!listed) {
+            throw new IllegalArgumentException("%s is not in the lineup of this match".formatted(player.getName()));
         }
     }
 
@@ -326,6 +481,10 @@ public class Fixture {
 
     public List<ResultAudit> getAudits() {
         return Collections.unmodifiableList(audits);
+    }
+
+    public List<LineupEntry> getLineupEntries() {
+        return Collections.unmodifiableList(lineupEntries);
     }
 
     @Override

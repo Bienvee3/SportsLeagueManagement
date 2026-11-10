@@ -80,4 +80,52 @@
     }, 4000);
   });
 
+  /* ---- match sheet: lineup row checkboxes (starter unchecks bench and vice versa) ---- */
+  document.querySelectorAll('tr[data-lineup-row]').forEach(row => {
+    const starter = row.querySelector('input[name="starterIds"]');
+    const bench   = row.querySelector('input[name="benchIds"]');
+    if (starter && bench) {
+      starter.addEventListener('change', () => { if (starter.checked) bench.checked = false; });
+      bench.addEventListener('change',   () => { if (bench.checked) starter.checked = false; });
+    }
+  });
+
+  /* ---- match event form: toggle between lineup select and free-text name by team ---- */
+  const eventForm = document.querySelector('form[data-event-form]');
+  if (eventForm) {
+    const teamSelect = eventForm.querySelector('select[name="teamId"]');
+    const textFields = eventForm.querySelectorAll('[data-text-field]');
+    const lineupFields = eventForm.querySelectorAll('[data-lineup-field]');
+    const playerSelects = eventForm.querySelectorAll('select[name="playerId"], select[name="relatedPlayerId"]');
+
+    function syncEventFields() {
+      const opt = teamSelect.selectedOptions[0];
+      const hasLineup = opt && opt.dataset.hasLineup === 'true';
+      const teamId = opt ? opt.value : '';
+
+      textFields.forEach(wrapper => {
+        wrapper.classList.toggle('d-none', hasLineup);
+        wrapper.querySelectorAll('input, select').forEach(input => input.disabled = hasLineup);
+      });
+      lineupFields.forEach(wrapper => {
+        wrapper.classList.toggle('d-none', !hasLineup);
+        wrapper.querySelectorAll('input, select').forEach(input => input.disabled = !hasLineup);
+      });
+      playerSelects.forEach(sel => {
+        Array.from(sel.options).forEach((option, idx) => {
+          if (idx === 0) return; // keep "Select player…"
+          const matches = option.dataset.team === teamId;
+          option.hidden = !matches;
+          option.disabled = !matches;
+        });
+        if (sel.selectedOptions[0] && sel.selectedOptions[0].disabled) {
+          sel.value = '';
+        }
+      });
+    }
+
+    teamSelect && teamSelect.addEventListener('change', syncEventFields);
+    syncEventFields();
+  }
+
 })();

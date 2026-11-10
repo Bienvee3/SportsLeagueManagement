@@ -2,8 +2,10 @@ package com.league.sportsleague.application.service;
 
 import com.league.sportsleague.application.dto.CorrectResultRequest;
 import com.league.sportsleague.application.dto.FixtureResponse;
+import com.league.sportsleague.application.dto.MatchSheetResponse;
 import com.league.sportsleague.application.dto.RecordMatchEventRequest;
 import com.league.sportsleague.application.dto.RecordResultRequest;
+import com.league.sportsleague.application.dto.SubmitLineupRequest;
 import com.league.sportsleague.domain.exception.EntityNotFoundException;
 import com.league.sportsleague.domain.exception.InvalidStateTransitionException;
 import com.league.sportsleague.domain.model.*;
@@ -186,7 +188,7 @@ class FixtureServiceTest {
         when(fixtureRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         RecordMatchEventRequest req = new RecordMatchEventRequest(
-                teamId, MatchEventType.GOAL, 23, "Bruno Petkovic", null, null);
+                teamId, MatchEventType.GOAL, 23, "Bruno Petkovic", null, null, null, null);
         UUID eventId = fixtureService.recordMatchEvent(id, req);
 
         assertNotNull(eventId);
@@ -205,7 +207,7 @@ class FixtureServiceTest {
         when(teamRepository.findById(any())).thenReturn(Optional.empty());
 
         RecordMatchEventRequest req = new RecordMatchEventRequest(
-                UUID.randomUUID(), MatchEventType.GOAL, 23, "Player", null, null);
+                UUID.randomUUID(), MatchEventType.GOAL, 23, "Player", null, null, null, null);
         assertThrows(EntityNotFoundException.class,
                 () -> fixtureService.recordMatchEvent(id, req));
     }
@@ -250,7 +252,7 @@ class FixtureServiceTest {
         when(fixtureRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         RecordMatchEventRequest req = new RecordMatchEventRequest(
-                teamId, MatchEventType.OWN_GOAL, 12, "Defender", null, null);
+                teamId, MatchEventType.OWN_GOAL, 12, "Defender", null, null, null, null);
         fixtureService.recordMatchEvent(id, req);
 
         assertEquals(0, fixture.getHomeScore());
@@ -268,7 +270,7 @@ class FixtureServiceTest {
         when(fixtureRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         RecordMatchEventRequest req = new RecordMatchEventRequest(
-                teamId, MatchEventType.YELLOW_CARD, 40, "Midfielder", null, null);
+                teamId, MatchEventType.YELLOW_CARD, 40, "Midfielder", null, null, null, null);
         fixtureService.recordMatchEvent(id, req);
 
         assertEquals(0, fixture.getHomeScore());
@@ -283,7 +285,7 @@ class FixtureServiceTest {
         when(teamRepository.findById(home.getId())).thenReturn(Optional.of(home));
 
         RecordMatchEventRequest req = new RecordMatchEventRequest(
-                home.getId(), MatchEventType.GOAL, 90, "Striker", null, null);
+                home.getId(), MatchEventType.GOAL, 90, "Striker", null, null, null, null);
 
         assertThrows(InvalidStateTransitionException.class,
                 () -> fixtureService.recordMatchEvent(fixture.getId(), req));
@@ -304,7 +306,7 @@ class FixtureServiceTest {
         when(fixtureRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         fixtureService.recordMatchEvent(fixture.getId(), new RecordMatchEventRequest(
-                away.getId(), MatchEventType.YELLOW_CARD, 70, "Defender", null, null));
+                away.getId(), MatchEventType.YELLOW_CARD, 70, "Defender", null, null, null, null));
 
         assertEquals(1, fixture.getEvents().size());
         assertEquals(2, fixture.getHomeScore());
@@ -321,7 +323,7 @@ class FixtureServiceTest {
         when(teamRepository.findById(outsider.getId())).thenReturn(Optional.of(outsider));
 
         RecordMatchEventRequest req = new RecordMatchEventRequest(
-                outsider.getId(), MatchEventType.GOAL, 12, "Outsider", null, null);
+                outsider.getId(), MatchEventType.GOAL, 12, "Outsider", null, null, null, null);
 
         assertThrows(IllegalArgumentException.class,
                 () -> fixtureService.recordMatchEvent(fixture.getId(), req));
@@ -359,7 +361,7 @@ class FixtureServiceTest {
         when(fixtureRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         fixtureService.recordMatchEvent(fixture.getId(), new RecordMatchEventRequest(
-                away.getId(), MatchEventType.RED_CARD, 80, "Defender", null, null));
+                away.getId(), MatchEventType.RED_CARD, 80, "Defender", null, null, null, null));
 
         assertEquals(3, fixture.getHomeScore());
         assertEquals(0, fixture.getAwayScore());
@@ -427,10 +429,140 @@ class FixtureServiceTest {
 
         assertThrows(InvalidStateTransitionException.class,
                 () -> fixtureService.recordMatchEvent(fixture.getId(), new RecordMatchEventRequest(
-                        home.getId(), MatchEventType.YELLOW_CARD, 5, "Midfielder", null, null)));
+                        home.getId(), MatchEventType.YELLOW_CARD, 5, "Midfielder", null, null, null, null)));
 
         assertTrue(fixture.getEvents().isEmpty());
         verify(fixtureRepository, never()).save(any());
+    }
+
+    // ── submitLineup / clearLineup / getMatchSheet ────────────────────────────
+
+    private List<Player> populateSquad(Team team, int count) {
+        List<Player> list = new java.util.ArrayList<>();
+        for (int i = 1; i <= count; i++) {
+            list.add(team.addPlayer(team.getShortCode().value() + " P" + i, i, "Pos"));
+        }
+        return list;
+    }
+
+    @Test
+    @DisplayName("submitLineup resolves player ids against the team, submits and saves")
+    void submitLineupResolvesAndSaves() {
+        List<Player> squad = populateSquad(home, 14);
+        List<UUID> starters = squad.subList(0, 11).stream().map(Player::getId).toList();
+        List<UUID> bench = squad.subList(11, 14).stream().map(Player::getId).toList();
+        UUID captain = starters.get(0);
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+
+        fixtureService.submitLineup(fixture.getId(), home.getId(), new SubmitLineupRequest(starters, bench, captain));
+
+        assertTrue(fixture.hasLineup(home));
+        assertEquals(14, fixture.getLineup(home).size());
+        verify(fixtureRepository).save(fixture);
+    }
+
+    @Test
+    @DisplayName("submitLineup throws EntityNotFoundException when a player id is not in the team")
+    void submitLineupThrowsWhenPlayerNotFound() {
+        populateSquad(home, 10);
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+
+        assertThrows(EntityNotFoundException.class,
+                () -> fixtureService.submitLineup(fixture.getId(), home.getId(),
+                        new SubmitLineupRequest(List.of(UUID.randomUUID()), List.of(), null)));
+    }
+
+    @Test
+    @DisplayName("submitLineup rejects a team that does not play in the fixture and saves nothing")
+    void submitLineupRejectsForeignTeam() {
+        Team outsider = new Team("Rijeka", "RIJ", "Rujevica", "Rijeka", 1906);
+        Player foreign = outsider.addPlayer("Outsider", 7, null);
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> fixtureService.submitLineup(fixture.getId(), outsider.getId(),
+                        new SubmitLineupRequest(List.of(foreign.getId()), List.of(), null)));
+
+        assertEquals("Team does not play in this fixture", ex.getMessage());
+        assertTrue(fixture.getLineupEntries().isEmpty());
+        verify(fixtureRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("clearLineup clears the lineup of the team and saves")
+    void clearLineupClearsAndSaves() {
+        List<Player> squad = populateSquad(home, 11);
+        fixture.submitLineup(home, squad, List.of(), null);
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+
+        fixtureService.clearLineup(fixture.getId(), home.getId());
+
+        assertFalse(fixture.hasLineup(home));
+        verify(fixtureRepository).save(fixture);
+    }
+
+    @Test
+    @DisplayName("recordMatchEvent with playerId links the squad player and copies its name")
+    void recordMatchEventWithPlayerId() {
+        Player striker = home.addPlayer("Bruno Petkovic", 9, "Forward");
+        Player playmaker = home.addPlayer("Martin Baturina", 10, "Midfielder");
+        fixture.kickOff();
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+        when(teamRepository.findById(home.getId())).thenReturn(Optional.of(home));
+        when(fixtureRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        RecordMatchEventRequest req = new RecordMatchEventRequest(
+                home.getId(), MatchEventType.GOAL, 23, null, null, null, striker.getId(), playmaker.getId());
+        fixtureService.recordMatchEvent(fixture.getId(), req);
+
+        assertEquals(1, fixture.getEvents().size());
+        MatchEvent event = fixture.getEvents().get(0);
+        assertEquals(striker, event.getPlayer());
+        assertEquals(playmaker, event.getRelatedPlayer());
+        assertEquals("Bruno Petkovic", event.getPlayerName());
+        assertEquals("Martin Baturina", event.getAssistingPlayer());
+    }
+
+    @Test
+    @DisplayName("recordMatchEvent with neither a player id nor a player name is rejected and nothing is saved")
+    void recordMatchEventWithoutPlayerIsRejected() {
+        fixture.kickOff();
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+        when(teamRepository.findById(home.getId())).thenReturn(Optional.of(home));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> fixtureService.recordMatchEvent(fixture.getId(), new RecordMatchEventRequest(
+                        home.getId(), MatchEventType.YELLOW_CARD, 30, "  ", null, null, null, null)));
+
+        assertEquals("A player must be selected or named", ex.getMessage());
+        assertTrue(fixture.getEvents().isEmpty());
+        verify(fixtureRepository, never()).save(any());
+        verify(chronicleRepository, never()).deleteByFixtureId(any());
+    }
+
+    @Test
+    @DisplayName("getMatchSheet exposes sport sizes, lineup submission status and squad options")
+    void getMatchSheetExposesDetails() {
+        List<Player> squad = populateSquad(home, 15);
+        fixture.submitLineup(home, squad.subList(0, 11), squad.subList(11, 14), squad.get(0));
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+
+        MatchSheetResponse sheet = fixtureService.getMatchSheet(fixture.getId());
+
+        assertEquals(11, sheet.startersRequired());
+        assertEquals(12, sheet.maxBench());
+        assertTrue(sheet.home().lineupSubmitted());
+        assertFalse(sheet.away().lineupSubmitted());
+        assertEquals(11, sheet.home().starters().size());
+        assertEquals(3, sheet.home().bench().size());
+        assertEquals(15, sheet.home().squad().size());
+        assertTrue(sheet.home().starters().get(0).captain());
+        // squad options are ordered by shirt number: #1 starts as captain, #12 is on the bench, #15 is not selected
+        assertEquals("STARTER", sheet.home().squad().get(0).selectedRole());
+        assertTrue(sheet.home().squad().get(0).captain());
+        assertEquals("SUBSTITUTE", sheet.home().squad().get(11).selectedRole());
+        assertNull(sheet.home().squad().get(14).selectedRole());
+        assertTrue(sheet.away().squad().isEmpty());
     }
 
     // ── findById ──────────────────────────────────────────────────────────────
