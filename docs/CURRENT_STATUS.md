@@ -1,8 +1,8 @@
 # Current Project Status — Sports League Management
 
-**Last Updated**: 2026-11-08
+**Last Updated**: 2026-11-10
 **Active Branch**: `main`
-**Latest Local Commit**: `3a0d074 fix(infra): bind Postgres to loopback and move DB password to environment`
+**Latest Local Commit**: `287df81 feat(service): add season player statistics`
 **Git Working Tree**: Clean after the `docs(status)` commit that records this note.
 **Push to origin**: Not yet — awaiting explicit user authorization per AGENTS.md §6.4.
 
@@ -93,12 +93,14 @@ Milestone 1 is 100% complete. Architecture restructuring Phases 1–5 are comple
 
 ---
 
-## 4. Test Suite — 376/376
+## 4. Test Suite — 539/539
 
 ```
-cmd.exe /c "cd /d C:\Users\Bienve\dev\Java\SportsLeagueManagement && mvnw.cmd test"
-Tests run: 376, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS (2026-11-07)
+cmd.exe /c "cd /d C:\Users\Bienve\dev\Java\SportsLeagueManagement && mvnw.cmd verify"
+Tests run: 539, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS, JaCoCo "All coverage checks have been met" (2026-11-10)
 ```
+
+The per-class table below is the 2026-11-07 snapshot; new classes since then: `TeamSquadTest`, `FixtureLineupTest`, `LineupRulesTest`, `PitchTimelineTest`, `SuspensionCalculatorTest`, `PlayerStatsCalculatorTest`, `FixtureViewControllerTest`.
 
 | Test Class | Count | Type |
 |---|---|---|
@@ -225,3 +227,14 @@ All features implemented and verified with 326/326 tests:
 - **Finding 3 (DB credential on a public port)**: `docker-compose.yml` now publishes Postgres on `127.0.0.1:5432` only and takes the credentials from `.env` (`SPRING_DATASOURCE_PASSWORD` is mandatory — compose refuses to start without it; user and db have non-secret defaults). The `dev` profile in `application.yml` reads `SPRING_DATASOURCE_URL`/`USERNAME` (defaults: local URL, `league_admin`) and `SPRING_DATASOURCE_PASSWORD` (no default, the app fails fast without it). The `test` profile (H2) and the Testcontainers profile do not use these values. README documents the setup and the volume caveat (an existing volume keeps the OLD password: `docker compose down -v` or `\password league_admin` in psql). **The value `league_dev_secret` was committed and published in git history and must be considered burned: rotate the password of any real database that ever used it** (history was not rewritten).
 - **Verification (2026-11-08)**: full suite 401/401 (`BUILD SUCCESS`). Runtime smoke (app on Postgres with the `.env` credentials, `docker compose ps` → `127.0.0.1:5432->5432/tcp`, data volume intact): OFFICIAL forged goal on a FINISHED fixture → flash "Cannot addGoalEvent Fixture in state FINISHED", score 2-1 and events unchanged; event of a foreign team → 400; VIEWER POST generate/translate → 403, no Generate button, GET of a missing language → 204 with a hint, stored text readable; OFFICIAL generate (EN, 12 s) and automatic HR translation (8 s) against real Gemini; `docker compose --env-file <empty> config` fails with "set SPRING_DATASOURCE_PASSWORD in .env".
 - **Known issues / follow-ups**: (1) nothing moves a fixture to `IN_PROGRESS`, so the lifecycle is SCHEDULED → FINISHED; goals must be entered before "Record result". (2) A chronicle generated while another request changes the fixture can still describe the older state (same window as before, now without a held DB connection). (3) Two concurrent "Generate" requests for the same fixture can hit the unique `(fixture_id, language)` constraint (500); staff-only, rare. (4) No per-user rate limit on paid AI calls. (5) An existing Postgres volume keeps its old password: align it with `.env` (README).
+
+## 9. Session 2026-11-10 — match sheet features (squads, lineups, live match, substitutions, suspensions, player stats)
+Six commits, each with a green full suite: `1554fd7`, `cb9f072`, `57533bb`, `0e2d7ab`, `947a5c5`, `287df81`.
+- **Squads** (`1554fd7`): V8 `players` (team FK, shirt number 1–99, free-text `playing_position`, `active`). `Player` is managed through `Team.addPlayer/updatePlayer/removePlayer`; shirt numbers are unique among active players (domain rule, no DB constraint); removal only deactivates, so history keeps its references. `TeamService` squad methods, REST `GET/POST /api/teams/{id}/players`, `PUT/DELETE .../players/{playerId}` (mutations ADMIN), Squad card on the team page + `teams/player-form.html`.
+- **Live match** (`cb9f072`): `Fixture.kickOff()` (SCHEDULED → IN_PROGRESS, 0-0) and `finish()` (IN_PROGRESS → FINISHED, discards stale chronicles). No event before kick-off; goal events only while IN_PROGRESS. "Record result" straight from SCHEDULED still works. REST `POST /api/fixtures/{id}/kick-off|finish`, "Match control" card. Closes known issue (1) of section 8.
+- **Lineups** (`57533bb`): V9 `lineup_entries` (unique fixture+player) and `match_events.player_id/related_player_id`. `LineupRules` enum holds per-sport sizes (football 11 + 12, basketball 5 + 7, handball 7 + 9, volleyball 6 + 8). `Fixture.submitLineup/clearLineup` only before kick-off, applied as a diff (avoids the insert-before-delete unique violation). Flexible sheet: kick-off without lineups is allowed with a warning + confirm. A team with a lineup must reference lineup players in its events; without a lineup free-text names still work. `relatedPlayer` = assist provider, or player coming on in a SUBSTITUTION. New "Lineups" tab (all roles) and lineup editor (ADMIN/OFFICIAL); event form switches between lineup selects and free text (`app.js`). REST `GET/PUT/DELETE /api/fixtures/{id}/lineups[/{teamId}]`. `RecordMatchEventRequest` gained `playerId`, `relatedPlayerId`; `playerName` no longer `@NotBlank`.
+- **Substitutions** (`0e2d7ab`): `PitchTimeline` replays starters + substitutions + red cards by minute: player off must be on the pitch, player on must not be, no re-entry in football, sent-off players cannot come on, limit per sport (football 5). An impossible event is rejected and not stored; deleting an event that later events depend on is refused.
+- **Suspensions** (`947a5c5`): `SuspensionCalculator` derives bans from the team's last finished match of the season: red card, or every 5th yellow card → 1 match. Enforced in `submitLineup` and again at kick-off; the lineup editor disables suspended players and the Lineups tab lists them.
+- **Player stats** (`287df81`): `PlayerStatsCalculator` (finished fixtures only): appearances, minutes (from lineups; none for volleyball), goals, assists, cards. Legacy text-only events are grouped per team and name. Page `/leagues/{l}/seasons/{s}/stats` ("Player stats" button), REST `GET .../player-stats`.
+- **Verification (2026-11-10)**: `mvnw verify` → 539/539, JaCoCo gate met. Runtime smoke on PostgreSQL 17 (Flyway applied V8 + V9 to the existing dev DB): ADMIN added 14 players to Dinamo and Hajduk, duplicate #10 → "Shirt number 10 is already taken by Marko Pjaca", edit + removal OK. OFFICIAL on a new Dinamo–Hajduk fixture: 10 starters → "Exactly 11 starters are required, got 10"; 11 + 3 + captain saved; one-lineup warning "No lineup submitted for: HNK Hajduk Split" with kick-off confirm; kick-off → In progress 0-0, editor hidden. Goal from dropdown → 1-0 with assist; sub 60' accepted, "(on: …)" shown; same player on again at 70' → "Sandro Kulenovic is already on the pitch at minute 70"; second red → "already been sent off". Final whistle. Next Dinamo fixture: red-carded #4 disabled with "red card" badge and listed as suspended; forged POST with #4 → "Sergi Dominguez is suspended for this match". Five subs accepted, sixth → "Substitution limit reached (5)". Rijeka (no lineup) free-text goal still accepted. Stats page as VIEWER: Petkovic #9 150' 1 goal, replaced starter 60' + 55' = 115', Dominguez 75' 1 red, seeded text scorers listed without shirt number. VIEWER: Lineups tab visible, no Actions tab, POST clear lineup → 403. HR labels verified (tabs, lineups, "(ulazi: …)", stats headers, "Momčad"). The dev DB now holds these smoke-test players, rounds 2–3 and their fixtures.
+- **Known issues / follow-ups**: (1) Seeded/legacy text-only events and squad-linked events of the same person appear as two rows in player stats (by design: names are not matched to squad players). (2) A second yellow card in one match is not turned into a red automatically; the official records the red card. (3) Suspension rule (red = 1 match, every 5th yellow = 1 match) is the same for every sport. (4) Assist providers named only as free text get no appearance.
