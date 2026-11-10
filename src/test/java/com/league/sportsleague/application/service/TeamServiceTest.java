@@ -219,4 +219,54 @@ class TeamServiceTest {
         assertThrows(EntityNotFoundException.class,
                 () -> teamService.findPlayer(sampleTeam.getId(), player.getId()));
     }
+
+    // ── addPlayersFromText ────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("addPlayersFromText adds one player per line, position optional, blank lines skipped")
+    void addPlayersFromTextAddsAll() {
+        when(teamRepository.findById(sampleTeam.getId())).thenReturn(Optional.of(sampleTeam));
+
+        int added = teamService.addPlayersFromText(sampleTeam.getId(),
+                "1 Ivan Nevistic, Goalkeeper\n\n9  Bruno Petkovic ; Forward\r\n10. Martin Baturina\n");
+
+        assertEquals(3, added);
+        List<Player> squad = sampleTeam.getActivePlayers();
+        assertEquals(List.of("Ivan Nevistic", "Bruno Petkovic", "Martin Baturina"),
+                squad.stream().map(Player::getName).toList());
+        assertEquals("Forward", squad.get(1).getPlayingPosition());
+        assertNull(squad.get(2).getPlayingPosition());
+        verify(teamRepository).save(sampleTeam);
+    }
+
+    @Test
+    @DisplayName("addPlayersFromText names the bad line and saves nothing")
+    void addPlayersFromTextRejectsBadLine() {
+        when(teamRepository.findById(sampleTeam.getId())).thenReturn(Optional.of(sampleTeam));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> teamService.addPlayersFromText(sampleTeam.getId(), "1 Ivan Nevistic\nBruno Petkovic"));
+
+        assertTrue(ex.getMessage().startsWith("Line 2: "), ex.getMessage());
+        verify(teamRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("addPlayersFromText reports a duplicate shirt number with its line")
+    void addPlayersFromTextRejectsDuplicateNumber() {
+        when(teamRepository.findById(sampleTeam.getId())).thenReturn(Optional.of(sampleTeam));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> teamService.addPlayersFromText(sampleTeam.getId(), "9 Bruno Petkovic\n9 Sandro Kulenovic"));
+
+        assertEquals("Line 2: Shirt number 9 is already taken by Bruno Petkovic", ex.getMessage());
+        verify(teamRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("addPlayersFromText rejects empty input")
+    void addPlayersFromTextRejectsEmpty() {
+        when(teamRepository.findById(sampleTeam.getId())).thenReturn(Optional.of(sampleTeam));
+        assertThrows(IllegalArgumentException.class, () -> teamService.addPlayersFromText(sampleTeam.getId(), "  \n "));
+    }
 }

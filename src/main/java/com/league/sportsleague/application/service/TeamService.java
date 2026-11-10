@@ -59,6 +59,45 @@ public class TeamService {
         return player.getId();
     }
 
+    private static final java.util.regex.Pattern PLAYER_LINE = java.util.regex.Pattern.compile(
+            "^(\\d{1,3})[\\s.:;\\-]+([^,;\\t]+?)\\s*(?:[,;\\t]\\s*(.*?))?\\s*$");
+
+    /**
+     * Adds a whole squad from pasted text, one player per line: {@code <number> <name>[, <position>]}
+     * (separators {@code ,} {@code ;} or tab). Blank lines are skipped. All players are added or none:
+     * the first invalid line aborts the transaction.
+     *
+     * @return the number of players added
+     * @throws IllegalArgumentException naming the offending line
+     */
+    public int addPlayersFromText(UUID teamId, String text) {
+        Team team = requireTeam(teamId);
+        String[] lines = text == null ? new String[0] : text.split("\\R");
+        int added = 0;
+        for (int i = 0; i < lines.length; i++) {
+            String line = lines[i].strip();
+            if (line.isEmpty()) {
+                continue;
+            }
+            java.util.regex.Matcher m = PLAYER_LINE.matcher(line);
+            if (!m.matches()) {
+                throw new IllegalArgumentException(
+                        "Line %d: expected \"<number> <name>, <position>\" but got \"%s\"".formatted(i + 1, line));
+            }
+            try {
+                team.addPlayer(m.group(2), Integer.parseInt(m.group(1)), m.group(3));
+            } catch (IllegalArgumentException invalid) {
+                throw new IllegalArgumentException("Line %d: %s".formatted(i + 1, invalid.getMessage()));
+            }
+            added++;
+        }
+        if (added == 0) {
+            throw new IllegalArgumentException("Paste at least one player, one per line: \"<number> <name>, <position>\"");
+        }
+        teamRepository.save(team);
+        return added;
+    }
+
     public void updatePlayer(UUID teamId, UUID playerId, PlayerRequest request) {
         Team team = requireTeam(teamId);
         team.updatePlayer(requireActivePlayer(team, playerId),

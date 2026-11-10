@@ -10,7 +10,9 @@
 
   <div class="page-header">
     <div class="d-flex align-items-center gap-3">
-      <a th:href="@{/teams}" class="btn btn-sm btn-outline-secondary">
+      <a th:href="${returnFixture != null} ? @{/fixtures/{id}(id=${returnFixture})} : @{/teams}"
+         th:title="${returnFixture != null} ? #{teams.squad.backToMatch} : null"
+         class="btn btn-sm btn-outline-secondary">
         <i class="bi bi-arrow-left"></i>
       </a>
       <span class="badge font-monospace fs-6"
@@ -99,7 +101,7 @@
                  class="btn btn-sm btn-outline-primary" th:title="#{teams.action.edit}">
                 <i class="bi bi-pencil"></i>
               </a>
-              <form th:action="@{/teams/{id}/players/{pid}/delete(id=${team.id},pid=${p.id})}"
+              <form th:action="@{/teams/{id}/players/{pid}/delete(id=${team.id},pid=${p.id},fixture=${returnFixture})}"
                     method="post" class="d-inline">
                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                 <button type="submit" class="btn btn-sm btn-outline-danger"
@@ -114,9 +116,27 @@
       </table>
     </div>
 
-    <!-- Add player (ADMIN) -->
+    <!-- Add a whole squad at once (ADMIN): one player per line -->
     <div sec:authorize="hasRole('ADMIN')" class="p-3 border-top border-secondary-subtle">
-      <form th:action="@{/teams/{id}/players(id=${team.id})}" method="post">
+      <form th:action="@{/teams/{id}/players/bulk(id=${team.id},fixture=${returnFixture})}" method="post">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <label for="bulkLines" class="form-label small fw-medium" th:text="#{teams.squad.bulk.title}">Add several players</label>
+        <textarea id="bulkLines" name="lines" class="form-control font-monospace" rows="6"
+                  th:text="${bulkLines}"
+                  th:placeholder="#{teams.squad.bulk.placeholder}"
+                  placeholder="1 Dominik Livakovic, Goalkeeper&#10;9 Bruno Petkovic, Forward"></textarea>
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-2">
+          <span class="form-text m-0" th:text="#{teams.squad.bulk.help}">One player per line: number, name and optional position after a comma.</span>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-list-check me-1"></i><span th:text="#{teams.squad.bulk.add}">Add all</span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Add one player (ADMIN) -->
+    <div sec:authorize="hasRole('ADMIN')" class="p-3 border-top border-secondary-subtle">
+      <form th:action="@{/teams/{id}/players(id=${team.id},fixture=${returnFixture})}" method="post">
         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
         <div class="row g-3 align-items-end">
           <div class="col-4 col-md-2">

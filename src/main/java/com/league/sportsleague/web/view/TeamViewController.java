@@ -44,10 +44,17 @@ public class TeamViewController {
         return "teams/list";
     }
 
+    /**
+     * @param fixture set when the page was opened from a match sheet ("Manage squad"): the back arrow
+     *                then returns to that fixture instead of the team list
+     */
     @GetMapping("/{id}")
-    public String detail(@PathVariable UUID id, Model model) {
+    public String detail(@PathVariable UUID id,
+                         @RequestParam(required = false) UUID fixture,
+                         Model model) {
         model.addAttribute("team", teamService.findById(id));
         model.addAttribute("players", teamService.findPlayers(id));
+        model.addAttribute("returnFixture", fixture);
         model.addAttribute("currentPage", "teams");
         return "teams/detail";
     }
@@ -142,10 +149,11 @@ public class TeamViewController {
     public String addPlayer(@PathVariable UUID id,
                             @Valid PlayerRequest form,
                             BindingResult br,
+                            @RequestParam(required = false) UUID fixture,
                             RedirectAttributes ra) {
         if (br.hasErrors()) {
             ra.addFlashAttribute("errorMsg", "Invalid input: " + br.getAllErrors().get(0).getDefaultMessage());
-            return "redirect:/teams/" + id;
+            return teamPage(id, fixture);
         }
         try {
             teamService.addPlayer(id, form);
@@ -153,7 +161,24 @@ public class TeamViewController {
         } catch (IllegalStateException | IllegalArgumentException e) {
             ra.addFlashAttribute("errorMsg", e.getMessage());
         }
-        return "redirect:/teams/" + id;
+        return teamPage(id, fixture);
+    }
+
+    /** Adds a whole squad at once from pasted text, one player per line: {@code <number> <name>[, <position>]}. */
+    @PostMapping("/{id}/players/bulk")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String addPlayers(@PathVariable UUID id,
+                             @RequestParam(defaultValue = "") String lines,
+                             @RequestParam(required = false) UUID fixture,
+                             RedirectAttributes ra) {
+        try {
+            teamService.addPlayersFromText(id, lines);
+            ra.addFlashAttribute("flashKey", "teams.flash.playersAdded");
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            ra.addFlashAttribute("errorMsg", e.getMessage());
+            ra.addFlashAttribute("bulkLines", lines); // keep the pasted text so it can be corrected
+        }
+        return teamPage(id, fixture);
     }
 
     @GetMapping("/{id}/players/{playerId}/edit")
@@ -188,9 +213,16 @@ public class TeamViewController {
 
     @PostMapping("/{id}/players/{playerId}/delete")
     @PreAuthorize("hasRole('ADMIN')")
-    public String removePlayer(@PathVariable UUID id, @PathVariable UUID playerId, RedirectAttributes ra) {
+    public String removePlayer(@PathVariable UUID id,
+                               @PathVariable UUID playerId,
+                               @RequestParam(required = false) UUID fixture,
+                               RedirectAttributes ra) {
         teamService.removePlayer(id, playerId);
         ra.addFlashAttribute("flashKey", "teams.flash.playerRemoved");
-        return "redirect:/teams/" + id;
+        return teamPage(id, fixture);
+    }
+
+    private static String teamPage(UUID teamId, UUID fixture) {
+        return "redirect:/teams/" + teamId + (fixture == null ? "" : "?fixture=" + fixture);
     }
 }

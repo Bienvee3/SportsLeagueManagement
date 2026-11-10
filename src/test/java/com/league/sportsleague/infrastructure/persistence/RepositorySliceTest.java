@@ -198,6 +198,22 @@ class RepositorySliceTest {
             assertFalse(reloadedRemoved.isActive());
             assertNull(reloadedRemoved.getPlayingPosition());
         }
+
+        @Test
+        @DisplayName("V10 seeds an 18-player squad for each seeded team (2 GK, 6 DF, 5 MF, 5 FW)")
+        void seededSquads() {
+            for (UUID teamId : List.of(DINAMO_ID, HAJDUK_ID,
+                    UUID.fromString("22222222-2222-2222-2222-222222222203"),
+                    UUID.fromString("22222222-2222-2222-2222-222222222204"))) {
+                Team team = teamRepository.findById(teamId).orElseThrow();
+                List<Player> squad = team.getActivePlayers();
+                assertEquals(18, squad.size(), team.getName());
+                assertEquals(2, squad.stream().filter(p -> "Goalkeeper".equals(p.getPlayingPosition())).count(), team.getName());
+                assertEquals(18, squad.stream().map(Player::getShirtNumber).distinct().count(), team.getName());
+            }
+            assertTrue(teamRepository.findById(DINAMO_ID).orElseThrow().getActivePlayers().stream()
+                    .anyMatch(p -> p.getName().equals("Bruno Petkovic") && p.getShirtNumber() == 9));
+        }
     }
 
     // ── SeasonRepository ─────────────────────────────────────────────────────
