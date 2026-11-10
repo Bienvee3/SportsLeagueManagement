@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/layout}">
+<head><title th:text="#{seasons.stats.title}">Player statistics</title></head>
+<body>
+<th:block layout:fragment="content">
+
+  <div class="page-header">
+    <div class="d-flex align-items-center gap-3">
+      <a th:href="@{/leagues/{lid}/seasons/{sid}(lid=${league.id},sid=${season.id})}"
+         class="btn btn-sm btn-outline-secondary" th:title="#{seasons.stats.back}">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <div>
+        <h1 class="h3 fw-bold mb-1" th:text="#{seasons.stats.title}">Player statistics</h1>
+        <div class="text-secondary small" th:text="${league.name} + ' · ' + ${season.name}">League · Season</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sport-card overflow-hidden">
+
+    <div th:if="${#lists.isEmpty(stats.entries)}" class="text-center py-5 px-3">
+      <i class="bi bi-graph-up display-4 text-secondary mb-3 d-block"></i>
+      <p class="text-secondary mb-0" th:text="#{seasons.stats.empty}">No statistics yet. They appear once matches are finished.</p>
+    </div>
+
+    <div th:if="${not #lists.isEmpty(stats.entries)}" class="table-responsive">
+      <table class="table standings-table align-middle mb-0">
+        <thead>
+          <tr>
+            <th th:text="#{seasons.stats.col.player}">Player</th>
+            <th th:text="#{seasons.stats.col.team}">Team</th>
+            <th class="text-center" th:title="#{seasons.stats.col.appearancesTitle}" th:text="#{seasons.stats.col.appearances}">Apps</th>
+            <th th:if="${stats.minutesTracked}" class="text-center d-none d-sm-table-cell"
+                th:title="#{seasons.stats.col.minutesTitle}" th:text="#{seasons.stats.col.minutes}">Min</th>
+            <th class="text-center fw-bold" th:title="#{seasons.stats.col.goalsTitle}" th:text="#{seasons.stats.col.goals}">G</th>
+            <th class="text-center" th:title="#{seasons.stats.col.assistsTitle}" th:text="#{seasons.stats.col.assists}">A</th>
+            <th class="text-center" th:title="#{seasons.stats.col.yellowTitle}" th:text="#{seasons.stats.col.yellow}">YC</th>
+            <th class="text-center" th:title="#{seasons.stats.col.redTitle}" th:text="#{seasons.stats.col.red}">RC</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="e : ${stats.entries}">
+            <td class="fw-semibold">
+              <span th:if="${e.shirtNumber != null}" class="badge bg-dark border font-monospace me-1"
+                    th:text="|#${e.shirtNumber}|">#9</span>
+              <span th:text="${e.playerName}">Player</span>
+            </td>
+            <td class="text-secondary small team-cell" th:text="${e.teamName}" th:title="${e.teamName}">Team</td>
+            <td class="text-center font-monospace small" th:text="${e.appearances}">0</td>
+            <td th:if="${stats.minutesTracked}" class="text-center font-monospace small d-none d-sm-table-cell"
+                th:text="${e.minutesPlayed}">0</td>
+            <td class="text-center fw-bold font-monospace" style="color:#f97316" th:text="${e.goals}">0</td>
+            <td class="text-center font-monospace small" th:text="${e.assists}">0</td>
+            <td class="text-center font-monospace small text-warning" th:text="${e.yellowCards}">0</td>
+            <td class="text-center font-monospace small text-danger" th:text="${e.redCards}">0</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="px-3 py-2 border-top border-secondary-subtle text-secondary small d-flex gap-1 align-items-center">
+        <i class="bi bi-clock-history"></i>
+        <span th:text="#{seasons.detail.updated}">Updated</span>
+        <span th:text="${stats.computedAt.toString().substring(0,16).replace('T',' ')}">now</span>
+      </div>
+    </div>
+  </div>
+
+</th:block>
+</body>
+</html>

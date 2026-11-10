@@ -31,6 +31,10 @@
          class="btn btn-outline-light btn-sm">
         <i class="bi bi-calendar3 me-1"></i><span th:text="#{seasons.detail.calendar}">Calendar</span>
       </a>
+      <a th:href="@{/leagues/{lid}/seasons/{sid}/stats(lid=${league.id},sid=${season.id})}"
+         class="btn btn-outline-light btn-sm">
+        <i class="bi bi-graph-up me-1"></i><span th:text="#{seasons.detail.stats}">Player stats</span>
+      </a>
 
       <!-- Season state actions (ADMIN only) -->
       <div sec:authorize="hasRole('ADMIN')" class="d-flex flex-wrap align-items-center gap-2">

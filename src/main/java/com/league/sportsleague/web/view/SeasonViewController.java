@@ -87,6 +87,17 @@ public class SeasonViewController {
         return "seasons/calendar";
     }
 
+    @GetMapping("/{id}/stats")
+    public String playerStats(@PathVariable UUID leagueId,
+                              @PathVariable UUID id,
+                              Model model) {
+        model.addAttribute("season", seasonService.findById(id));
+        model.addAttribute("league", leagueService.findById(leagueId));
+        model.addAttribute("stats", seasonService.getPlayerStats(id));
+        model.addAttribute("currentPage", "leagues");
+        return "seasons/stats";
+    }
+
     // ── ADMIN: rounds and matches (one by one) ───────────────────────────────
 
     @PostMapping("/{id}/rounds")

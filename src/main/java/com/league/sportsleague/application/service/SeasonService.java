@@ -1,10 +1,13 @@
 package com.league.sportsleague.application.service;
 
 import com.league.sportsleague.application.dto.CreateSeasonRequest;
+import com.league.sportsleague.application.dto.PlayerStatsResponse;
 import com.league.sportsleague.application.dto.SeasonResponse;
 import com.league.sportsleague.application.dto.TeamResponse;
 import com.league.sportsleague.application.dto.RoundResponse;
 import com.league.sportsleague.application.dto.StandingsResponse;
+import com.league.sportsleague.domain.LineupRules;
+import com.league.sportsleague.domain.PlayerStatsCalculator;
 import com.league.sportsleague.domain.StandingsCalculator;
 import com.league.sportsleague.domain.exception.EntityNotFoundException;
 import com.league.sportsleague.domain.RoundRobinScheduler;
@@ -235,6 +238,16 @@ public class SeasonService {
         var fixtures = fixtureRepository.findFinishedBySeasonWithTeams(seasonId);
         var entries  = StandingsCalculator.calculate(fixtures);
         return new StandingsResponse(season.getId(), season.getName(), Instant.now(), entries);
+    }
+
+    /** Goals, assists, cards, appearances and minutes per player over the finished matches of the season. */
+    @Transactional(readOnly = true)
+    public PlayerStatsResponse getPlayerStats(UUID seasonId) {
+        Season season = requireSeason(seasonId);
+        var fixtures = fixtureRepository.findFinishedBySeasonWithTeams(seasonId);
+        boolean minutesTracked = LineupRules.forSport(season.getLeague().getSportType()).regulationMinutes() > 0;
+        return new PlayerStatsResponse(season.getId(), season.getName(), Instant.now(), minutesTracked,
+                PlayerStatsCalculator.calculate(fixtures));
     }
 
     @Transactional(readOnly = true)

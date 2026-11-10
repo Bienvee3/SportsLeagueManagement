@@ -2,6 +2,7 @@ package com.league.sportsleague.web.api;
 
 import com.league.sportsleague.application.dto.AddFixtureRequest;
 import com.league.sportsleague.application.dto.CreateSeasonRequest;
+import com.league.sportsleague.application.dto.PlayerStatsResponse;
 import com.league.sportsleague.application.dto.RegisterTeamRequest;
 import com.league.sportsleague.application.dto.RoundResponse;
 import com.league.sportsleague.application.dto.SeasonResponse;
@@ -57,6 +58,12 @@ public class SeasonRestController {
     @Operation(summary = "Get standings for a season")
     public StandingsResponse getStandings(@PathVariable UUID leagueId, @PathVariable UUID id) {
         return seasonService.getStandings(id);
+    }
+
+    @GetMapping("/{id}/player-stats")
+    @Operation(summary = "Get player statistics (goals, assists, cards, appearances, minutes) for a season")
+    public PlayerStatsResponse getPlayerStats(@PathVariable UUID leagueId, @PathVariable UUID id) {
+        return seasonService.getPlayerStats(id);
     }
 
     @PostMapping

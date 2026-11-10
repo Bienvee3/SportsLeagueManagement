@@ -469,4 +469,50 @@ class SeasonServiceTest {
         assertNotNull(response);
         assertTrue(response.entries().isEmpty());
     }
+
+    // ── getPlayerStats ────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("getPlayerStats aggregates finished fixtures and tracks minutes for football")
+    void getPlayerStatsAggregatesFinishedFixtures() {
+        Team away = new Team("Hajduk", "HAJ", "Poljud", "Split", 1911);
+        Player scorer = team.addPlayer("Bruno Petkovic", 9, "Forward");
+        Round round = new Round(season, 1, "Round 1", LocalDate.now(), LocalDate.now(), RoundStatus.SCHEDULED);
+        Fixture played = new Fixture(round, team, away, Instant.now());
+        played.kickOff();
+        played.addMatchEvent(new MatchEvent(played, team, MatchEventType.GOAL, 23, scorer, null, null));
+        played.finish();
+        when(seasonRepository.findById(season.getId())).thenReturn(Optional.of(season));
+        when(fixtureRepository.findFinishedBySeasonWithTeams(season.getId())).thenReturn(List.of(played));
+
+        var response = seasonService.getPlayerStats(season.getId());
+
+        assertEquals(season.getId(), response.seasonId());
+        assertTrue(response.minutesTracked());
+        assertEquals(1, response.entries().size());
+        assertEquals("Bruno Petkovic", response.entries().get(0).playerName());
+        assertEquals(1, response.entries().get(0).goals());
+    }
+
+    @Test
+    @DisplayName("getPlayerStats does not track minutes for volleyball")
+    void getPlayerStatsVolleyballHasNoMinutes() {
+        Season volley = new Season(new League("Volley", "volley", "VOLLEYBALL", "Croatia"),
+                "2026/2027", 2026, 2027, SeasonStatus.ACTIVE);
+        when(seasonRepository.findById(volley.getId())).thenReturn(Optional.of(volley));
+        when(fixtureRepository.findFinishedBySeasonWithTeams(volley.getId())).thenReturn(List.of());
+
+        var response = seasonService.getPlayerStats(volley.getId());
+
+        assertFalse(response.minutesTracked());
+        assertTrue(response.entries().isEmpty());
+    }
+
+    @Test
+    @DisplayName("getPlayerStats throws EntityNotFoundException when season not found")
+    void getPlayerStatsThrowsWhenSeasonNotFound() {
+        when(seasonRepository.findById(any())).thenReturn(Optional.empty());
+        assertThrows(EntityNotFoundException.class,
+                () -> seasonService.getPlayerStats(UUID.randomUUID()));
+    }
 }
