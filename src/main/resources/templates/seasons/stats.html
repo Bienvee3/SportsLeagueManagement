@@ -20,6 +20,26 @@
     </div>
   </div>
 
+  <!-- Leaderboards, side by side -->
+  <div th:if="${not #lists.isEmpty(stats.entries)}" class="row g-3 mb-4">
+    <div class="col-12 col-md-6 col-xl-4">
+      <div th:replace="~{seasons/stats-board :: board('seasons.stats.board.scorers', 'bi-trophy', ${stats.topScorers}, 'goals')}"></div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-4">
+      <div th:replace="~{seasons/stats-board :: board('seasons.stats.board.assists', 'bi-hand-index-thumb', ${stats.topAssists}, 'assists')}"></div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-4">
+      <div th:replace="~{seasons/stats-board :: board('seasons.stats.board.contributions', 'bi-lightning-charge', ${stats.topContributions}, 'contributions')}"></div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-4">
+      <div th:replace="~{seasons/stats-board :: board(${stats.minutesTracked} ? 'seasons.stats.board.minutes' : 'seasons.stats.board.appearances', 'bi-stopwatch', ${stats.mostPlayed}, ${stats.minutesTracked} ? 'minutes' : 'appearances')}"></div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-4">
+      <div th:replace="~{seasons/stats-board :: board('seasons.stats.board.discipline', 'bi-square-fill', ${stats.discipline}, 'discipline')}"></div>
+    </div>
+  </div>
+
+  <h2 th:if="${not #lists.isEmpty(stats.entries)}" class="h5 fw-semibold mb-3" th:text="#{seasons.stats.allPlayers}">All players</h2>
   <div class="sport-card overflow-hidden">
 
     <div th:if="${#lists.isEmpty(stats.entries)}" class="text-center py-5 px-3">

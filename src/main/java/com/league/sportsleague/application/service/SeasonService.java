@@ -246,7 +246,7 @@ public class SeasonService {
         Season season = requireSeason(seasonId);
         var fixtures = fixtureRepository.findFinishedBySeasonWithTeams(seasonId);
         boolean minutesTracked = LineupRules.forSport(season.getLeague().getSportType()).regulationMinutes() > 0;
-        return new PlayerStatsResponse(season.getId(), season.getName(), Instant.now(), minutesTracked,
+        return PlayerStatsResponse.of(season.getId(), season.getName(), Instant.now(), minutesTracked,
                 PlayerStatsCalculator.calculate(fixtures));
     }
 

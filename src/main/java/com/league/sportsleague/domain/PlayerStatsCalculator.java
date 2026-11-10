@@ -22,8 +22,9 @@ import java.util.UUID;
  * count, as in the standings.
  *
  * <p>Players linked to the squad are counted by id. Legacy events that only carry a free-text name are
- * counted per team and name (trimmed, case-insensitive), so the history recorded before squads existed
- * stays visible. Appearances and minutes come from the lineup when the team filed one; without a
+ * credited to the squad player of that team with the same name (trimmed, case-insensitive); names that
+ * match no squad player are counted per team and name, so history recorded before squads existed stays
+ * visible. Appearances and minutes come from the lineup when the team filed one; without a
  * lineup, every player named in an event of the team counts as one appearance and minutes are unknown.
  */
 public final class PlayerStatsCalculator {
@@ -135,8 +136,29 @@ public final class PlayerStatsCalculator {
             return null;
         }
         String trimmed = name.trim();
-        return rows.computeIfAbsent(team.getId() + "|" + trimmed.toLowerCase(Locale.ROOT),
+        String normalized = trimmed.toLowerCase(Locale.ROOT);
+        for (Player player : team.getPlayers()) {
+            if (player.getName().trim().toLowerCase(Locale.ROOT).equals(normalized)) {
+                return row(rows, team, player);
+            }
+        }
+        return rows.computeIfAbsent(team.getId() + "|" + normalized,
                 key -> new Row(null, trimmed, null, team));
+    }
+
+    /**
+     * A leaderboard: the entries with a positive {@code metric}, best first ({@code order}), at most
+     * {@code limit} of them.
+     */
+    public static List<PlayerStatsEntry> leaders(List<PlayerStatsEntry> entries,
+                                                 java.util.function.ToIntFunction<PlayerStatsEntry> metric,
+                                                 Comparator<PlayerStatsEntry> order,
+                                                 int limit) {
+        return entries.stream()
+                .filter(e -> metric.applyAsInt(e) > 0)
+                .sorted(order.thenComparing(PlayerStatsEntry::playerName))
+                .limit(limit)
+                .toList();
     }
 
     private static final class Row {

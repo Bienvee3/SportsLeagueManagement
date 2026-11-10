@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--/* One leaderboard card of the player stats page.
+       kind: goals | assists | contributions | minutes | appearances | discipline */-->
+<div th:fragment="board(titleKey, icon, entries, kind)" class="sport-card h-100">
+  <div class="px-3 py-3 border-bottom border-secondary-subtle fw-semibold">
+    <i class="bi me-2 text-warning" th:classappend="${icon}"></i><span th:text="#{${titleKey}}">Top scorers</span>
+  </div>
+  <p th:if="${#lists.isEmpty(entries)}" class="text-secondary small p-3 mb-0" th:text="#{seasons.stats.board.empty}">Nobody yet.</p>
+  <ol th:if="${not #lists.isEmpty(entries)}" class="list-unstyled mb-0 p-2">
+    <li th:each="e, stat : ${entries}" class="d-flex align-items-center gap-2 px-2 py-2"
+        th:classappend="${!stat.last} ? 'border-bottom border-secondary-subtle'">
+      <span class="fw-bold font-monospace text-center" style="min-width:22px"
+            th:style="${stat.count == 1} ? 'color:#fbbf24' : 'color:var(--bs-secondary-color)'"
+            th:text="${stat.count}">1</span>
+      <div class="flex-grow-1 text-truncate">
+        <span th:if="${e.shirtNumber != null}" class="badge bg-dark border font-monospace me-1" th:text="|#${e.shirtNumber}|">#9</span>
+        <span class="fw-semibold" th:text="${e.playerName}">Player</span>
+        <div class="text-secondary small text-truncate" th:text="${e.teamName}">Team</div>
+      </div>
+      <th:block th:switch="${kind}">
+        <span th:case="'goals'" class="fw-bold font-monospace fs-5" style="color:#f97316" th:text="${e.goals}">0</span>
+        <span th:case="'assists'" class="fw-bold font-monospace fs-5" style="color:#f97316" th:text="${e.assists}">0</span>
+        <span th:case="'contributions'" class="text-end">
+          <span class="fw-bold font-monospace fs-5" style="color:#f97316" th:text="${e.goals + e.assists}">0</span>
+          <span class="d-block text-secondary small font-monospace" th:text="|${e.goals}G ${e.assists}A|">0G 0A</span>
+        </span>
+        <span th:case="'minutes'" class="text-end">
+          <span class="fw-bold font-monospace fs-5" th:text="|${e.minutesPlayed}'|">0'</span>
+          <span class="d-block text-secondary small font-monospace" th:text="#{seasons.stats.board.apps(${e.appearances})}">0 apps</span>
+        </span>
+        <span th:case="'appearances'" class="fw-bold font-monospace fs-5" th:text="${e.appearances}">0</span>
+        <span th:case="'discipline'" class="d-flex gap-1">
+          <span class="badge text-bg-warning font-monospace" th:title="#{seasons.stats.col.yellowTitle}" th:text="${e.yellowCards}">0</span>
+          <span class="badge text-bg-danger font-monospace" th:title="#{seasons.stats.col.redTitle}" th:text="${e.redCards}">0</span>
+        </span>
+      </th:block>
+    </li>
+  </ol>
+</div>
+</body>
+</html>

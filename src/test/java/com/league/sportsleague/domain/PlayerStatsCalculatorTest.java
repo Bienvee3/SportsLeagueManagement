@@ -144,6 +144,78 @@ class PlayerStatsCalculatorTest {
 
             assertEquals(1, row(PlayerStatsCalculator.calculate(List.of(f)), "Martin Baturina").assists());
         }
+
+        @Test
+        @DisplayName("a free-text name that matches a squad player of the team is credited to that player")
+        void textNameMergedIntoSquadPlayer() {
+            Player petkovic = dinamo.addPlayer("Bruno Petkovic", 9, "Forward");
+            Fixture legacy = live(dinamo, hajduk);
+            legacy.addMatchEvent(new MatchEvent(legacy, dinamo, MatchEventType.GOAL, 23, " bruno petkovic", null, null));
+            legacy.finish();
+            Fixture linked = live(dinamo, hajduk);
+            linked.addMatchEvent(new MatchEvent(linked, dinamo, MatchEventType.GOAL, 10, petkovic, null, null));
+            linked.finish();
+
+            List<PlayerStatsEntry> stats = PlayerStatsCalculator.calculate(List.of(legacy, linked));
+
+            assertEquals(1, stats.size());
+            assertEquals(petkovic.getId(), stats.get(0).playerId());
+            assertEquals(9, stats.get(0).shirtNumber());
+            assertEquals(2, stats.get(0).goals());
+            assertEquals(2, stats.get(0).appearances());
+        }
+
+        @Test
+        @DisplayName("the same name in the other team is not merged into this team's squad player")
+        void textNameOfOtherTeamNotMerged() {
+            dinamo.addPlayer("Marko Livaja", 21, null);
+            Fixture f = live(dinamo, hajduk);
+            f.addMatchEvent(new MatchEvent(f, hajduk, MatchEventType.GOAL, 10, "Marko Livaja"));
+            f.finish();
+
+            PlayerStatsEntry r = row(PlayerStatsCalculator.calculate(List.of(f)), "Marko Livaja");
+
+            assertEquals(hajduk.getId(), r.teamId());
+            assertNull(r.playerId());
+        }
+    }
+
+    @Nested
+    @DisplayName("Leaderboards")
+    class Leaderboards {
+
+        private PlayerStatsEntry entry(String name, int goals, int assists, int yellow, int red) {
+            return new PlayerStatsEntry(null, name, null, null, "Team", 1, 90, goals, assists, yellow, red);
+        }
+
+        @Test
+        @DisplayName("leaders keeps positive values only, best first, ties by name, limited")
+        void leadersOrderFilterLimit() {
+            List<PlayerStatsEntry> all = List.of(
+                    entry("Zed", 2, 0, 0, 0), entry("Amy", 2, 0, 0, 0), entry("Bob", 5, 0, 0, 0),
+                    entry("Cid", 1, 0, 0, 0), entry("Dan", 0, 3, 0, 0));
+
+            List<PlayerStatsEntry> top = PlayerStatsCalculator.leaders(all, PlayerStatsEntry::goals,
+                    java.util.Comparator.comparingInt(PlayerStatsEntry::goals).reversed(), 3);
+
+            assertEquals(List.of("Bob", "Amy", "Zed"), top.stream().map(PlayerStatsEntry::playerName).toList());
+        }
+
+        @Test
+        @DisplayName("the stats response builds every board: scorers, assists, G+A, minutes and discipline")
+        void responseBoards() {
+            List<PlayerStatsEntry> all = List.of(
+                    entry("Striker", 4, 0, 0, 0), entry("Playmaker", 1, 5, 2, 0), entry("Hardman", 0, 0, 1, 1));
+
+            var r = com.league.sportsleague.application.dto.PlayerStatsResponse.of(
+                    java.util.UUID.randomUUID(), "S", Instant.now(), true, all);
+
+            assertEquals("Striker", r.topScorers().get(0).playerName());
+            assertEquals(List.of("Playmaker"), r.topAssists().stream().map(PlayerStatsEntry::playerName).toList());
+            assertEquals("Playmaker", r.topContributions().get(0).playerName()); // 6 > 4
+            assertEquals(3, r.mostPlayed().size());
+            assertEquals(List.of("Hardman", "Playmaker"), r.discipline().stream().map(PlayerStatsEntry::playerName).toList());
+        }
     }
 
     @Nested

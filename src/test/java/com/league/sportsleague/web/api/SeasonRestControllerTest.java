@@ -82,10 +82,11 @@ class SeasonRestControllerTest {
         var entry = new com.league.sportsleague.domain.PlayerStatsEntry(
                 UUID.randomUUID(), "Bruno Petkovic", 9, UUID.randomUUID(), "Dinamo", 3, 270, 2, 1, 0, 0);
         when(seasonService.getPlayerStats(SEASON_ID)).thenReturn(
-                new PlayerStatsResponse(SEASON_ID, "2026/2027", java.time.Instant.now(), true, List.of(entry)));
+                PlayerStatsResponse.of(SEASON_ID, "2026/2027", java.time.Instant.now(), true, List.of(entry)));
         mockMvc.perform(get("/api/leagues/{leagueId}/seasons/{id}/player-stats", LEAGUE_ID, SEASON_ID))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.minutesTracked").value(true))
+                .andExpect(jsonPath("$.topScorers[0].playerName").value("Bruno Petkovic"))
                 .andExpect(jsonPath("$.entries[0].playerName").value("Bruno Petkovic"))
                 .andExpect(jsonPath("$.entries[0].goals").value(2));
     }
