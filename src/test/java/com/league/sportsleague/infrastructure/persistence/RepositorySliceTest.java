@@ -173,6 +173,30 @@ class RepositorySliceTest {
             assertInstanceOf(TeamCode.class, found.get().getShortCode());
             assertEquals("TST", found.get().getShortCode().value());
         }
+
+        @Test
+        @DisplayName("squad round-trip: players are saved with the team and reloaded with all fields")
+        void squadRoundTrip() {
+            Team team = new Team("NK Squad", "SQD", "Test Stadium", "Test City", 2000);
+            team.addPlayer("First Keeper", 1, "Goalkeeper");
+            Player removed = team.addPlayer("Old Striker", 9, null);
+            team.removePlayer(removed);
+            teamRepository.save(team);
+            em.flush();
+            em.clear();
+
+            Team found = teamRepository.findById(team.getId()).orElseThrow();
+            assertEquals(2, found.getPlayers().size());
+            assertEquals(1, found.getActivePlayers().size());
+            Player keeper = found.getActivePlayers().get(0);
+            assertEquals("First Keeper", keeper.getName());
+            assertEquals(1, keeper.getShirtNumber());
+            assertEquals("Goalkeeper", keeper.getPlayingPosition());
+            assertNotNull(keeper.getCreatedAt());
+            Player reloadedRemoved = found.findPlayer(removed.getId()).orElseThrow();
+            assertFalse(reloadedRemoved.isActive());
+            assertNull(reloadedRemoved.getPlayingPosition());
+        }
     }
 
     // ── SeasonRepository ─────────────────────────────────────────────────────

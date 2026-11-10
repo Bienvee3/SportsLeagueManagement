@@ -2,6 +2,8 @@ package com.league.sportsleague.web.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.league.sportsleague.application.dto.CreateTeamRequest;
+import com.league.sportsleague.application.dto.PlayerRequest;
+import com.league.sportsleague.application.dto.PlayerResponse;
 import com.league.sportsleague.application.dto.TeamResponse;
 import com.league.sportsleague.application.service.TeamService;
 import com.league.sportsleague.domain.exception.EntityNotFoundException;
@@ -118,6 +120,69 @@ class TeamRestControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNoContent());
         verify(teamService).updateProfile(ID, "Dinamo Zagreb", "Maksimir", "Zagreb", 1945);
+    }
+
+    // ── Squad ─────────────────────────────────────────────────────────────────
+
+    private static final UUID PLAYER_ID = UUID.fromString("88888888-8888-8888-8888-888888888888");
+
+    @Test
+    @WithMockUser(roles = "VIEWER")
+    @DisplayName("GET /api/teams/{id}/players returns the squad")
+    void listPlayers() throws Exception {
+        when(teamService.findPlayers(ID)).thenReturn(
+                List.of(new PlayerResponse(PLAYER_ID, ID, "Bruno Petkovic", 9, "Forward")));
+        mockMvc.perform(get("/api/teams/{id}/players", ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name").value("Bruno Petkovic"))
+                .andExpect(jsonPath("$[0].shirtNumber").value(9));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("POST /api/teams/{id}/players returns 201 with the player Location")
+    void addPlayer() throws Exception {
+        when(teamService.addPlayer(any(), any())).thenReturn(PLAYER_ID);
+        mockMvc.perform(post("/api/teams/{id}/players", ID).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new PlayerRequest("Bruno Petkovic", 9, "Forward"))))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location",
+                        org.hamcrest.Matchers.endsWith("/api/teams/" + ID + "/players/" + PLAYER_ID)));
+    }
+
+    @Test
+    @WithMockUser(roles = "OFFICIAL")
+    @DisplayName("POST /api/teams/{id}/players returns 403 for OFFICIAL")
+    void addPlayerForbiddenForOfficial() throws Exception {
+        mockMvc.perform(post("/api/teams/{id}/players", ID).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new PlayerRequest("Bruno Petkovic", 9, "Forward"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("POST /api/teams/{id}/players returns 400 when the name is blank")
+    void addPlayerValidationFails() throws Exception {
+        mockMvc.perform(post("/api/teams/{id}/players", ID).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new PlayerRequest("", 9, null))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Validation Error"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("POST /api/teams/{id}/players returns 400 when the shirt number is taken")
+    void addPlayerDuplicateNumber() throws Exception {
+        when(teamService.addPlayer(any(), any()))
+                .thenThrow(new IllegalArgumentException("Shirt number 9 is already taken by Bruno Petkovic"));
+        mockMvc.perform(post("/api/teams/{id}/players", ID).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new PlayerRequest("Other", 9, null))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("Shirt number 9 is already taken by Bruno Petkovic"));
     }
 
     @Test

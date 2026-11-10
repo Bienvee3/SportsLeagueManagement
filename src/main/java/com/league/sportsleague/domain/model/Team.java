@@ -13,8 +13,10 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 @Entity
@@ -46,6 +48,9 @@ public class Team {
 
     @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<SeasonTeam> seasonTeams = new ArrayList<>();
+
+    @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<Player> players = new ArrayList<>();
 
     public Team() {
         this.id = UUID.randomUUID();
@@ -89,6 +94,46 @@ public class Team {
         this.foundedYear = foundedYear;
     }
 
+    // Squad
+
+    /** Adds a player to the squad. Shirt numbers are unique among the active players of the team. */
+    public Player addPlayer(String name, int shirtNumber, String playingPosition) {
+        requireFreeShirtNumber(shirtNumber, null);
+        Player player = new Player(this, name, shirtNumber, playingPosition);
+        players.add(player);
+        return player;
+    }
+
+    public void updatePlayer(Player player, String name, int shirtNumber, String playingPosition) {
+        requireOwnPlayer(player);
+        requireFreeShirtNumber(shirtNumber, player);
+        player.update(name, shirtNumber, playingPosition);
+    }
+
+    /** Removes a player from the squad. The player is deactivated, not deleted: match history keeps it. */
+    public void removePlayer(Player player) {
+        requireOwnPlayer(player);
+        player.deactivate();
+    }
+
+    // Compared by id: within a session the same team or player can be reached as a Hibernate proxy.
+    private void requireOwnPlayer(Player player) {
+        Objects.requireNonNull(player, "Player must not be null");
+        if (!this.id.equals(player.getTeam().getId())) {
+            throw new IllegalArgumentException("Player does not belong to this team");
+        }
+    }
+
+    private void requireFreeShirtNumber(int shirtNumber, Player except) {
+        for (Player other : players) {
+            boolean samePlayer = except != null && other.getId().equals(except.getId());
+            if (!samePlayer && other.isActive() && other.getShirtNumber() == shirtNumber) {
+                throw new IllegalArgumentException(
+                        "Shirt number %d is already taken by %s".formatted(shirtNumber, other.getName()));
+            }
+        }
+    }
+
     // Read-only Accessors
     public UUID getId() {
         return id;
@@ -124,6 +169,24 @@ public class Team {
 
     public List<SeasonTeam> getSeasonTeams() {
         return Collections.unmodifiableList(seasonTeams);
+    }
+
+    /** Every player ever registered, including removed ones. */
+    public List<Player> getPlayers() {
+        return Collections.unmodifiableList(players);
+    }
+
+    /** The current squad, ordered by shirt number. */
+    public List<Player> getActivePlayers() {
+        return players.stream()
+                .filter(Player::isActive)
+                .sorted(Comparator.comparingInt(Player::getShirtNumber))
+                .toList();
+    }
+
+    /** Finds a player of this team by id, whether still active or removed. */
+    public Optional<Player> findPlayer(UUID playerId) {
+        return players.stream().filter(p -> p.getId().equals(playerId)).findFirst();
     }
 
     @Override

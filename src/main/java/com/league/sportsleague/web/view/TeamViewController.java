@@ -1,6 +1,7 @@
 package com.league.sportsleague.web.view;
 
 import com.league.sportsleague.application.dto.CreateTeamRequest;
+import com.league.sportsleague.application.dto.PlayerRequest;
 import com.league.sportsleague.application.dto.TeamResponse;
 import com.league.sportsleague.domain.model.Team;
 import com.league.sportsleague.application.dto.UpdateTeamRequest;
@@ -46,6 +47,7 @@ public class TeamViewController {
     @GetMapping("/{id}")
     public String detail(@PathVariable UUID id, Model model) {
         model.addAttribute("team", teamService.findById(id));
+        model.addAttribute("players", teamService.findPlayers(id));
         model.addAttribute("currentPage", "teams");
         return "teams/detail";
     }
@@ -131,5 +133,64 @@ public class TeamViewController {
             ra.addFlashAttribute("errorKey", "teams.error.deleteInUse");
             return "redirect:/teams/" + id;
         }
+    }
+
+    // ── ADMIN: squad ──────────────────────────────────────────────────────────
+
+    @PostMapping("/{id}/players")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String addPlayer(@PathVariable UUID id,
+                            @Valid PlayerRequest form,
+                            BindingResult br,
+                            RedirectAttributes ra) {
+        if (br.hasErrors()) {
+            ra.addFlashAttribute("errorMsg", "Invalid input: " + br.getAllErrors().get(0).getDefaultMessage());
+            return "redirect:/teams/" + id;
+        }
+        try {
+            teamService.addPlayer(id, form);
+            ra.addFlashAttribute("flashKey", "teams.flash.playerAdded");
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            ra.addFlashAttribute("errorMsg", e.getMessage());
+        }
+        return "redirect:/teams/" + id;
+    }
+
+    @GetMapping("/{id}/players/{playerId}/edit")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String editPlayerForm(@PathVariable UUID id, @PathVariable UUID playerId, Model model) {
+        model.addAttribute("team", teamService.findById(id));
+        model.addAttribute("player", teamService.findPlayer(id, playerId));
+        model.addAttribute("currentPage", "teams");
+        return "teams/player-form";
+    }
+
+    @PostMapping("/{id}/players/{playerId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String updatePlayer(@PathVariable UUID id,
+                               @PathVariable UUID playerId,
+                               @Valid PlayerRequest form,
+                               BindingResult br,
+                               RedirectAttributes ra) {
+        if (br.hasErrors()) {
+            ra.addFlashAttribute("errorMsg", "Invalid input: " + br.getAllErrors().get(0).getDefaultMessage());
+            return "redirect:/teams/" + id + "/players/" + playerId + "/edit";
+        }
+        try {
+            teamService.updatePlayer(id, playerId, form);
+            ra.addFlashAttribute("flashKey", "teams.flash.playerUpdated");
+            return "redirect:/teams/" + id;
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            ra.addFlashAttribute("errorMsg", e.getMessage());
+            return "redirect:/teams/" + id + "/players/" + playerId + "/edit";
+        }
+    }
+
+    @PostMapping("/{id}/players/{playerId}/delete")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String removePlayer(@PathVariable UUID id, @PathVariable UUID playerId, RedirectAttributes ra) {
+        teamService.removePlayer(id, playerId);
+        ra.addFlashAttribute("flashKey", "teams.flash.playerRemoved");
+        return "redirect:/teams/" + id;
     }
 }

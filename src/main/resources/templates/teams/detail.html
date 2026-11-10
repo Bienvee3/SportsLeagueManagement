@@ -69,6 +69,81 @@
     </div>
   </div>
 
+  <!-- Squad -->
+  <div class="sport-card mt-4">
+    <div class="d-flex align-items-center justify-content-between px-3 py-3 border-bottom border-secondary-subtle">
+      <span class="fw-semibold"><i class="bi bi-people me-2 text-warning"></i><span th:text="#{teams.squad.title}">Squad</span></span>
+      <span class="badge bg-secondary rounded-pill" th:text="${#lists.size(players)}">0</span>
+    </div>
+
+    <div th:if="${#lists.isEmpty(players)}" class="p-4 text-center text-secondary small"
+         th:text="#{teams.squad.empty}">No players registered yet.</div>
+
+    <div th:if="${not #lists.isEmpty(players)}" class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th style="width:72px" class="text-center" th:text="#{teams.squad.col.number}">No.</th>
+            <th th:text="#{teams.squad.col.name}">Player</th>
+            <th th:text="#{teams.squad.col.position}">Position</th>
+            <th sec:authorize="hasRole('ADMIN')" class="text-end"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="p : ${players}">
+            <td class="text-center"><span class="badge bg-dark border font-monospace" th:text="${p.shirtNumber}">10</span></td>
+            <td class="fw-semibold" th:text="${p.name}">Player</td>
+            <td class="text-secondary small" th:text="${p.position} ?: '—'">—</td>
+            <td sec:authorize="hasRole('ADMIN')" class="text-end text-nowrap">
+              <a th:href="@{/teams/{id}/players/{pid}/edit(id=${team.id},pid=${p.id})}"
+                 class="btn btn-sm btn-outline-primary" th:title="#{teams.action.edit}">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <form th:action="@{/teams/{id}/players/{pid}/delete(id=${team.id},pid=${p.id})}"
+                    method="post" class="d-inline">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <button type="submit" class="btn btn-sm btn-outline-danger"
+                        th:title="#{teams.squad.remove}"
+                        th:attr="data-confirm=#{teams.squad.confirmRemove}">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Add player (ADMIN) -->
+    <div sec:authorize="hasRole('ADMIN')" class="p-3 border-top border-secondary-subtle">
+      <form th:action="@{/teams/{id}/players(id=${team.id})}" method="post">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <div class="row g-3 align-items-end">
+          <div class="col-4 col-md-2">
+            <label for="playerShirtNumber" class="form-label small fw-medium" th:text="#{teams.squad.col.number}">No.</label>
+            <input type="number" id="playerShirtNumber" name="shirtNumber"
+                   class="form-control font-monospace" min="1" max="99" placeholder="10" required>
+          </div>
+          <div class="col-8 col-md-5">
+            <label for="playerName" class="form-label small fw-medium" th:text="#{teams.squad.col.name}">Player</label>
+            <input type="text" id="playerName" name="name" class="form-control"
+                   th:placeholder="#{teams.squad.name.placeholder}" placeholder="Player name" required maxlength="100">
+          </div>
+          <div class="col-12 col-md-3">
+            <label for="playerPosition" class="form-label small fw-medium" th:text="#{teams.squad.col.position}">Position</label>
+            <input type="text" id="playerPosition" name="position" class="form-control"
+                   th:placeholder="#{teams.squad.position.placeholder}" placeholder="e.g. Goalkeeper" maxlength="30">
+          </div>
+          <div class="col-12 col-md-2">
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="bi bi-plus-lg me-1"></i><span th:text="#{teams.squad.add}">Add player</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
 </th:block>
 </body>
 </html>
