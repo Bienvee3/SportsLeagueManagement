@@ -2,7 +2,7 @@
 
 **Last Updated**: 2026-11-10
 **Active Branch**: `main`
-**Latest Local Commit**: `287df81 feat(service): add season player statistics`
+**Latest Local Commit**: `0268571 feat(service): add player stats leaderboards and credit legacy names to squad players`
 **Git Working Tree**: Clean after the `docs(status)` commit that records this note.
 **Push to origin**: Not yet — awaiting explicit user authorization per AGENTS.md §6.4.
 
@@ -93,11 +93,11 @@ Milestone 1 is 100% complete. Architecture restructuring Phases 1–5 are comple
 
 ---
 
-## 4. Test Suite — 539/539
+## 4. Test Suite — 548/548
 
 ```
 cmd.exe /c "cd /d C:\Users\Bienve\dev\Java\SportsLeagueManagement && mvnw.cmd verify"
-Tests run: 539, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS, JaCoCo "All coverage checks have been met" (2026-11-10)
+Tests run: 548, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS, JaCoCo "All coverage checks have been met" (2026-11-10)
 ```
 
 The per-class table below is the 2026-11-07 snapshot; new classes since then: `TeamSquadTest`, `FixtureLineupTest`, `LineupRulesTest`, `PitchTimelineTest`, `SuspensionCalculatorTest`, `PlayerStatsCalculatorTest`, `FixtureViewControllerTest`.
@@ -237,4 +237,12 @@ Six commits, each with a green full suite: `1554fd7`, `cb9f072`, `57533bb`, `0e2
 - **Suspensions** (`947a5c5`): `SuspensionCalculator` derives bans from the team's last finished match of the season: red card, or every 5th yellow card → 1 match. Enforced in `submitLineup` and again at kick-off; the lineup editor disables suspended players and the Lineups tab lists them.
 - **Player stats** (`287df81`): `PlayerStatsCalculator` (finished fixtures only): appearances, minutes (from lineups; none for volleyball), goals, assists, cards. Legacy text-only events are grouped per team and name. Page `/leagues/{l}/seasons/{s}/stats` ("Player stats" button), REST `GET .../player-stats`.
 - **Verification (2026-11-10)**: `mvnw verify` → 539/539, JaCoCo gate met. Runtime smoke on PostgreSQL 17 (Flyway applied V8 + V9 to the existing dev DB): ADMIN added 14 players to Dinamo and Hajduk, duplicate #10 → "Shirt number 10 is already taken by Marko Pjaca", edit + removal OK. OFFICIAL on a new Dinamo–Hajduk fixture: 10 starters → "Exactly 11 starters are required, got 10"; 11 + 3 + captain saved; one-lineup warning "No lineup submitted for: HNK Hajduk Split" with kick-off confirm; kick-off → In progress 0-0, editor hidden. Goal from dropdown → 1-0 with assist; sub 60' accepted, "(on: …)" shown; same player on again at 70' → "Sandro Kulenovic is already on the pitch at minute 70"; second red → "already been sent off". Final whistle. Next Dinamo fixture: red-carded #4 disabled with "red card" badge and listed as suspended; forged POST with #4 → "Sergi Dominguez is suspended for this match". Five subs accepted, sixth → "Substitution limit reached (5)". Rijeka (no lineup) free-text goal still accepted. Stats page as VIEWER: Petkovic #9 150' 1 goal, replaced starter 60' + 55' = 115', Dominguez 75' 1 red, seeded text scorers listed without shirt number. VIEWER: Lineups tab visible, no Actions tab, POST clear lineup → 403. HR labels verified (tabs, lineups, "(ulazi: …)", stats headers, "Momčad"). The dev DB now holds these smoke-test players, rounds 2–3 and their fixtures.
-- **Known issues / follow-ups**: (1) Seeded/legacy text-only events and squad-linked events of the same person appear as two rows in player stats (by design: names are not matched to squad players). (2) A second yellow card in one match is not turned into a red automatically; the official records the red card. (3) Suspension rule (red = 1 match, every 5th yellow = 1 match) is the same for every sport. (4) Assist providers named only as free text get no appearance.
+- **Known issues / follow-ups**: (1) ~~Legacy text rows duplicated in stats~~ fixed in section 10. (2) A second yellow card in one match is not turned into a red automatically; the official records the red card. (3) Suspension rule (red = 1 match, every 5th yellow = 1 match) is the same for every sport. (4) Assist providers named only as free text get no appearance.
+
+## 10. Session 2026-11-10 (b) — usability feedback
+Three commits: `879a5bc`, `4ca942b`, `0268571`.
+- **Navigation** (`879a5bc`): the fixture page "Back to calendar" was `history.back()`, so after a form submit or a detour to a team page it went to the wrong page. It now links to the season calendar at the match's round (`#round-{id}` anchors; `FixtureResponse` gained `seasonId`, `leagueId`). `app.js` remembers the active tab per page and restores it when the previous page was the same page (every POST-redirect, error flashes included), so saving a lineup or an event stays on Actions; a URL hash (`#actions`, `#lineups`) also selects a tab. "Manage squad" opens the team page with `?fixture=`, whose back arrow then returns to the match.
+- **Record match event**: the goal types were hidden on FINISHED matches (goals are locked after the final whistle, section 8) and the card was hidden before kick-off. Now all six types are always listed — Goal, Penalty, Own goal, Yellow, Red, Substitution — with goal types disabled and marked "(locked)" after the final whistle; before kick-off the card explains that "Kick off" must be pressed first.
+- **Squads** (`4ca942b`): V10 seeds an 18-player squad for each seeded team (Dinamo, Hajduk, Rijeka, Osijek) only when the team has no players, so lineups are picked by clicking. Team page has "Add several players": one per line `<number> <name>, <position>`, all-or-nothing, error names the line and keeps the pasted text (`TeamService.addPlayersFromText`).
+- **Player stats** (`0268571`): five leaderboards side by side (top scorers, top assists, goals + assists, most minutes — or appearances for volleyball —, discipline) above the full table; `PlayerStatsResponse` carries them (`PlayerStatsCalculator.leaders`). Free-text names of legacy events are now credited to the squad player of the same team with the same name.
+- **Verification**: `mvnw verify` 548/548, JaCoCo met. Runtime on PostgreSQL (port 8081, the user's own app was on 8080): V10 applied (Rijeka/Osijek 18 players, Dinamo kept its 20); bulk paste with a taken number → "Line 2: Shirt number 8 is already taken by Toni Fruk", nothing added, text kept; valid paste added 2. New Rijeka–Osijek fixture: "not started" notice, 18 clickable rows, lineup saved by clicks and Actions tab kept; back link → calendar `#round-…`; team page with `?fixture=` back → match. IN_PROGRESS lists all six types; finished derby shows goal types "(locked)". Stats page shows the five boards; Petkovic now 2 goals (seeded text goal merged).
