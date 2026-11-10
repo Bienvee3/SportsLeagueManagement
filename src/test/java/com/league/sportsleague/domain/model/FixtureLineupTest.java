@@ -279,4 +279,76 @@ class FixtureLineupTest {
             assertEquals(1, fixture.getHomeScore());
         }
     }
+
+    @Nested
+    @DisplayName("Substitutions against the lineup")
+    class Substitutions {
+
+        private List<Player> squad;
+
+        @BeforeEach
+        void startMatch() {
+            squad = createPlayers(home, 14); // #1-#11 start, #12-#14 on the bench
+            fixture.submitLineup(home, squad.subList(0, 11), squad.subList(11, 14), null);
+            fixture.kickOff();
+        }
+
+        private MatchEvent substitution(int minute, int off, int on) {
+            return new MatchEvent(fixture, home, MatchEventType.SUBSTITUTION, minute,
+                    squad.get(off - 1), squad.get(on - 1), null);
+        }
+
+        @Test
+        @DisplayName("a valid substitution is recorded")
+        void validSubstitutionRecorded() {
+            fixture.addMatchEvent(substitution(60, 9, 12));
+
+            assertEquals(1, fixture.getEvents().size());
+            assertEquals(60, fixture.replayPitch(home).minutesPlayed(squad.get(8).getId(), 90));
+        }
+
+        @Test
+        @DisplayName("an impossible substitution is rejected and leaves the events unchanged")
+        void invalidSubstitutionLeavesEventsUnchanged() {
+            MatchEvent first = substitution(60, 9, 12);
+            fixture.addMatchEvent(first);
+            MatchEvent impossible = substitution(70, 10, 12); // #12 is already on the pitch
+
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                    () -> fixture.addMatchEvent(impossible));
+
+            assertEquals("DIN Player 12 is already on the pitch at minute 70", ex.getMessage());
+            assertEquals(List.of(first), fixture.getEvents());
+            assertNull(impossible.getFixture());
+        }
+
+        @Test
+        @DisplayName("deleting a substitution that a later one depends on is refused and keeps the event")
+        void dependentSubstitutionCannotBeDeleted() {
+            MatchEvent on = substitution(60, 9, 12);
+            MatchEvent offAgain = substitution(75, 12, 13); // needs #12 on the pitch
+            fixture.addMatchEvent(on);
+            fixture.addMatchEvent(offAgain);
+
+            IllegalStateException ex = assertThrows(IllegalStateException.class, () -> fixture.removeMatchEvent(on));
+
+            assertTrue(ex.getMessage().startsWith("The event cannot be deleted because later events depend on it: "));
+            assertEquals(List.of(on, offAgain), fixture.getEvents());
+            assertSame(fixture, on.getFixture());
+        }
+
+        @Test
+        @DisplayName("the last substitution can be deleted")
+        void lastSubstitutionCanBeDeleted() {
+            MatchEvent on = substitution(60, 9, 12);
+            MatchEvent offAgain = substitution(75, 12, 13);
+            fixture.addMatchEvent(on);
+            fixture.addMatchEvent(offAgain);
+
+            fixture.removeMatchEvent(offAgain);
+
+            assertEquals(List.of(on), fixture.getEvents());
+            assertNull(offAgain.getFixture());
+        }
+    }
 }

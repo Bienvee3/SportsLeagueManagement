@@ -1,6 +1,7 @@
 package com.league.sportsleague.domain.model;
 
 import com.league.sportsleague.domain.LineupRules;
+import com.league.sportsleague.domain.PitchTimeline;
 import com.league.sportsleague.domain.exception.DuplicateTeamException;
 import com.league.sportsleague.domain.exception.InvalidStateTransitionException;
 import com.league.sportsleague.domain.model.enums.FixtureStatus;
@@ -337,22 +338,70 @@ public class Fixture {
         requirePlayersFitTeam(event);
         events.add(event);
         event.setFixture(this);
+        if (hasLineup(event.getTeam())) {
+            try {
+                replayPitch(event.getTeam());
+            } catch (IllegalArgumentException impossible) {
+                events.remove(events.size() - 1);
+                event.setFixture(null);
+                throw impossible;
+            }
+        }
         if (goal) {
             syncScoreFromEvents();
         }
     }
 
-    /** Removes a match event. Removing a goal event follows the same status rule as adding one. */
+    /**
+     * Removes a match event. Removing a goal event follows the same status rule as adding one. A
+     * substitution or red card that a later substitution depends on cannot be removed.
+     *
+     * @throws IllegalStateException if the remaining events of the team would no longer be consistent
+     */
     public void removeMatchEvent(MatchEvent event) {
         boolean goal = isGoalEvent(event.getEventType());
         if (goal) {
             requireGoalEventsAllowed("removeGoalEvent");
         }
-        events.remove(event);
-        event.setFixture(null);
+        int index = indexOfEvent(event);
+        if (index < 0) {
+            return;
+        }
+        MatchEvent removed = events.remove(index);
+        boolean shapesPitch = removed.getEventType() == MatchEventType.SUBSTITUTION
+                || removed.getEventType() == MatchEventType.RED_CARD;
+        if (shapesPitch && hasLineup(removed.getTeam())) {
+            try {
+                replayPitch(removed.getTeam());
+            } catch (IllegalArgumentException dependent) {
+                events.add(index, removed);
+                throw new IllegalStateException(
+                        "The event cannot be deleted because later events depend on it: " + dependent.getMessage());
+            }
+        }
+        removed.setFixture(null);
         if (goal) {
             syncScoreFromEvents();
         }
+    }
+
+    /** Replays who was on the pitch for one team; throws if its substitutions and red cards are impossible. */
+    public PitchTimeline replayPitch(Team team) {
+        List<MatchEvent> teamEvents = events.stream()
+                .filter(e -> isSameTeam(e.getTeam(), team))
+                .toList();
+        return PitchTimeline.replay(getLineup(team), teamEvents, getLineupRules());
+    }
+
+    // By identity first: MatchEvent.equals compares business fields, so two identical events can coexist.
+    private int indexOfEvent(MatchEvent event) {
+        for (int i = 0; i < events.size(); i++) {
+            if (events.get(i) == event) return i;
+        }
+        for (int i = 0; i < events.size(); i++) {
+            if (events.get(i).getId().equals(event.getId())) return i;
+        }
+        return -1;
     }
 
     private void requireGoalEventsAllowed(String operation) {
