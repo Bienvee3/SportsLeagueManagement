@@ -56,6 +56,22 @@ public class FixtureRestController {
         return fixtureService.findBySeasonWithTeams(seasonId);
     }
 
+    @PostMapping("/{id}/kick-off")
+    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
+    @Operation(summary = "Start the match: SCHEDULED to IN_PROGRESS (OFFICIAL)")
+    public ResponseEntity<Void> kickOff(@PathVariable UUID id) {
+        fixtureService.kickOff(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/finish")
+    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
+    @Operation(summary = "Final whistle: IN_PROGRESS to FINISHED with the current score (OFFICIAL)")
+    public ResponseEntity<Void> finish(@PathVariable UUID id) {
+        fixtureService.finish(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/{id}/result")
     @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
     @Operation(summary = "Record match result (OFFICIAL)")

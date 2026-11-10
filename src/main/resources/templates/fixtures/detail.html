@@ -154,6 +154,37 @@
 
       <div class="row g-3 mb-4">
 
+        <!-- Match control: kick-off and final whistle -->
+        <div class="col-12"
+             th:if="${fixture.status == 'SCHEDULED' or fixture.status == 'IN_PROGRESS'}">
+          <div class="sport-card">
+            <div class="px-3 py-3 border-bottom border-secondary-subtle fw-semibold">
+              <i class="bi bi-stopwatch me-2 text-warning"></i><span th:text="#{fixtures.live.title}">Match control</span>
+            </div>
+            <div class="p-3">
+              <form th:if="${fixture.status == 'SCHEDULED'}"
+                    th:action="@{/fixtures/{id}/kick-off(id=${fixture.id})}" method="post"
+                    class="d-flex flex-wrap align-items-center gap-3">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <button type="submit" class="btn btn-success">
+                  <i class="bi bi-play-fill me-1"></i><span th:text="#{fixtures.live.kickOff}">Kick off</span>
+                </button>
+                <span class="text-secondary small" th:text="#{fixtures.live.kickOffHelp}">Starts the match and locks the lineups.</span>
+              </form>
+              <form th:if="${fixture.status == 'IN_PROGRESS'}"
+                    th:action="@{/fixtures/{id}/finish(id=${fixture.id})}" method="post"
+                    class="d-flex flex-wrap align-items-center gap-3">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <button type="submit" class="btn btn-primary"
+                        th:attr="data-confirm=#{fixtures.live.finishConfirm}">
+                  <i class="bi bi-flag-fill me-1"></i><span th:text="#{fixtures.live.finish}">Final whistle</span>
+                </button>
+                <span class="text-secondary small" th:text="#{fixtures.live.finishHelp}">Ends the match with the current score.</span>
+              </form>
+            </div>
+          </div>
+        </div>
+
         <!-- Goal mismatch notice: warns if total goal events don't match the score -->
         <div class="col-12"
              th:if="${fixture.status == 'FINISHED' and fixture.homeScore != null and fixture.awayScore != null}"
@@ -247,9 +278,9 @@
           </div>
         </div>
 
-        <!-- Record match event -->
+        <!-- Record match event (only once the match has started) -->
         <div class="col-12"
-             th:if="${fixture.status == 'SCHEDULED' or fixture.status == 'IN_PROGRESS' or fixture.status == 'FINISHED'}">
+             th:if="${fixture.status == 'IN_PROGRESS' or fixture.status == 'FINISHED'}">
           <div class="sport-card">
             <div class="px-3 py-3 border-bottom border-secondary-subtle fw-semibold">
               <i class="bi bi-lightning-charge me-2 text-warning"></i><span th:text="#{fixtures.recordEvent.title}">Record Match Event</span>

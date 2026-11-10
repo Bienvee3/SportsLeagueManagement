@@ -49,7 +49,8 @@ class DomainModelTest {
         assertEquals(1, round1.getFixtures().size());
         assertEquals(round1, derby.getRound());
 
-        // 7. Match events (goals only before the final whistle) & result
+        // 7. Match events (goals only between kick-off and the final whistle) & result
+        derby.kickOff();
         MatchEvent goal1 = new MatchEvent(derby, dinamo, MatchEventType.GOAL, 23, "Bruno Petkovic");
         MatchEvent goal2 = new MatchEvent(derby, hajduk, MatchEventType.GOAL, 55, "Marko Livaja");
         MatchEvent goal3 = new MatchEvent(derby, dinamo, MatchEventType.GOAL, 89, "Martin Baturina");

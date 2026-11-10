@@ -64,6 +64,7 @@ class ChronicleStoreTest {
     @Test
     @DisplayName("buildRequest maps team names, score, events and language")
     void buildRequestMapsFixture() {
+        fixture.kickOff();
         fixture.addMatchEvent(new MatchEvent(fixture, home, MatchEventType.GOAL, 23, "Petkovic"));
         fixture.recordResult(new Score(1, 0));
         when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));

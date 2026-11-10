@@ -36,6 +36,30 @@ public class FixtureViewController {
         return "fixtures/detail";
     }
 
+    @PostMapping("/{id}/kick-off")
+    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
+    public String kickOff(@PathVariable UUID id, RedirectAttributes ra) {
+        try {
+            fixtureService.kickOff(id);
+            ra.addFlashAttribute("flashKey", "fixtures.flash.kickedOff");
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            ra.addFlashAttribute("errorMsg", e.getMessage());
+        }
+        return "redirect:/fixtures/" + id;
+    }
+
+    @PostMapping("/{id}/finish")
+    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
+    public String finish(@PathVariable UUID id, RedirectAttributes ra) {
+        try {
+            fixtureService.finish(id);
+            ra.addFlashAttribute("flashKey", "fixtures.flash.finished");
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            ra.addFlashAttribute("errorMsg", e.getMessage());
+        }
+        return "redirect:/fixtures/" + id;
+    }
+
     @PostMapping("/{id}/result")
     @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
     public String recordResult(@PathVariable UUID id,
@@ -77,8 +101,12 @@ public class FixtureViewController {
             ra.addFlashAttribute("errorMsg", "Invalid input: " + br.getAllErrors().get(0).getDefaultMessage());
             return "redirect:/fixtures/" + id;
         }
-        fixtureService.recordMatchEvent(id, form);
-        ra.addFlashAttribute("flashKey", "fixtures.flash.eventRecorded");
+        try {
+            fixtureService.recordMatchEvent(id, form);
+            ra.addFlashAttribute("flashKey", "fixtures.flash.eventRecorded");
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            ra.addFlashAttribute("errorMsg", e.getMessage());
+        }
         return "redirect:/fixtures/" + id;
     }
 
@@ -87,8 +115,12 @@ public class FixtureViewController {
     public String deleteEvent(@PathVariable UUID id,
                               @PathVariable UUID eventId,
                               RedirectAttributes ra) {
-        fixtureService.deleteMatchEvent(id, eventId);
-        ra.addFlashAttribute("flashKey", "fixtures.flash.eventDeleted");
+        try {
+            fixtureService.deleteMatchEvent(id, eventId);
+            ra.addFlashAttribute("flashKey", "fixtures.flash.eventDeleted");
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            ra.addFlashAttribute("errorMsg", e.getMessage());
+        }
         return "redirect:/fixtures/" + id;
     }
 

@@ -6,7 +6,6 @@ import com.league.sportsleague.domain.valueobject.Score;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -234,7 +233,7 @@ class DomainMethodsTest {
 
         private Fixture inProgress() {
             Fixture f = scheduled();
-            ReflectionTestUtils.setField(f, "status", FixtureStatus.IN_PROGRESS); // no domain transition reaches it yet
+            f.kickOff();
             return f;
         }
 
@@ -243,9 +242,9 @@ class DomainMethodsTest {
         }
 
         @Test
-        @DisplayName("goal events on a SCHEDULED fixture sync the score (own goal credits the opponent)")
-        void goalsOnScheduledSyncScore() {
-            Fixture f = scheduled();
+        @DisplayName("goal events of both teams sync the score (own goal credits the opponent)")
+        void goalsOfBothTeamsSyncScore() {
+            Fixture f = inProgress();
             f.addMatchEvent(event(f, home, MatchEventType.GOAL, 10));
             f.addMatchEvent(event(f, away, MatchEventType.PENALTY, 20));
             f.addMatchEvent(event(f, away, MatchEventType.OWN_GOAL, 30));
@@ -285,7 +284,7 @@ class DomainMethodsTest {
         @Test
         @DisplayName("removing a goal from a FINISHED fixture throws and keeps the event and the score")
         void goalRemovalOnFinishedIsRejected() {
-            Fixture f = scheduled();
+            Fixture f = inProgress();
             MatchEvent goal = event(f, home, MatchEventType.GOAL, 10);
             f.addMatchEvent(goal);
             f.recordResult(new Score(1, 0));
@@ -327,7 +326,7 @@ class DomainMethodsTest {
         @Test
         @DisplayName("an event of a team that does not play in the fixture is rejected")
         void foreignTeamIsRejected() {
-            Fixture f = scheduled();
+            Fixture f = inProgress();
 
             assertThrows(IllegalArgumentException.class,
                     () -> f.addMatchEvent(event(f, team("OTH"), MatchEventType.YELLOW_CARD, 10)));
@@ -338,7 +337,7 @@ class DomainMethodsTest {
         @Test
         @DisplayName("a corrected score is not overwritten by later events; goals stay locked")
         void correctedScoreSurvivesLaterEvents() {
-            Fixture f = scheduled();
+            Fixture f = inProgress();
             f.addMatchEvent(event(f, home, MatchEventType.GOAL, 10));
             f.recordResult(new Score(1, 0));
             f.correctResult(new Score(3, 0), "Forfeit ruling", "admin");

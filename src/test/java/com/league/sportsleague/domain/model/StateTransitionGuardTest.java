@@ -251,6 +251,111 @@ class StateTransitionGuardTest {
         }
     }
 
+    // ── Fixture: live match ───────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("Fixture live match (kick-off and final whistle)")
+    class FixtureLiveMatch {
+
+        private MatchEvent event(Fixture f, Team team, MatchEventType type, int minute) {
+            return new MatchEvent(f, team, type, minute, "Player");
+        }
+
+        @Test
+        @DisplayName("kickOff() moves a SCHEDULED fixture to IN_PROGRESS at 0-0")
+        void kickOffStartsAtNilNil() {
+            Fixture f = scheduledFixture(scheduledRound(activeSeason()));
+
+            f.kickOff();
+
+            assertEquals(FixtureStatus.IN_PROGRESS, f.getStatus());
+            assertEquals(0, f.getHomeScore());
+            assertEquals(0, f.getAwayScore());
+        }
+
+        @Test
+        @DisplayName("kickOff() throws when IN_PROGRESS, FINISHED, POSTPONED or CANCELLED")
+        void kickOffOutsideScheduledThrows() {
+            Round r = scheduledRound(activeSeason());
+            Fixture inProgress = scheduledFixture(r);
+            inProgress.kickOff();
+            Fixture finished = scheduledFixture(r);
+            finished.recordResult(new Score(1, 0));
+            Fixture postponed = scheduledFixture(r);
+            postponed.postpone("Rain");
+            Fixture cancelled = scheduledFixture(r);
+            cancelled.cancel();
+
+            assertThrows(InvalidStateTransitionException.class, inProgress::kickOff);
+            assertThrows(InvalidStateTransitionException.class, finished::kickOff);
+            assertThrows(InvalidStateTransitionException.class, postponed::kickOff);
+            assertThrows(InvalidStateTransitionException.class, cancelled::kickOff);
+            assertEquals(1, finished.getHomeScore());
+        }
+
+        @Test
+        @DisplayName("finish() ends an IN_PROGRESS fixture with the score reached through its goals")
+        void finishKeepsEventScore() {
+            Fixture f = scheduledFixture(scheduledRound(activeSeason()));
+            f.kickOff();
+            f.addMatchEvent(event(f, f.getHomeTeam(), MatchEventType.GOAL, 10));
+            f.addMatchEvent(event(f, f.getHomeTeam(), MatchEventType.PENALTY, 44));
+            f.addMatchEvent(event(f, f.getAwayTeam(), MatchEventType.GOAL, 70));
+
+            f.finish();
+
+            assertEquals(FixtureStatus.FINISHED, f.getStatus());
+            assertEquals(2, f.getHomeScore());
+            assertEquals(1, f.getAwayScore());
+        }
+
+        @Test
+        @DisplayName("finish() throws when the match has not been kicked off or is already finished")
+        void finishOutsideInProgressThrows() {
+            Round r = scheduledRound(activeSeason());
+            Fixture scheduled = scheduledFixture(r);
+            Fixture finished = scheduledFixture(r);
+            finished.kickOff();
+            finished.finish();
+
+            assertThrows(InvalidStateTransitionException.class, scheduled::finish);
+            assertThrows(InvalidStateTransitionException.class, finished::finish);
+            assertEquals(FixtureStatus.SCHEDULED, scheduled.getStatus());
+            assertNull(scheduled.getHomeScore());
+        }
+
+        @Test
+        @DisplayName("no event of any type is accepted before kick-off")
+        void eventsBeforeKickOffThrow() {
+            Fixture f = scheduledFixture(scheduledRound(activeSeason()));
+
+            assertThrows(InvalidStateTransitionException.class,
+                    () -> f.addMatchEvent(event(f, f.getHomeTeam(), MatchEventType.GOAL, 5)));
+            assertThrows(InvalidStateTransitionException.class,
+                    () -> f.addMatchEvent(event(f, f.getHomeTeam(), MatchEventType.YELLOW_CARD, 5)));
+
+            assertTrue(f.getEvents().isEmpty());
+            assertNull(f.getHomeScore());
+        }
+
+        @Test
+        @DisplayName("recordResult() is still possible straight from SCHEDULED and from IN_PROGRESS")
+        void recordResultWithoutLiveTracking() {
+            Round r = scheduledRound(activeSeason());
+            Fixture direct = scheduledFixture(r);
+            Fixture live = scheduledFixture(r);
+            live.kickOff();
+
+            direct.recordResult(new Score(3, 2));
+            live.recordResult(new Score(1, 1));
+
+            assertEquals(FixtureStatus.FINISHED, direct.getStatus());
+            assertEquals(3, direct.getHomeScore());
+            assertEquals(FixtureStatus.FINISHED, live.getStatus());
+            assertEquals(1, live.getAwayScore());
+        }
+    }
+
     // ── SeasonTeam ────────────────────────────────────────────────────────────
 
     @Nested

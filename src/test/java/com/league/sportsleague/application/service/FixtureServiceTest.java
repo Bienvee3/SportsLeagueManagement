@@ -178,6 +178,7 @@ class FixtureServiceTest {
     @Test
     @DisplayName("recordMatchEvent adds event to fixture and saves, returns event UUID")
     void recordMatchEventAddsEventAndSaves() {
+        fixture.kickOff();
         UUID id = fixture.getId();
         UUID teamId = home.getId();
         when(fixtureRepository.findById(id)).thenReturn(Optional.of(fixture));
@@ -214,6 +215,7 @@ class FixtureServiceTest {
     @Test
     @DisplayName("deleteMatchEvent removes the event, saves and discards stale chronicles")
     void deleteMatchEventRemovesEvent() {
+        fixture.kickOff();
         MatchEvent goal = new MatchEvent(fixture, home, MatchEventType.GOAL, 23, "Bruno Petkovic");
         fixture.addMatchEvent(goal);
         when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
@@ -240,6 +242,7 @@ class FixtureServiceTest {
     @Test
     @DisplayName("recordMatchEvent with OWN_GOAL increments opponent score")
     void ownGoalIncrementsOpponentScore() {
+        fixture.kickOff();
         UUID id = fixture.getId();
         UUID teamId = home.getId();
         when(fixtureRepository.findById(id)).thenReturn(Optional.of(fixture));
@@ -257,6 +260,7 @@ class FixtureServiceTest {
     @Test
     @DisplayName("recordMatchEvent with non-goal event does not change fixture score")
     void nonGoalEventDoesNotChangeScore() {
+        fixture.kickOff();
         UUID id = fixture.getId();
         UUID teamId = home.getId();
         when(fixtureRepository.findById(id)).thenReturn(Optional.of(fixture));
@@ -267,8 +271,8 @@ class FixtureServiceTest {
                 teamId, MatchEventType.YELLOW_CARD, 40, "Midfielder", null, null);
         fixtureService.recordMatchEvent(id, req);
 
-        assertNull(fixture.getHomeScore());
-        assertNull(fixture.getAwayScore());
+        assertEquals(0, fixture.getHomeScore());
+        assertEquals(0, fixture.getAwayScore());
     }
 
     @Test
@@ -311,6 +315,7 @@ class FixtureServiceTest {
     @Test
     @DisplayName("recordMatchEvent rejects an event whose team is neither home nor away")
     void recordEventOfForeignTeamIsRejected() {
+        fixture.kickOff();
         Team outsider = new Team("Rijeka", "RIJ", "Rujevica", "Rijeka", 1906);
         when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
         when(teamRepository.findById(outsider.getId())).thenReturn(Optional.of(outsider));
@@ -329,6 +334,7 @@ class FixtureServiceTest {
     @Test
     @DisplayName("deleteMatchEvent rejects removing a goal from a FINISHED fixture: event and score kept")
     void deleteGoalOnFinishedFixtureIsRejected() {
+        fixture.kickOff();
         MatchEvent goal = new MatchEvent(fixture, home, MatchEventType.GOAL, 23, "Bruno Petkovic");
         fixture.addMatchEvent(goal);
         fixture.recordResult(new Score(1, 0));
@@ -357,6 +363,74 @@ class FixtureServiceTest {
 
         assertEquals(3, fixture.getHomeScore());
         assertEquals(0, fixture.getAwayScore());
+    }
+
+    // ── kickOff / finish ──────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("kickOff moves the fixture to IN_PROGRESS at 0-0 and saves")
+    void kickOffStartsMatchAndSaves() {
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+
+        fixtureService.kickOff(fixture.getId());
+
+        assertEquals(FixtureStatus.IN_PROGRESS, fixture.getStatus());
+        assertEquals(0, fixture.getHomeScore());
+        assertEquals(0, fixture.getAwayScore());
+        verify(fixtureRepository).save(fixture);
+    }
+
+    @Test
+    @DisplayName("kickOff on a match already in progress is rejected and nothing is saved")
+    void kickOffTwiceIsRejected() {
+        fixture.kickOff();
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+
+        assertThrows(InvalidStateTransitionException.class, () -> fixtureService.kickOff(fixture.getId()));
+
+        verify(fixtureRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("finish ends the match with the event score, saves and discards stale chronicles")
+    void finishEndsMatchAndDiscardsChronicles() {
+        fixture.kickOff();
+        fixture.addMatchEvent(new MatchEvent(fixture, away, MatchEventType.GOAL, 12, "Marko Livaja"));
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+
+        fixtureService.finish(fixture.getId());
+
+        assertEquals(FixtureStatus.FINISHED, fixture.getStatus());
+        assertEquals(0, fixture.getHomeScore());
+        assertEquals(1, fixture.getAwayScore());
+        verify(fixtureRepository).save(fixture);
+        verify(chronicleRepository).deleteByFixtureId(fixture.getId());
+    }
+
+    @Test
+    @DisplayName("finish before kick-off is rejected: nothing saved, chronicles kept")
+    void finishBeforeKickOffIsRejected() {
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+
+        assertThrows(InvalidStateTransitionException.class, () -> fixtureService.finish(fixture.getId()));
+
+        assertEquals(FixtureStatus.SCHEDULED, fixture.getStatus());
+        verify(fixtureRepository, never()).save(any());
+        verify(chronicleRepository, never()).deleteByFixtureId(any());
+    }
+
+    @Test
+    @DisplayName("recordMatchEvent before kick-off is rejected and nothing is saved")
+    void recordEventBeforeKickOffIsRejected() {
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+        when(teamRepository.findById(home.getId())).thenReturn(Optional.of(home));
+
+        assertThrows(InvalidStateTransitionException.class,
+                () -> fixtureService.recordMatchEvent(fixture.getId(), new RecordMatchEventRequest(
+                        home.getId(), MatchEventType.YELLOW_CARD, 5, "Midfielder", null, null)));
+
+        assertTrue(fixture.getEvents().isEmpty());
+        verify(fixtureRepository, never()).save(any());
     }
 
     // ── findById ──────────────────────────────────────────────────────────────

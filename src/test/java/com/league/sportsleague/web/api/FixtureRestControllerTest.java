@@ -5,6 +5,7 @@ import com.league.sportsleague.application.dto.FixtureResponse;
 import com.league.sportsleague.application.dto.RecordResultRequest;
 import com.league.sportsleague.application.service.FixtureService;
 import com.league.sportsleague.domain.exception.EntityNotFoundException;
+import com.league.sportsleague.domain.exception.InvalidStateTransitionException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -133,6 +134,51 @@ class FixtureRestControllerTest {
     void deleteEventForbiddenForViewer() throws Exception {
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
                         .delete("/api/fixtures/{id}/events/{e}", FIXTURE_ID, UUID.randomUUID()).with(csrf()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "OFFICIAL")
+    @DisplayName("POST /api/fixtures/{id}/kick-off returns 204 for OFFICIAL")
+    void kickOff() throws Exception {
+        mockMvc.perform(post("/api/fixtures/{id}/kick-off", FIXTURE_ID).with(csrf()))
+                .andExpect(status().isNoContent());
+        org.mockito.Mockito.verify(fixtureService).kickOff(FIXTURE_ID);
+    }
+
+    @Test
+    @WithMockUser(roles = "VIEWER")
+    @DisplayName("POST /api/fixtures/{id}/kick-off returns 403 for VIEWER")
+    void kickOffForbiddenForViewer() throws Exception {
+        mockMvc.perform(post("/api/fixtures/{id}/kick-off", FIXTURE_ID).with(csrf()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "OFFICIAL")
+    @DisplayName("POST /api/fixtures/{id}/kick-off returns 409 when the match has already started")
+    void kickOffConflict() throws Exception {
+        org.mockito.Mockito.doThrow(new InvalidStateTransitionException("Fixture", "IN_PROGRESS", "kickOff"))
+                .when(fixtureService).kickOff(FIXTURE_ID);
+        mockMvc.perform(post("/api/fixtures/{id}/kick-off", FIXTURE_ID).with(csrf()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.title").value("Invalid State Transition"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("POST /api/fixtures/{id}/finish returns 204 for ADMIN")
+    void finish() throws Exception {
+        mockMvc.perform(post("/api/fixtures/{id}/finish", FIXTURE_ID).with(csrf()))
+                .andExpect(status().isNoContent());
+        org.mockito.Mockito.verify(fixtureService).finish(FIXTURE_ID);
+    }
+
+    @Test
+    @WithMockUser(roles = "VIEWER")
+    @DisplayName("POST /api/fixtures/{id}/finish returns 403 for VIEWER")
+    void finishForbiddenForViewer() throws Exception {
+        mockMvc.perform(post("/api/fixtures/{id}/finish", FIXTURE_ID).with(csrf()))
                 .andExpect(status().isForbidden());
     }
 

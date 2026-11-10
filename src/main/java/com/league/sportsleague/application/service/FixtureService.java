@@ -55,6 +55,21 @@ public class FixtureService {
         chronicleRepository.deleteByFixtureId(fixtureId); // stored chronicles describe the old result
     }
 
+    /** Starts the match: SCHEDULED → IN_PROGRESS. */
+    public void kickOff(UUID fixtureId) {
+        Fixture fixture = requireFixture(fixtureId);
+        fixture.kickOff();
+        fixtureRepository.save(fixture);
+    }
+
+    /** Final whistle: IN_PROGRESS → FINISHED with the score reached through the goal events. */
+    public void finish(UUID fixtureId) {
+        Fixture fixture = requireFixture(fixtureId);
+        fixture.finish();
+        fixtureRepository.save(fixture);
+        chronicleRepository.deleteByFixtureId(fixtureId);
+    }
+
     public void postponeFixture(UUID fixtureId, String reason) {
         Fixture fixture = requireFixture(fixtureId);
         fixture.postpone(reason);

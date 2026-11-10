@@ -93,6 +93,30 @@ public class Fixture {
 
     // Domain Business Methods
 
+    /**
+     * Starts the match. Fixture must be SCHEDULED. The score starts at 0-0; a fixture that already
+     * carries a score synced from earlier goal events keeps it.
+     */
+    public void kickOff() {
+        if (this.status != FixtureStatus.SCHEDULED) {
+            throw new InvalidStateTransitionException("Fixture", status.name(), "kickOff");
+        }
+        this.status = FixtureStatus.IN_PROGRESS;
+        if (this.homeScore == null) this.homeScore = 0;
+        if (this.awayScore == null) this.awayScore = 0;
+    }
+
+    /** Ends a match in progress with the score reached through its goal events. */
+    public void finish() {
+        if (this.status != FixtureStatus.IN_PROGRESS) {
+            throw new InvalidStateTransitionException("Fixture", status.name(), "finish");
+        }
+        this.status = FixtureStatus.FINISHED;
+        if (this.homeScore == null) this.homeScore = 0;
+        if (this.awayScore == null) this.awayScore = 0;
+        this.postponementReason = null;
+    }
+
     /** Records the final result. Fixture must be SCHEDULED or IN_PROGRESS. */
     public void recordResult(Score score) {
         Objects.requireNonNull(score, "Score must not be null");
@@ -163,16 +187,21 @@ public class Fixture {
     // Match events
 
     /**
-     * Adds a match event. Goal events (GOAL, PENALTY, OWN_GOAL) are only accepted while the fixture is
-     * SCHEDULED or IN_PROGRESS and keep the score in sync with the goals; once the fixture is FINISHED the
-     * only audited way to change the score is {@link #correctResult}. Other events (cards, substitutions)
-     * never touch the score and stay allowed in every status.
+     * Adds a match event. No event is accepted before kick-off (SCHEDULED). Goal events (GOAL, PENALTY,
+     * OWN_GOAL) are only accepted while the fixture is IN_PROGRESS and keep the score in sync with the
+     * goals; once the fixture is FINISHED the only audited way to change the score is
+     * {@link #correctResult}. Other events (cards, substitutions) never touch the score and stay allowed
+     * in every other status.
      *
-     * @throws InvalidStateTransitionException for a goal event on a FINISHED, POSTPONED or CANCELLED fixture
+     * @throws InvalidStateTransitionException for any event on a SCHEDULED fixture and for a goal event
+     *                                         on a FINISHED, POSTPONED or CANCELLED fixture
      * @throws IllegalArgumentException        if the event's team is neither the home nor the away team
      */
     public void addMatchEvent(MatchEvent event) {
         Objects.requireNonNull(event, "Match event must not be null");
+        if (this.status == FixtureStatus.SCHEDULED) {
+            throw new InvalidStateTransitionException("Fixture", status.name(), "addMatchEvent");
+        }
         boolean goal = isGoalEvent(event.getEventType());
         if (goal) {
             requireGoalEventsAllowed("addGoalEvent");
@@ -201,7 +230,7 @@ public class Fixture {
     }
 
     private void requireGoalEventsAllowed(String operation) {
-        if (this.status != FixtureStatus.SCHEDULED && this.status != FixtureStatus.IN_PROGRESS) {
+        if (this.status != FixtureStatus.IN_PROGRESS) {
             throw new InvalidStateTransitionException("Fixture", status.name(), operation);
         }
     }
