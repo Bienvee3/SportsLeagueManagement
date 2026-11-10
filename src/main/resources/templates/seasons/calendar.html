@@ -48,7 +48,7 @@
 
   <!-- Rounds -->
   <th:block th:each="r : ${rounds}">
-    <div class="d-flex align-items-center gap-2 mt-4 mb-2">
+    <div class="d-flex align-items-center gap-2 mt-4 mb-2" th:id="'round-' + ${r.id}" style="scroll-margin-top:90px">
       <span class="badge px-3 py-2" style="background:#f97316" th:text="#{seasons.calendar.round(${r.roundNumber})}">Round 1</span>
       <span class="fw-semibold" th:unless="${r.name == 'Round ' + r.roundNumber}" th:text="${r.name}">Name</span>
       <span class="text-secondary small font-monospace" th:if="${r.startDate != null}" th:text="${r.startDate}">Date</span>

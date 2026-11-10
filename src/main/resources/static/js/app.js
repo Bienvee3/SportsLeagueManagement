@@ -80,6 +80,25 @@
     }, 4000);
   });
 
+  /* ---- keep the active tab after a form submit on the same page ----
+     Every action redirects back to the page it came from (POST-redirect-GET), which used to reset the
+     view to the first tab. The last tab is remembered per page and restored only when the previous page
+     was this same page (a submit or a reload); arriving from elsewhere shows the default tab. A URL hash
+     such as #actions or #lineups always wins. */
+  const tabButtons = document.querySelectorAll('.nav-tabs [data-bs-toggle="tab"]');
+  if (tabButtons.length) {
+    const key = 'active-tab:' + location.pathname;
+    tabButtons.forEach(btn => btn.addEventListener('shown.bs.tab', () => {
+      sessionStorage.setItem(key, btn.dataset.bsTarget);
+    }));
+    let samePage = false;
+    try { samePage = document.referrer && new URL(document.referrer).pathname === location.pathname; } catch (e) { /* no referrer */ }
+    const fromHash = location.hash ? location.hash + '-pane' : null;
+    const wanted = fromHash || (samePage ? sessionStorage.getItem(key) : null);
+    const btn = wanted && Array.from(tabButtons).find(b => b.dataset.bsTarget === wanted);
+    if (btn) bootstrap.Tab.getOrCreateInstance(btn).show();
+  }
+
   /* ---- match sheet: lineup row checkboxes (starter unchecks bench and vice versa) ---- */
   document.querySelectorAll('tr[data-lineup-row]').forEach(row => {
     const starter = row.querySelector('input[name="starterIds"]');

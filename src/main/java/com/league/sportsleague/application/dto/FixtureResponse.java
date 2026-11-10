@@ -22,7 +22,9 @@ public record FixtureResponse(
         Integer awayScore,
         String status,
         Instant scheduledTime,
-        List<MatchEventResponse> events
+        List<MatchEventResponse> events,
+        UUID seasonId,
+        UUID leagueId
 ) {
     public static FixtureResponse from(Fixture fixture) {
         List<MatchEventResponse> events = fixture.getEvents().stream()
@@ -44,7 +46,9 @@ public record FixtureResponse(
                 fixture.getAwayScore(),
                 fixture.getStatus().name(),
                 fixture.getScheduledTime(),
-                events
+                events,
+                fixture.getRound().getSeason().getId(),
+                fixture.getRound().getSeason().getLeague().getId()
         );
     }
 }

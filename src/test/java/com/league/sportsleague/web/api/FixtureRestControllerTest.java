@@ -47,7 +47,7 @@ class FixtureRestControllerTest {
     private FixtureResponse sample() {
         return new FixtureResponse(FIXTURE_ID, ROUND_ID, 1, "Round 1",
                 "HFC", "Home FC", HOME_TEAM_ID, "AFC", "Away FC", AWAY_TEAM_ID,
-                null, null, "SCHEDULED", Instant.now(), java.util.List.of());
+                null, null, "SCHEDULED", Instant.now(), java.util.List.of(), SEASON_ID, UUID.randomUUID());
     }
 
     @Test

@@ -38,12 +38,14 @@ class FixtureViewControllerTest {
     private static final UUID FIXTURE_ID   = UUID.fromString("44444444-4444-4444-4444-444444444444");
     private static final UUID ROUND_ID     = UUID.fromString("55555555-5555-5555-5555-555555555555");
     private static final UUID HOME_TEAM_ID = UUID.fromString("66666666-6666-6666-6666-666666666666");
+    private static final UUID SEASON_ID    = UUID.fromString("33333333-3333-3333-3333-333333333333");
+    private static final UUID LEAGUE_ID    = UUID.fromString("11111111-1111-1111-1111-111111111111");
     private static final UUID AWAY_TEAM_ID = UUID.fromString("77777777-7777-7777-7777-777777777777");
 
     private FixtureResponse sampleFixture() {
         return new FixtureResponse(FIXTURE_ID, ROUND_ID, 1, "Round 1",
                 "DIN", "Dinamo", HOME_TEAM_ID, "HAJ", "Hajduk", AWAY_TEAM_ID,
-                null, null, "SCHEDULED", Instant.now(), List.of());
+                null, null, "SCHEDULED", Instant.now(), List.of(), SEASON_ID, LEAGUE_ID);
     }
 
     private MatchSheetResponse sampleSheet() {
@@ -77,7 +79,7 @@ class FixtureViewControllerTest {
         return new FixtureResponse(FIXTURE_ID, ROUND_ID, 1, "Round 1",
                 "DIN", "Dinamo", HOME_TEAM_ID, "HAJ", "Hajduk", AWAY_TEAM_ID,
                 "SCHEDULED".equals(status) ? null : 0, "SCHEDULED".equals(status) ? null : 0,
-                status, Instant.now(), events);
+                status, Instant.now(), events, SEASON_ID, LEAGUE_ID);
     }
 
     /** Home lineup filed (one starter as captain, one substitute, one suspended squad player); away: nothing. */
