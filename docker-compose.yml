@@ -19,6 +19,33 @@ services:
       timeout: 5s
       retries: 5
 
+  # The application itself, built from the Dockerfile. `docker compose up --build` starts both services;
+  # `docker compose up -d postgres` starts only the database (for running the app from the IDE).
+  app:
+    build: .
+    image: sports-league-management:local
+    container_name: sports_league_app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-sports_league_db}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-league_admin}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:?set SPRING_DATASOURCE_PASSWORD in .env}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:?set ADMIN_USERNAME in .env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+      OFFICIAL_USERNAME: ${OFFICIAL_USERNAME:-}
+      OFFICIAL_PASSWORD: ${OFFICIAL_PASSWORD:-}
+      VIEWER_USERNAME: ${VIEWER_USERNAME:-}
+      VIEWER_PASSWORD: ${VIEWER_PASSWORD:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      # Set SPRING_AI_MODEL_CHAT=none in .env to run without the AI provider (chronicles then answer 503).
+      SPRING_AI_MODEL_CHAT: ${SPRING_AI_MODEL_CHAT:-google-genai}
+
 volumes:
   postgres_data:
     driver: local

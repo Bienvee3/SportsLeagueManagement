@@ -1,0 +1,15 @@
+# Never send secrets or build output to the Docker build context (and so never into an image).
+.env
+.env.*
+!.env.example
+.git
+.github
+target
+.idea
+.vscode
+*.iml
+*.log
+docs
+*.md
+run.ps1
+start-app.bat
