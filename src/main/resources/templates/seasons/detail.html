@@ -154,7 +154,7 @@
           <div class="px-3 py-2 border-top border-secondary-subtle text-secondary small d-flex gap-1 align-items-center">
             <i class="bi bi-clock-history"></i>
             <span th:text="#{seasons.detail.updated}">Updated</span>
-            <span th:text="${standings.computedAt.toString().substring(0,16).replace('T',' ')}">now</span>
+            <span th:text="${@fmt.dateTime(standings.computedAt)}">now</span>
           </div>
         </div>
       </div>

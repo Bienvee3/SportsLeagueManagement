@@ -46,7 +46,7 @@
             <span class="badge" th:classappend="'badge-' + ${fixture.status}"
                   th:text="#{'status.' + ${fixture.status}}">SCHEDULED</span>
             <span class="text-secondary small">
-              <i class="bi bi-clock me-1"></i><span th:text="${fixture.scheduledTime.toString().substring(0,16).replace('T',' ')}">Date</span>
+              <i class="bi bi-clock me-1"></i><span th:text="${@fmt.dateTime(fixture.scheduledTime)}">Date</span>
             </span>
           </div>
         </div>

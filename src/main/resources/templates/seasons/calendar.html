@@ -51,7 +51,7 @@
     <div class="d-flex align-items-center gap-2 mt-4 mb-2" th:id="'round-' + ${r.id}" style="scroll-margin-top:90px">
       <span class="badge px-3 py-2" style="background:#f97316" th:text="#{seasons.calendar.round(${r.roundNumber})}">Round 1</span>
       <span class="fw-semibold" th:unless="${r.name == 'Round ' + r.roundNumber}" th:text="${r.name}">Name</span>
-      <span class="text-secondary small font-monospace" th:if="${r.startDate != null}" th:text="${r.startDate}">Date</span>
+      <span class="text-secondary small font-monospace" th:if="${r.startDate != null}" th:text="${@fmt.date(r.startDate)}">Date</span>
       <span class="badge bg-secondary ms-auto" th:text="#{seasons.calendar.matchCount(${r.fixtureCount})}">0 matches</span>
       <form sec:authorize="hasRole('ADMIN')"
             th:action="@{/leagues/{lid}/seasons/{sid}/rounds/{rid}/delete(lid=${league.id},sid=${season.id},rid=${r.id})}"
@@ -89,7 +89,7 @@
           <div class="flex-grow-1 fw-semibold text-truncate" style="flex-basis:0" th:text="${f.awayTeamName}">Away</div>
         </a>
         <div class="text-secondary small font-monospace flex-shrink-0">
-          <i class="bi bi-clock me-1"></i><span th:text="${f.scheduledTime.toString().substring(0,16).replace('T',' ')}">2026-01-01 15:00</span>
+          <i class="bi bi-clock me-1"></i><span th:text="${@fmt.dateTime(f.scheduledTime)}">2026-01-01 15:00</span>
         </div>
         <span class="badge flex-shrink-0" th:classappend="'badge-' + ${f.status}"
               th:text="#{'status.' + ${f.status}}">SCHEDULED</span>

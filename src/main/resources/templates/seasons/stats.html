@@ -72,7 +72,7 @@
             <td class="text-secondary small team-cell" th:text="${e.teamName}" th:title="${e.teamName}">Team</td>
             <td class="text-center font-monospace small" th:text="${e.appearances}">0</td>
             <td th:if="${stats.minutesTracked}" class="text-center font-monospace small d-none d-sm-table-cell"
-                th:text="${e.minutesPlayed}">0</td>
+                th:text="${@fmt.number(e.minutesPlayed)}">0</td>
             <td class="text-center fw-bold font-monospace" style="color:#f97316" th:text="${e.goals}">0</td>
             <td class="text-center font-monospace small" th:text="${e.assists}">0</td>
             <td class="text-center font-monospace small text-warning" th:text="${e.yellowCards}">0</td>
@@ -83,7 +83,7 @@
       <div class="px-3 py-2 border-top border-secondary-subtle text-secondary small d-flex gap-1 align-items-center">
         <i class="bi bi-clock-history"></i>
         <span th:text="#{seasons.detail.updated}">Updated</span>
-        <span th:text="${stats.computedAt.toString().substring(0,16).replace('T',' ')}">now</span>
+        <span th:text="${@fmt.dateTime(stats.computedAt)}">now</span>
       </div>
     </div>
   </div>

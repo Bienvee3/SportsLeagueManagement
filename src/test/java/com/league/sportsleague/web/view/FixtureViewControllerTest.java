@@ -28,7 +28,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(FixtureViewController.class)
-@Import(com.league.sportsleague.infrastructure.security.MethodSecurityConfig.class)
+@Import({com.league.sportsleague.infrastructure.security.MethodSecurityConfig.class, DisplayFormats.class})
 class FixtureViewControllerTest {
 
     @Autowired MockMvc mockMvc;

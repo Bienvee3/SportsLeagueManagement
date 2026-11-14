@@ -63,4 +63,19 @@ class LanguageSwitchTest {
         assertTrue(hr.contains("data-chronicle-lang=\"CROATIAN\""));
         assertTrue(en.contains("data-chronicle-lang=\"ENGLISH\""));
     }
+
+    @Test
+    @WithMockUser(roles = "VIEWER")
+    @DisplayName("match dates on the fixture page and the calendar follow the app language")
+    void datesFollowTheAppLanguage() throws Exception {
+        String calendar = "/leagues/11111111-1111-1111-1111-111111111111/seasons/33333333-3333-3333-3333-333333333333/calendar";
+        for (String url : new String[] {"/fixtures/" + FIXTURE_ID, calendar}) {
+            String hr = mockMvc.perform(get(url).cookie(new Cookie("app-lang", "hr")))
+                    .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+            String en = mockMvc.perform(get(url))
+                    .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+            assertTrue(hr.contains("02.08.2026. 18:00"), "Croatian date format on " + url);
+            assertTrue(en.contains("2 Aug 2026, 18:00"), "English date format on " + url);
+        }
+    }
 }

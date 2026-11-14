@@ -27,28 +27,28 @@
     <div class="col-6 col-lg-3">
       <div class="kpi-card">
         <div class="kpi-icon">🏆</div>
-        <div class="kpi-value" th:text="${#lists.size(leagues)}">0</div>
+        <div class="kpi-value" th:text="${@fmt.number(#lists.size(leagues))}">0</div>
         <div class="kpi-label" th:text="#{pages.dashboard.kpi.leagues}">Leagues</div>
       </div>
     </div>
     <div class="col-6 col-lg-3">
       <div class="kpi-card">
         <div class="kpi-icon">🗓</div>
-        <div class="kpi-value" th:text="${seasonCount}">0</div>
+        <div class="kpi-value" th:text="${@fmt.number(seasonCount)}">0</div>
         <div class="kpi-label" th:text="#{pages.dashboard.kpi.seasons}">Seasons</div>
       </div>
     </div>
     <div class="col-6 col-lg-3">
       <div class="kpi-card">
         <div class="kpi-icon">👥</div>
-        <div class="kpi-value" th:text="${teamCount}">0</div>
+        <div class="kpi-value" th:text="${@fmt.number(teamCount)}">0</div>
         <div class="kpi-label" th:text="#{pages.dashboard.kpi.teams}">Teams</div>
       </div>
     </div>
     <div class="col-6 col-lg-3">
       <div class="kpi-card">
         <div class="kpi-icon">🔥</div>
-        <div class="kpi-value" th:text="${activeSeasonCount}">0</div>
+        <div class="kpi-value" th:text="${@fmt.number(activeSeasonCount)}">0</div>
         <div class="kpi-label" th:text="#{pages.dashboard.kpi.activeSeasons}">Active seasons</div>
       </div>
     </div>

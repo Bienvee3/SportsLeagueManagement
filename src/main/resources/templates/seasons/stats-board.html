@@ -27,7 +27,7 @@
           <span class="d-block text-secondary small font-monospace" th:text="|${e.goals}G ${e.assists}A|">0G 0A</span>
         </span>
         <span th:case="'minutes'" class="text-end">
-          <span class="fw-bold font-monospace fs-5" th:text="|${e.minutesPlayed}'|">0'</span>
+          <span class="fw-bold font-monospace fs-5" th:text="|${@fmt.number(e.minutesPlayed)}'|">0'</span>
           <span class="d-block text-secondary small font-monospace" th:text="#{seasons.stats.board.apps(${e.appearances})}">0 apps</span>
         </span>
         <span th:case="'appearances'" class="fw-bold font-monospace fs-5" th:text="${e.appearances}">0</span>
