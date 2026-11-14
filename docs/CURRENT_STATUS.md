@@ -1,10 +1,10 @@
 # Current Project Status — Sports League Management
 
-**Last Updated**: 2026-11-10
+**Last Updated**: 2026-11-14
 **Active Branch**: `main`
-**Latest Local Commit**: `0268571 feat(service): add player stats leaderboards and credit legacy names to squad players`
-**Git Working Tree**: Clean after the `docs(status)` commit that records this note.
-**Push to origin**: Not yet — awaiting explicit user authorization per AGENTS.md §6.4.
+**Latest Local Commit**: `7584c29 docs(status): record usability feedback session` (+ the `docs(status)` commit that records the 2026-11-14 audit)
+**Git Working Tree**: Clean after that commit.
+**Push to origin**: `main` equals `origin/main` as of 2026-11-14. Any further push still needs explicit user authorization per AGENTS.md §6.4.
 
 ---
 
@@ -246,3 +246,14 @@ Three commits: `879a5bc`, `4ca942b`, `0268571`.
 - **Squads** (`4ca942b`): V10 seeds an 18-player squad for each seeded team (Dinamo, Hajduk, Rijeka, Osijek) only when the team has no players, so lineups are picked by clicking. Team page has "Add several players": one per line `<number> <name>, <position>`, all-or-nothing, error names the line and keeps the pasted text (`TeamService.addPlayersFromText`).
 - **Player stats** (`0268571`): five leaderboards side by side (top scorers, top assists, goals + assists, most minutes — or appearances for volleyball —, discipline) above the full table; `PlayerStatsResponse` carries them (`PlayerStatsCalculator.leaders`). Free-text names of legacy events are now credited to the squad player of the same team with the same name.
 - **Verification**: `mvnw verify` 548/548, JaCoCo met. Runtime on PostgreSQL (port 8081, the user's own app was on 8080): V10 applied (Rijeka/Osijek 18 players, Dinamo kept its 20); bulk paste with a taken number → "Line 2: Shirt number 8 is already taken by Toni Fruk", nothing added, text kept; valid paste added 2. New Rijeka–Osijek fixture: "not started" notice, 18 clickable rows, lineup saved by clicks and Actions tab kept; back link → calendar `#round-…`; team page with `?fixture=` back → match. IN_PROGRESS lists all six types; finished derby shows goal types "(locked)". Stats page shows the five boards; Petkovic now 2 goals (seeded text goal merged).
+
+## 11. Session 2026-11-14 — audit against the professor's assignment (no code changes)
+Source: `Student_Project_Assignments_2026-27.docx` (topic P39, seven learning outcomes, section 3 artefacts, section 9 rubric: at least 50 % of the points of **every** LO are needed to pass). Verified in code, not in documents.
+- **Verified**: `mvnw verify` → 548/548, 0 failures, JaCoCo gate met (`application.service` 93.8 %, total 76.9 %). `main` equals `origin/main`.
+- **Met**: layering and constructor injection; three roles with BCrypt, CSRF and the Thymeleaf security dialect; PostgreSQL + Flyway V1–V10 with `ddl-auto=validate`; JPA one-to-many, association entity (`SeasonTeam`), optional relation (`MatchEvent.player`), lazy fetching with `JOIN FETCH`/`@BatchSize`; REST with DTOs, ProblemDetail, springdoc 3.1.1; AI behind a port with a stub; EN/HR UI with a persistent cookie switcher.
+- **Missing or partial — LO7**: no scheduled job at all (neither Quartz nor `@Scheduled`); Bean Validation messages are hard-coded English strings in the DTOs; dates/numbers are not formatted per language.
+- **Missing or partial — delivery artefacts**: no `Dockerfile` (compose only runs the DB), no `.github` CI or badge, no deployment (no actuator, no `PORT`), no Figma/`docs/prototype.pdf`, no `docs/ai-usage.md`, no `docs/ai-evaluation.md`, only two ADRs (persistence, value objects; the AI ADR is missing), no measured performance improvement, N+1 fix not documented with before/after SQL, README lacks live URL, demo credentials, limitations, next steps, Figma mapping, badge.
+- **Missing or partial — other LOs**: REST lists are not paginated/sortable and there is no 422 (LO5); `@PreAuthorize` is only on controllers, not on service methods (LO2); no CRUD edit for Season/Round/Fixture (LO1); JaCoCo report not committed (LO6); pool choice not justified in prose (LO3).
+- **AI feature vs. spec**: the report is built from teams, score and events, not from the standings effect; nothing checks that the text contains the right scorelines; the text is stored without a review step (the rubric deducts for unreviewed AI output in the domain).
+- **Defects found**: (1) `mvnw verify -Pintegration` runs **0 tests**: the build-level `excludedGroups=integration` is inherited and cancels the profile's `groups=integration`. With the exclusion removed the 3 Testcontainers tests start and error only because Docker Desktop was stopped, so there is no evidence yet that they pass. (2) Tie-breaks are hard-coded (points, goal difference, goals for, head-to-head points, head-to-head goal difference), not configurable, and the README lists a different order. (3) No test covers "correct a result weeks later and the table order changes" (the topic's hard part). (4) `docs/ARCHITECTURE.md` and `docs/uml/04-infrastructure.puml` are stale.
+- **Suggested order**: deployment (Dockerfile, actuator, prod profile, Render + Neon) + CI + scheduled jobs; i18n of validation/dates; AI documents and ADR; Figma; performance numbers; then pagination/422, service-level security, the integration-profile fix and the hard-part test. Full roadmap in the Obsidian project note (`Brain/01 Projects/Sports League Management.md`, section 12).
