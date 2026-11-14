@@ -1,5 +1,7 @@
 # P39 Sports League Management
 
+[![CI](https://github.com/Bienvee3/SportsLeagueManagement/actions/workflows/ci.yml/badge.svg)](https://github.com/Bienvee3/SportsLeagueManagement/actions/workflows/ci.yml)
+
 **Rapid Development of Java Applications Using Programming Frameworks**  
 Algebra Bernays University — Academic Year 2026/2027  
 **Student:** Doalto Cavada Bienvenido  
@@ -79,7 +81,7 @@ startup when absent) and `GEMINI_API_KEY` (real AI chronicles).
 ### 2 — Start the database
 
 ```powershell
-docker compose up -d
+docker compose up -d postgres
 ```
 
 This starts a PostgreSQL 17 container reachable only from this machine (`127.0.0.1:5432`).
@@ -142,13 +144,22 @@ Press `Ctrl+C` in the terminal where the app is running.
 
 ---
 
-### 6 — Stop the database
+### 6 — Stop the containers
 
 ```powershell
 docker compose down
 ```
 
 > To also **delete all data** (full reset): `docker compose down -v`
+
+---
+
+### Alternative — run everything in Docker
+
+`docker compose up --build` builds the image from the `Dockerfile` (multi-stage, JRE-only, non-root) and starts
+the application together with PostgreSQL, using the `prod` profile and the variables of your `.env`
+(`ADMIN_USERNAME`, `ADMIN_PASSWORD`, `SPRING_DATASOURCE_PASSWORD` are required). The app is then on
+`http://localhost:8080`. Set `SPRING_AI_MODEL_CHAT=none` in `.env` to run without the AI provider.
 
 ---
 
@@ -161,6 +172,25 @@ docker compose down
 # Integration tests with real PostgreSQL via Testcontainers (requires Docker)
 .\mvnw.cmd verify -Pintegration
 ```
+
+Continuous integration (`.github/workflows/ci.yml`) runs `mvnw verify` (with the JaCoCo gate), the
+`-Pintegration` tests and a Docker build on every push.
+
+---
+
+### Scheduled jobs
+
+Two Quartz jobs run on a JDBC job store (tables created by Flyway V11, cluster mode, so two instances
+never fire the same job twice). Cron expressions and the grace period are in `application.yml` under `app.jobs`.
+
+| Job | Default | What it does |
+|---|---|---|
+| `roundLifecycle` (domain) | every 5 minutes | Starts a round when one of its matches kicks off and completes it once every match is finished or cancelled |
+| `overdueFixtures` | every hour | Logs a warning for matches still SCHEDULED more than 3 hours after their kick-off time |
+
+### Health check
+
+`GET /actuator/health` is public and returns only `{"status":"UP"}`; no other actuator endpoint is exposed.
 
 ---
 
