@@ -277,6 +277,44 @@ class RepositorySliceTest {
             List<Round> rounds = roundRepository.findBySeasonIdOrderByRoundNumber(UUID.randomUUID());
             assertTrue(rounds.isEmpty());
         }
+
+        @Test
+        @DisplayName("findOpenRoundsOfActiveSeasons returns unfinished rounds of ACTIVE seasons with their fixtures loaded")
+        void findOpenRoundsOfActiveSeasonsFiltersAndFetches() {
+            League l = new League("HNL 4", "hnl-4", "FOOTBALL", "Croatia");
+            leagueRepository.save(l);
+            Season active = new Season(l, "Active", 2026, 2027, SeasonStatus.ACTIVE);
+            Season upcoming = new Season(l, "Upcoming", 2027, 2028, SeasonStatus.UPCOMING);
+            seasonRepository.save(active);
+            seasonRepository.save(upcoming);
+            Team a = new Team("C FC", "CCF", "Stadium", "City", 2000);
+            Team b = new Team("D FC", "DDF", "Stadium", "City", 2000);
+            teamRepository.save(a);
+            teamRepository.save(b);
+
+            Round open = new Round(active, 1, "Open", null, null, RoundStatus.SCHEDULED);
+            Round inProgress = new Round(active, 2, "Running", null, null, RoundStatus.IN_PROGRESS);
+            Round done = new Round(active, 3, "Done", null, null, RoundStatus.COMPLETED);
+            Round inUpcomingSeason = new Round(upcoming, 1, "Later", null, null, RoundStatus.SCHEDULED);
+            for (Round r : List.of(open, inProgress, done, inUpcomingSeason)) {
+                roundRepository.save(r);
+                r.addFixture(new Fixture(r, a, b, Instant.now()));
+                fixtureRepository.save(r.getFixtures().get(0));
+            }
+            em.flush();
+            em.clear();
+
+            List<Round> result = roundRepository.findOpenRoundsOfActiveSeasons();
+
+            List<UUID> ids = result.stream().map(Round::getId).toList();
+            assertTrue(ids.contains(open.getId()));
+            assertTrue(ids.contains(inProgress.getId()));
+            assertFalse(ids.contains(done.getId()), "COMPLETED rounds are not open");
+            assertFalse(ids.contains(inUpcomingSeason.getId()), "rounds of a season that is not ACTIVE are ignored");
+            Round loaded = result.stream().filter(r -> r.getId().equals(open.getId())).findFirst().orElseThrow();
+            assertTrue(org.hibernate.Hibernate.isInitialized(loaded.getFixtures()), "fixtures must come from the JOIN FETCH");
+            assertEquals(1, loaded.getFixtures().size());
+        }
     }
 
     // ── FixtureRepository ────────────────────────────────────────────────────
@@ -386,6 +424,39 @@ class RepositorySliceTest {
         void findByRoundIdUnknownReturnsEmpty() {
             List<Fixture> fixtures = fixtureRepository.findByRoundId(UUID.randomUUID());
             assertTrue(fixtures.isEmpty());
+        }
+
+        @Test
+        @DisplayName("findScheduledBefore returns only SCHEDULED matches kicking off before the cutoff, teams and round loaded")
+        void findScheduledBeforeReturnsOnlyOldScheduledMatches() {
+            League l = new League("HNL 3", "hnl-3", "FOOTBALL", "Croatia");
+            leagueRepository.save(l);
+            Season s = new Season(l, "26/27", 2026, 2027, SeasonStatus.ACTIVE);
+            seasonRepository.save(s);
+            Round r = new Round(s, 1, "R1", LocalDate.now(), LocalDate.now().plusDays(2), RoundStatus.SCHEDULED);
+            roundRepository.save(r);
+            Team a = new Team("A FC", "AAF", "Stadium", "City", 2000);
+            Team b = new Team("B FC", "BBF", "Stadium", "City", 2000);
+            teamRepository.save(a);
+            teamRepository.save(b);
+
+            Instant now = Instant.parse("2026-11-14T12:00:00Z");
+            Fixture late = new Fixture(r, a, b, now.minusSeconds(4 * 3600));
+            Fixture upcoming = new Fixture(r, b, a, now.plusSeconds(3600));
+            Fixture playedLongAgo = new Fixture(r, a, b, now.minusSeconds(48 * 3600));
+            playedLongAgo.recordResult(new Score(1, 0));
+            fixtureRepository.save(late);
+            fixtureRepository.save(upcoming);
+            fixtureRepository.save(playedLongAgo);
+            em.flush();
+            em.clear();
+
+            List<Fixture> result = fixtureRepository.findScheduledBefore(now.minusSeconds(3600));
+
+            assertEquals(List.of(late.getId()), result.stream().map(Fixture::getId).toList());
+            Fixture loaded = result.get(0);
+            assertTrue(org.hibernate.Hibernate.isInitialized(loaded.getHomeTeam()), "homeTeam must come from the JOIN FETCH");
+            assertTrue(org.hibernate.Hibernate.isInitialized(loaded.getRound()), "round must come from the JOIN FETCH");
         }
     }
 }

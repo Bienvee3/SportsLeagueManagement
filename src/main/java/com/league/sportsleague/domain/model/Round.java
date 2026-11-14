@@ -1,6 +1,7 @@
 package com.league.sportsleague.domain.model;
 
 import com.league.sportsleague.domain.exception.InvalidStateTransitionException;
+import com.league.sportsleague.domain.model.enums.FixtureStatus;
 import com.league.sportsleague.domain.model.enums.RoundStatus;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -89,6 +90,35 @@ public class Round {
             throw new InvalidStateTransitionException("Round", status.name(), "completeRound");
         }
         this.status = RoundStatus.COMPLETED;
+    }
+
+    /**
+     * Keeps the round in step with its matches (used by the scheduled lifecycle job).
+     * SCHEDULED becomes IN_PROGRESS once any match has kicked off or finished; IN_PROGRESS becomes
+     * COMPLETED once the round has matches and every one is FINISHED or CANCELLED — a POSTPONED or
+     * still SCHEDULED match keeps it open. A SCHEDULED round whose matches were all recorded at once
+     * therefore completes in a single call.
+     *
+     * @return true when the status changed
+     */
+    public boolean advanceFromFixtures() {
+        RoundStatus before = this.status;
+        if (this.status == RoundStatus.SCHEDULED && fixtures.stream().anyMatch(Round::hasStarted)) {
+            this.status = RoundStatus.IN_PROGRESS;
+        }
+        if (this.status == RoundStatus.IN_PROGRESS && !fixtures.isEmpty()
+                && fixtures.stream().allMatch(Round::isSettled)) {
+            this.status = RoundStatus.COMPLETED;
+        }
+        return this.status != before;
+    }
+
+    private static boolean hasStarted(Fixture f) {
+        return f.getStatus() == FixtureStatus.IN_PROGRESS || f.isFinished();
+    }
+
+    private static boolean isSettled(Fixture f) {
+        return f.isFinished() || f.getStatus() == FixtureStatus.CANCELLED;
     }
 
     public void updateSchedule(LocalDate startDate, LocalDate endDate) {

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -57,5 +58,21 @@ public interface JpaFixtureRepository extends JpaRepository<Fixture, UUID>, Fixt
     @Override
     default List<Fixture> findFinishedBySeasonWithTeams(UUID seasonId) {
         return findBySeasonIdAndStatusWithTeams(seasonId, FixtureStatus.FINISHED);
+    }
+
+    @Query("SELECT f FROM Fixture f " +
+           "JOIN FETCH f.homeTeam " +
+           "JOIN FETCH f.awayTeam " +
+           "JOIN FETCH f.round " +
+           "WHERE f.status = :status AND f.scheduledTime < :cutoff " +
+           "ORDER BY f.scheduledTime")
+    List<Fixture> findByStatusAndScheduledBeforeWithTeams(
+            @Param("status") FixtureStatus status,
+            @Param("cutoff") Instant cutoff);
+
+    /** SCHEDULED matches whose kick-off time is before {@code cutoff}; teams and round fetched in one query. */
+    @Override
+    default List<Fixture> findScheduledBefore(Instant cutoff) {
+        return findByStatusAndScheduledBeforeWithTeams(FixtureStatus.SCHEDULED, cutoff);
     }
 }

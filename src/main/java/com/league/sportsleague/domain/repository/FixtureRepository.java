@@ -2,6 +2,7 @@ package com.league.sportsleague.domain.repository;
 
 import com.league.sportsleague.domain.model.Fixture;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,6 +28,12 @@ public interface FixtureRepository {
      * eagerly loaded via JOIN FETCH to prevent N+1 queries.
      */
     List<Fixture> findFinishedBySeasonWithTeams(UUID seasonId);
+
+    /**
+     * Returns the SCHEDULED fixtures whose kick-off time is before {@code cutoff}, oldest first, with
+     * homeTeam, awayTeam and round loaded by JOIN FETCH. Used to spot matches nobody started.
+     */
+    List<Fixture> findScheduledBefore(Instant cutoff);
 
     Fixture save(Fixture fixture);
 }

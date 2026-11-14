@@ -352,6 +352,89 @@ class DomainMethodsTest {
         }
     }
 
+
+    // ── Round.advanceFromFixtures() ───────────────────────────────────────────
+
+    @Nested
+    @DisplayName("Round.advanceFromFixtures()")
+    class RoundAdvance {
+
+        private Fixture addFixture(Round r, String home, String away) {
+            Fixture f = new Fixture(r, team(home), team(away), Instant.now());
+            r.addFixture(f);
+            return f;
+        }
+
+        @Test
+        @DisplayName("stays SCHEDULED while no match has started")
+        void staysScheduled() {
+            Round r = scheduledRound(activeSeason());
+            addFixture(r, "AAA", "BBB");
+
+            assertFalse(r.advanceFromFixtures());
+            assertEquals(RoundStatus.SCHEDULED, r.getStatus());
+        }
+
+        @Test
+        @DisplayName("starts when a match kicks off and stays open while others are unfinished")
+        void startsWhenAMatchKicksOff() {
+            Round r = scheduledRound(activeSeason());
+            Fixture first = addFixture(r, "AAA", "BBB");
+            addFixture(r, "CCC", "DDD");
+            first.kickOff();
+
+            assertTrue(r.advanceFromFixtures());
+            assertEquals(RoundStatus.IN_PROGRESS, r.getStatus());
+            assertFalse(r.advanceFromFixtures(), "nothing left to advance on the second run");
+        }
+
+        @Test
+        @DisplayName("completes once every match is FINISHED or CANCELLED")
+        void completesWhenAllSettled() {
+            Round r = scheduledRound(activeSeason());
+            Fixture played = addFixture(r, "AAA", "BBB");
+            Fixture called = addFixture(r, "CCC", "DDD");
+            played.recordResult(new Score(1, 0));
+            called.cancel();
+
+            assertTrue(r.advanceFromFixtures());
+            assertEquals(RoundStatus.COMPLETED, r.getStatus(), "SCHEDULED -> IN_PROGRESS -> COMPLETED in one run");
+        }
+
+        @Test
+        @DisplayName("a POSTPONED or still SCHEDULED match keeps the round IN_PROGRESS")
+        void unsettledMatchKeepsRoundOpen() {
+            Round r = scheduledRound(activeSeason());
+            Fixture played = addFixture(r, "AAA", "BBB");
+            Fixture postponed = addFixture(r, "CCC", "DDD");
+            played.recordResult(new Score(2, 2));
+            postponed.postpone("Pitch unplayable");
+
+            r.advanceFromFixtures();
+
+            assertEquals(RoundStatus.IN_PROGRESS, r.getStatus());
+        }
+
+        @Test
+        @DisplayName("a round without matches never changes")
+        void emptyRoundIsUntouched() {
+            Round r = scheduledRound(activeSeason());
+
+            assertFalse(r.advanceFromFixtures());
+            assertEquals(RoundStatus.SCHEDULED, r.getStatus());
+        }
+
+        @Test
+        @DisplayName("a COMPLETED round is final")
+        void completedRoundStaysCompleted() {
+            Round r = scheduledRound(activeSeason());
+            addFixture(r, "AAA", "BBB").recordResult(new Score(0, 0));
+            r.advanceFromFixtures();
+
+            assertFalse(r.advanceFromFixtures());
+            assertEquals(RoundStatus.COMPLETED, r.getStatus());
+        }
+    }
     // ── Domain query methods ──────────────────────────────────────────────────
 
     @Nested
