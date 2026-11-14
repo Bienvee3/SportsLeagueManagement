@@ -4,16 +4,16 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
 public record CreateLeagueRequest(
-        @NotBlank(message = "League name must not be blank")
+        @NotBlank(message = "{validation.league.name.required}")
         String name,
 
-        @NotBlank(message = "Slug must not be blank")
+        @NotBlank(message = "{validation.league.slug.required}")
         @Pattern(regexp = "[a-z0-9]+(-[a-z0-9]+)*",
-                 message = "Slug must match [a-z0-9]+(-[a-z0-9]+)*")
+                 message = "{validation.league.slug.pattern}")
         String slug,
 
         String sportType,
 
-        @NotBlank(message = "Country must not be blank")
+        @NotBlank(message = "{validation.league.country.required}")
         String country
 ) {}

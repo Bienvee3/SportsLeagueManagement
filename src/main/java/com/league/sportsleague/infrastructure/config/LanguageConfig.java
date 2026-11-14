@@ -37,7 +37,7 @@ public class LanguageConfig implements WebMvcConfigurer {
     MessageSource messageSource() {
         ResourceBundleMessageSource source = new ResourceBundleMessageSource();
         source.setBasenames("i18n/common", "i18n/pages", "i18n/leagues", "i18n/teams",
-                "i18n/seasons", "i18n/fixtures");
+                "i18n/seasons", "i18n/fixtures", "i18n/validation");
         source.setDefaultEncoding("UTF-8");
         source.setFallbackToSystemLocale(false);
         source.setUseCodeAsDefaultMessage(true);

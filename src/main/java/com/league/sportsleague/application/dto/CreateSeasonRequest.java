@@ -4,12 +4,12 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 
 public record CreateSeasonRequest(
-        @NotBlank(message = "Season name must not be blank")
+        @NotBlank(message = "{validation.season.name.required}")
         String name,
 
-        @Min(value = 1900, message = "Year start must be >= 1900")
+        @Min(value = 1900, message = "{validation.season.yearStart.min}")
         int yearStart,
 
-        @Min(value = 1900, message = "Year end must be >= 1900")
+        @Min(value = 1900, message = "{validation.season.yearEnd.min}")
         int yearEnd
 ) {}

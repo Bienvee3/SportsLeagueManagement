@@ -6,12 +6,12 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record AddFixtureRequest(
-        @NotNull(message = "Home team is required")
+        @NotNull(message = "{validation.fixture.home.required}")
         UUID homeTeamId,
 
-        @NotNull(message = "Away team is required")
+        @NotNull(message = "{validation.fixture.away.required}")
         UUID awayTeamId,
 
-        @NotNull(message = "Kick-off time is required")
+        @NotNull(message = "{validation.fixture.kickoff.required}")
         Instant scheduledTime
 ) {}

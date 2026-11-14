@@ -6,9 +6,9 @@ import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 
 public record RegisterTeamRequest(
-        @NotNull(message = "Team ID must not be null")
+        @NotNull(message = "{validation.team.required}")
         UUID teamId,
 
-        @Min(value = 0, message = "Initial seed must be >= 0")
+        @Min(value = 0, message = "{validation.registration.seed.min}")
         int initialSeed
 ) {}

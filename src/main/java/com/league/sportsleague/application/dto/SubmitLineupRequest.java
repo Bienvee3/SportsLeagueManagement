@@ -7,7 +7,7 @@ import java.util.UUID;
 
 /** The lineup of one team for a fixture: starters, substitutes and an optional captain (a starter). */
 public record SubmitLineupRequest(
-        @NotEmpty(message = "Starters must not be empty")
+        @NotEmpty(message = "{validation.lineup.starters.required}")
         List<UUID> starterIds,
 
         List<UUID> benchIds,

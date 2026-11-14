@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class I18nBundlesTest {
 
     private static final List<String> AREAS =
-            List.of("common", "pages", "leagues", "teams", "seasons", "fixtures");
+            List.of("common", "pages", "leagues", "teams", "seasons", "fixtures", "validation");
     private static final Path TEMPLATES = Path.of("src/main/resources/templates");
     private static final Pattern LITERAL_KEY = Pattern.compile("#\\{([A-Za-z][A-Za-z0-9_.]*)[})(]");
 

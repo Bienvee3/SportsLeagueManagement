@@ -13,14 +13,14 @@ import java.util.UUID;
  * {@code relatedPlayerId} is the assist provider of a goal or the player coming on in a substitution.
  */
 public record RecordMatchEventRequest(
-        @NotNull(message = "Team ID must not be null")
+        @NotNull(message = "{validation.team.required}")
         UUID teamId,
 
-        @NotNull(message = "Event type must not be null")
+        @NotNull(message = "{validation.event.type.required}")
         MatchEventType eventType,
 
-        @Min(value = 1, message = "Match minute must be >= 1")
-        @Max(value = 130, message = "Match minute must be <= 130")
+        @Min(value = 1, message = "{validation.event.minute.min}")
+        @Max(value = 130, message = "{validation.event.minute.max}")
         int matchMinute,
 
         String playerName,
