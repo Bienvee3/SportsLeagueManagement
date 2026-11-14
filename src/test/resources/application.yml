@@ -15,5 +15,7 @@ spring:
   ai:
     model:
       chat: none
+  quartz:
+    auto-startup: false   # jobs are registered but never fire during ordinary tests
 ADMIN_USERNAME: test-admin
 ADMIN_PASSWORD: test-only-password

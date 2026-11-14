@@ -3,6 +3,26 @@ spring:
     name: sports-league-management
   profiles:
     active: dev
+  quartz:
+    job-store-type: jdbc
+    scheduler-name: sports-league-scheduler
+    overwrite-existing-jobs: true
+    jdbc:
+      initialize-schema: never   # tables come from Flyway migration V11
+    properties:
+      org.quartz.scheduler.instanceId: AUTO
+      org.quartz.jobStore.isClustered: true   # several instances share the job store; one fires each trigger
+      org.quartz.jobStore.driverDelegateClass: org.quartz.impl.jdbcjobstore.PostgreSQLDelegate
+      org.quartz.threadPool.threadCount: 2
+
+# Scheduled jobs (see QuartzJobsConfig). Cron fields: second minute hour day month weekday.
+app:
+  jobs:
+    round-lifecycle:
+      cron: "0 0/5 * * * ?"     # every 5 minutes
+    overdue-fixtures:
+      cron: "0 0 * * * ?"       # every hour
+      grace: PT3H               # report matches still SCHEDULED this long after their kick-off time
 
 ---
 spring:
