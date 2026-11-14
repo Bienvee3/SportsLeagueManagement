@@ -46,6 +46,23 @@ class SecurityAccessTest {
     }
 
     @Test
+    @DisplayName("the platform health check is public and reports only the status")
+    void healthEndpointIsPublicAndMinimal() throws Exception {
+        mockMvc.perform(get("/actuator/health"))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.status").value("UP"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.components").doesNotExist());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("no other actuator endpoint is exposed, not even to an ADMIN")
+    void otherActuatorEndpointsAreNotExposed() throws Exception {
+        mockMvc.perform(get("/actuator/env")).andExpect(status().isNotFound());
+        mockMvc.perform(get("/actuator/beans")).andExpect(status().isNotFound());
+    }
+
+    @Test
     @WithMockUser(roles = "VIEWER")
     @DisplayName("VIEWER can reach general pages")
     void viewerCanReachGeneralPages() throws Exception {

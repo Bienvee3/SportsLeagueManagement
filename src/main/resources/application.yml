@@ -14,15 +14,49 @@ spring:
       org.quartz.jobStore.isClustered: true   # several instances share the job store; one fires each trigger
       org.quartz.jobStore.driverDelegateClass: org.quartz.impl.jdbcjobstore.PostgreSQLDelegate
       org.quartz.threadPool.threadCount: 2
+  ai:
+    model:
+      chat: google-genai            # SPRING_AI_MODEL_CHAT=none runs the app without the AI provider
+    google:
+      genai:
+        api-key: ${GEMINI_API_KEY}  # no default: with the provider on, startup fails if the key is missing
+        chat:
+          model: gemini-3.5-flash
+          temperature: 0.7
+          max-output-tokens: 2048
 
-# Scheduled jobs (see QuartzJobsConfig). Cron fields: second minute hour day month weekday.
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui
+    operations-sorter: alpha
+
+server:
+  port: ${PORT:8080}                  # hosting platforms inject PORT
+  forward-headers-strategy: framework # trust X-Forwarded-* from the platform's HTTPS proxy
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health               # only the health check is exposed
+  endpoint:
+    health:
+      show-details: never             # status only: nothing about the database or the host leaks
+
 app:
+  # Scheduled jobs (see QuartzJobsConfig). Cron fields: second minute hour day month weekday.
   jobs:
     round-lifecycle:
       cron: "0 0/5 * * * ?"     # every 5 minutes
     overdue-fixtures:
       cron: "0 0 * * * ?"       # every hour
       grace: PT3H               # report matches still SCHEDULED this long after their kick-off time
+  # Limits for the Gemini client, see ChronicleAdapterConfig. Spring AI 2.0.2 has no property for them.
+  ai:
+    timeout-ms: 30000           # per attempt
+    max-attempts: 2             # total attempts including the first
 
 ---
 spring:
@@ -62,30 +96,6 @@ spring:
     baseline-on-migrate: true
     locations: classpath:db/migration
 
-  springdoc:
-    api-docs:
-      path: /api-docs
-    swagger-ui:
-      path: /swagger-ui
-      operations-sorter: alpha
-
-  ai:
-    model:
-      chat: google-genai
-    google:
-      genai:
-        api-key: ${GEMINI_API_KEY}
-        chat:
-          model: gemini-3.5-flash
-          temperature: 0.7
-          max-output-tokens: 2048
-
-# Limits for the Gemini client, see ChronicleAdapterConfig. Spring AI 2.0.2 has no property for them.
-app:
-  ai:
-    timeout-ms: 30000   # per attempt
-    max-attempts: 2     # total attempts including the first
-
 ---
 spring:
   config:
@@ -93,14 +103,15 @@ spring:
       on-profile: prod
 
   datasource:
+    # Everything comes from the environment, with no defaults: a missing value stops the startup.
     url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
       pool-name: SportsLeagueHikariCP-Prod
-      maximum-pool-size: 5
-      minimum-idle: 2
+      maximum-pool-size: 5          # a free managed database allows few connections; 5 covers the web threads
+      minimum-idle: 2               # plus the 2 Quartz workers without exhausting it
       idle-timeout: 300000
       connection-timeout: 20000
       max-lifetime: 1200000
@@ -115,4 +126,3 @@ spring:
     enabled: true
     baseline-on-migrate: true
     locations: classpath:db/migration
-
