@@ -354,4 +354,43 @@ class StandingsCalculatorTest {
         }
         throw new AssertionError("Team not found: " + teamId);
     }
+
+    @Nested
+    @DisplayName("Late result correction (the hard part of the topic)")
+    class LateCorrection {
+
+        @Test
+        @DisplayName("correcting an old result reorders the table, is audited, and a second correction is audited too")
+        void correctionReordersTableAndIsAudited() {
+            Team alpha = team("Alpha", "ALP");
+            Team beta  = team("Beta",  "BET");
+            Team gamma = team("Gamma", "GAM");
+            Round r = round(season());
+            Fixture oldest = finished(r, alpha, beta, 1, 0);       // played weeks ago
+            Fixture draw1  = finished(r, gamma, beta, 0, 0);
+            Fixture draw2  = finished(r, alpha, gamma, 0, 0);
+            List<Fixture> season = List.of(oldest, draw1, draw2);
+
+            List<StandingsEntry> before = StandingsCalculator.calculate(season);
+            assertEquals(List.of(alpha.getId(), gamma.getId(), beta.getId()),
+                    before.stream().map(StandingsEntry::teamId).toList(), "alpha 4, gamma 2, beta 1");
+
+            oldest.correctResult(new com.league.sportsleague.domain.valueobject.Score(0, 2), "Official protest upheld", "referee");
+
+            List<StandingsEntry> after = StandingsCalculator.calculate(season);
+            assertEquals(List.of(beta.getId(), gamma.getId(), alpha.getId()),
+                    after.stream().map(StandingsEntry::teamId).toList(), "beta 4, gamma 2, alpha 1");
+            assertEquals(4, after.get(0).points());
+            assertEquals(1, oldest.getAudits().size());
+            assertEquals(1, oldest.getAudits().get(0).getOldHomeScore());
+            assertEquals(2, oldest.getAudits().get(0).getNewAwayScore());
+
+            oldest.correctResult(new com.league.sportsleague.domain.valueobject.Score(1, 0), "Protest overturned", "referee");
+
+            assertEquals(List.of(alpha.getId(), gamma.getId(), beta.getId()),
+                    StandingsCalculator.calculate(season).stream().map(StandingsEntry::teamId).toList(),
+                    "undoing the correction restores the original order");
+            assertEquals(2, oldest.getAudits().size(), "every correction keeps its own audit row");
+        }
+    }
 }
