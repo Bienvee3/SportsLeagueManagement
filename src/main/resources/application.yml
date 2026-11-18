@@ -127,3 +127,12 @@ spring:
     enabled: true
     baseline-on-migrate: true
     locations: classpath:db/migration
+
+# Production is only reached over HTTPS (the platform terminates TLS and forward-headers-strategy keeps the
+# scheme), so the session cookie may never travel over plain HTTP. Dev stays on http://localhost.
+server:
+  servlet:
+    session:
+      cookie:
+        secure: true
+        same-site: lax
