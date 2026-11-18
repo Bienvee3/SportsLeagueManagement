@@ -55,8 +55,9 @@ app:
       grace: PT3H               # report matches still SCHEDULED this long after their kick-off time
   # Limits for the Gemini client, see ChronicleAdapterConfig. Spring AI 2.0.2 has no property for them.
   ai:
-    timeout-ms: 30000           # per attempt
-    max-attempts: 2             # total attempts including the first
+    timeout-ms: 60000           # per HTTP call; answers took 16-29 s in the live evaluation, 30 s cancelled some
+    max-attempts: 1             # SDK-level attempts: 1, because ChronicleService already retries a rejected answer
+                                # and every extra HTTP attempt would also burn the free-tier daily quota
     max-calls-per-hour: 30      # cost guard on the shared API key (all users together); 0 disables it
 
 ---

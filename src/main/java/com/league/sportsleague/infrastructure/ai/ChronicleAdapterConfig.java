@@ -38,8 +38,8 @@ public class ChronicleAdapterConfig {
     @Bean
     @ConditionalOnProperty(name = "spring.ai.model.chat", havingValue = "google-genai")
     Client googleGenAiClientWithTimeout(@Value("${spring.ai.google.genai.api-key}") String apiKey,
-                                        @Value("${app.ai.timeout-ms:30000}") int timeoutMs,
-                                        @Value("${app.ai.max-attempts:2}") int maxAttempts) {
+                                        @Value("${app.ai.timeout-ms:60000}") int timeoutMs,
+                                        @Value("${app.ai.max-attempts:1}") int maxAttempts) {
         return Client.builder()
                 .apiKey(apiKey)
                 .httpOptions(HttpOptions.builder()
