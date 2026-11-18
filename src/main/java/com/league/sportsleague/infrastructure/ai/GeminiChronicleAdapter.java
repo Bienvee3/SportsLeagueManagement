@@ -5,6 +5,7 @@ import com.league.sportsleague.domain.ai.ChronicleRequest;
 import com.league.sportsleague.domain.ai.ChronicleResult;
 import com.league.sportsleague.domain.ai.Language;
 import com.league.sportsleague.domain.ai.MatchEventSummary;
+import com.league.sportsleague.domain.ai.TeamTableEffect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -60,11 +61,11 @@ public class GeminiChronicleAdapter implements ChroniclePort {
 
     // ── Prompt builder ────────────────────────────────────────────────────────
 
-    private static String buildPrompt(ChronicleRequest req) {
+    static String buildPrompt(ChronicleRequest req) {
         StringBuilder sb = new StringBuilder();
 
         sb.append("You are a professional sports journalist. ");
-        sb.append("Write a concise post-match chronicle of exactly 150-200 words based strictly ");
+        sb.append("Write a concise post-match chronicle of 150-200 words based strictly ");
         sb.append("on the data provided below. Do not invent details not present in the data.\n\n");
 
         sb.append("MATCH DATA:\n");
@@ -88,12 +89,37 @@ public class GeminiChronicleAdapter implements ChroniclePort {
             sb.append("\nNo individual events recorded.\n");
         }
 
+        if (!req.tableEffects().isEmpty()) {
+            sb.append("\nEFFECT ON THE LEAGUE TABLE (after this match was counted):\n");
+            for (TeamTableEffect t : req.tableEffects()) {
+                sb.append("  ").append(t.teamName()).append(": ");
+                if (t.positionBefore() == null) {
+                    sb.append("first match of the season");
+                } else {
+                    sb.append("position ").append(t.positionBefore()).append(" with ").append(t.pointsBefore()).append(" points");
+                }
+                sb.append(" -> position ").append(t.positionAfter()).append(" with ").append(t.pointsAfter()).append(" points\n");
+            }
+        }
+
         sb.append("\nOUTPUT REQUIREMENTS:\n");
         sb.append("- Language: ").append(languageInstruction(req.language())).append("\n");
         sb.append("- Tone: professional journalistic\n");
         sb.append("- Length: 150-200 words\n");
-        sb.append("- Include: match narrative, score, key events\n");
-        sb.append("- Exclude: fictional details, speculation\n");
+        sb.append("- Include: match narrative, the final score, key events");
+        sb.append(req.tableEffects().isEmpty() ? "\n" : ", and what the result meant for the table\n");
+        sb.append("- Write every scoreline with the home team's goals first, like ")
+          .append(req.homeScore()).append("-").append(req.awayScore())
+          .append("; state only the final score and running scores that follow from the events above\n");
+        sb.append("- Exclude: fictional details, speculation, any number or name not in the data\n");
+        sb.append("- Output ONLY the chronicle text: no title, no markdown, no word count, no notes about your work\n");
+
+        if (!req.corrections().isEmpty()) {
+            sb.append("\nYOUR PREVIOUS ANSWER WAS REJECTED. Write it again and fix these problems:\n");
+            for (String problem : req.corrections()) {
+                sb.append("- ").append(problem).append("\n");
+            }
+        }
 
         return sb.toString();
     }

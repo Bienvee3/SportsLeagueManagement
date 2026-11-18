@@ -11,6 +11,7 @@ import static org.mockito.Mockito.doThrow;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -24,9 +25,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -47,8 +50,13 @@ class ChronicleServiceTest {
 
     @InjectMocks ChronicleService chronicleService;
 
+    /** An answer the validator accepts for {@link #request}: the real score and a sensible length. */
+    private static final String GOOD = "Dinamo Zagreb beat Hajduk Split 2-1 on a warm evening. " + "word ".repeat(150).trim();
+    /** An answer the validator rejects: it invents a score. */
+    private static final String BAD = "Dinamo Zagreb beat Hajduk Split 5-0 on a warm evening. " + "word ".repeat(150).trim();
+
     private static ChronicleRequest request(Language language) {
-        return new ChronicleRequest("Dinamo Zagreb", "Hajduk Split", 2, 1, List.of(), language);
+        return new ChronicleRequest("Dinamo Zagreb", "Hajduk Split", 2, 1, List.of(), language, List.of(), List.of());
     }
 
     // ── quota ─────────────────────────────────────────────────────────────────
@@ -58,7 +66,7 @@ class ChronicleServiceTest {
     void generateAcquiresQuotaFirst() {
         ChronicleRequest req = request(Language.ENGLISH);
         when(store.buildRequest(FIXTURE_ID, Language.ENGLISH)).thenReturn(req);
-        when(chroniclePort.generate(req)).thenReturn(new ChronicleResult("Report.", Language.ENGLISH));
+        when(chroniclePort.generate(req)).thenReturn(new ChronicleResult(GOOD, Language.ENGLISH));
 
         chronicleService.generateChronicle(FIXTURE_ID, Language.ENGLISH);
 
@@ -105,6 +113,73 @@ class ChronicleServiceTest {
         verifyNoInteractions(chroniclePort);
     }
 
+    // ── verification of the answer ────────────────────────────────────────────
+
+    @Test
+    @DisplayName("a rejected answer is retried once with the problems, and the corrected one is stored")
+    void invalidAnswerIsRetriedWithCorrections() {
+        ChronicleRequest req = request(Language.ENGLISH);
+        when(store.buildRequest(FIXTURE_ID, Language.ENGLISH)).thenReturn(req);
+        when(chroniclePort.generate(req)).thenReturn(new ChronicleResult(BAD, Language.ENGLISH));
+        when(chroniclePort.generate(argThat(r -> !r.corrections().isEmpty())))
+                .thenReturn(new ChronicleResult(GOOD, Language.ENGLISH));
+
+        ChronicleResult result = chronicleService.generateChronicle(FIXTURE_ID, Language.ENGLISH);
+
+        assertEquals(GOOD, result.text());
+        verify(limiter, times(2)).acquire();
+        var retried = ArgumentCaptor.forClass(ChronicleRequest.class);
+        verify(chroniclePort, times(2)).generate(retried.capture());
+        assertTrue(retried.getAllValues().get(1).corrections().stream().anyMatch(c -> c.contains("5-0")),
+                "the second attempt must carry the reason of the rejection");
+        verify(store).replace(FIXTURE_ID, Language.ENGLISH, GOOD);
+    }
+
+    @Test
+    @DisplayName("two rejected answers end in a 503-style failure and nothing is stored")
+    void twoInvalidAnswersAreNeverStored() {
+        ChronicleRequest req = request(Language.ENGLISH);
+        when(store.buildRequest(FIXTURE_ID, Language.ENGLISH)).thenReturn(req);
+        when(chroniclePort.generate(any())).thenReturn(new ChronicleResult(BAD, Language.ENGLISH));
+
+        ChronicleUnavailableException ex = assertThrows(ChronicleUnavailableException.class,
+                () -> chronicleService.generateChronicle(FIXTURE_ID, Language.ENGLISH));
+
+        assertTrue(ex.getMessage().contains("failed verification"), ex.getMessage());
+        verify(chroniclePort, times(2)).generate(any());
+        verify(store, never()).replace(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("a translation that changes a scoreline is retried and never stored when it stays wrong")
+    void badTranslationIsNeverStored() {
+        ChronicleResult source = new ChronicleResult("Dinamo won 2-1 after leading 1-0.", Language.ENGLISH);
+        when(store.findStored(FIXTURE_ID, Language.CROATIAN)).thenReturn(Optional.empty());
+        when(store.findAnyStored(FIXTURE_ID)).thenReturn(Optional.of(source));
+        when(chroniclePort.translate(any(), eq(Language.CROATIAN)))
+                .thenReturn(new ChronicleResult("Dinamo je pobijedio 3:1 nakon 1:0.", Language.CROATIAN));
+
+        assertThrows(ChronicleUnavailableException.class,
+                () -> chronicleService.translateChronicle(FIXTURE_ID, Language.CROATIAN));
+
+        verify(chroniclePort, times(2)).translate(any(), eq(Language.CROATIAN));
+        verify(store, never()).saveTranslation(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("a translation that keeps the scorelines is accepted at the first attempt")
+    void goodTranslationIsAccepted() {
+        ChronicleResult source = new ChronicleResult("Dinamo won 2-1 after leading 1-0.", Language.ENGLISH);
+        ChronicleResult translated = new ChronicleResult("Dinamo je pobijedio 2:1 nakon vodstva 1:0.", Language.CROATIAN);
+        when(store.findStored(FIXTURE_ID, Language.CROATIAN)).thenReturn(Optional.empty());
+        when(store.findAnyStored(FIXTURE_ID)).thenReturn(Optional.of(source));
+        when(chroniclePort.translate(source, Language.CROATIAN)).thenReturn(translated);
+        when(store.saveTranslation(FIXTURE_ID, source, translated)).thenReturn(true);
+
+        assertEquals(translated, chronicleService.translateChronicle(FIXTURE_ID, Language.CROATIAN).orElseThrow());
+        verify(chroniclePort).translate(source, Language.CROATIAN);
+    }
+
     // ── generate ──────────────────────────────────────────────────────────────
 
     @Test
@@ -112,15 +187,15 @@ class ChronicleServiceTest {
     void generateCallsProviderBetweenTheTwoTransactions() {
         ChronicleRequest req = request(Language.CROATIAN);
         when(store.buildRequest(FIXTURE_ID, Language.CROATIAN)).thenReturn(req);
-        when(chroniclePort.generate(req)).thenReturn(new ChronicleResult("Izvještaj.", Language.CROATIAN));
+        when(chroniclePort.generate(req)).thenReturn(new ChronicleResult(GOOD, Language.CROATIAN));
 
         ChronicleResult result = chronicleService.generateChronicle(FIXTURE_ID, Language.CROATIAN);
 
-        assertEquals("Izvještaj.", result.text());
+        assertEquals(GOOD, result.text());
         InOrder order = inOrder(store, chroniclePort);
         order.verify(store).buildRequest(FIXTURE_ID, Language.CROATIAN);
         order.verify(chroniclePort).generate(req);
-        order.verify(store).replace(FIXTURE_ID, Language.CROATIAN, "Izvještaj.");
+        order.verify(store).replace(FIXTURE_ID, Language.CROATIAN, GOOD);
     }
 
     @Test
@@ -128,11 +203,11 @@ class ChronicleServiceTest {
     void generateDefaultsToEnglish() {
         ChronicleRequest req = request(Language.ENGLISH);
         when(store.buildRequest(FIXTURE_ID, Language.ENGLISH)).thenReturn(req);
-        when(chroniclePort.generate(req)).thenReturn(new ChronicleResult("Report.", Language.ENGLISH));
+        when(chroniclePort.generate(req)).thenReturn(new ChronicleResult(GOOD, Language.ENGLISH));
 
         chronicleService.generateChronicle(FIXTURE_ID, null);
 
-        verify(store).replace(FIXTURE_ID, Language.ENGLISH, "Report.");
+        verify(store).replace(FIXTURE_ID, Language.ENGLISH, GOOD);
     }
 
     @Test

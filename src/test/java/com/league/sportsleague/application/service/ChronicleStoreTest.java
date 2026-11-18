@@ -1,6 +1,7 @@
 package com.league.sportsleague.application.service;
 
 import com.league.sportsleague.domain.ai.ChronicleRequest;
+import com.league.sportsleague.domain.ai.TeamTableEffect;
 import com.league.sportsleague.domain.ai.ChronicleResult;
 import com.league.sportsleague.domain.ai.Language;
 import com.league.sportsleague.domain.exception.EntityNotFoundException;
@@ -32,6 +33,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -87,6 +89,60 @@ class ChronicleStoreTest {
 
         assertThrows(EntityNotFoundException.class,
                 () -> store.buildRequest(UUID.randomUUID(), Language.ENGLISH));
+    }
+
+    @Test
+    @DisplayName("buildRequest adds what the match did to the table: position and points before and after, per team")
+    void buildRequestIncludesTableEffect() {
+        Team away = fixture.getAwayTeam();
+        Fixture earlier = new Fixture(fixture.getRound(), away, home, Instant.now());
+        earlier.recordResult(new Score(1, 0));            // before: Hajduk 3 pts (1st), Dinamo 0 pts (2nd)
+        fixture.recordResult(new Score(3, 0));            // after: Dinamo 3 pts GD +2 (1st), Hajduk 3 pts GD -2 (2nd)
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+        when(fixtureRepository.findFinishedBySeasonWithTeams(fixture.getRound().getSeason().getId()))
+                .thenReturn(List.of(earlier, fixture));
+
+        ChronicleRequest request = store.buildRequest(fixture.getId(), Language.ENGLISH);
+
+        assertEquals(2, request.tableEffects().size());
+        TeamTableEffect dinamo = request.tableEffects().get(0);
+        assertEquals("Dinamo Zagreb", dinamo.teamName());
+        assertEquals(2, dinamo.positionBefore());
+        assertEquals(1, dinamo.positionAfter());
+        assertEquals(0, dinamo.pointsBefore());
+        assertEquals(3, dinamo.pointsAfter());
+        TeamTableEffect hajduk = request.tableEffects().get(1);
+        assertEquals("Hajduk Split", hajduk.teamName());
+        assertEquals(1, hajduk.positionBefore());
+        assertEquals(2, hajduk.positionAfter());
+        assertEquals(3, hajduk.pointsBefore());
+        assertEquals(3, hajduk.pointsAfter());
+    }
+
+    @Test
+    @DisplayName("in the first match of the season both teams were not in the table before")
+    void firstMatchOfTheSeasonHasNoPositionBefore() {
+        fixture.recordResult(new Score(1, 1));
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+        when(fixtureRepository.findFinishedBySeasonWithTeams(fixture.getRound().getSeason().getId()))
+                .thenReturn(List.of(fixture));
+
+        ChronicleRequest request = store.buildRequest(fixture.getId(), Language.CROATIAN);
+
+        assertEquals(2, request.tableEffects().size());
+        assertNull(request.tableEffects().get(0).positionBefore());
+        assertEquals(0, request.tableEffects().get(0).pointsBefore());
+        assertEquals(1, request.tableEffects().get(0).pointsAfter());
+    }
+
+    @Test
+    @DisplayName("a match that is not finished has no table effect")
+    void unfinishedMatchHasNoTableEffect() {
+        when(fixtureRepository.findById(fixture.getId())).thenReturn(Optional.of(fixture));
+        when(fixtureRepository.findFinishedBySeasonWithTeams(fixture.getRound().getSeason().getId()))
+                .thenReturn(List.of());
+
+        assertTrue(store.buildRequest(fixture.getId(), Language.ENGLISH).tableEffects().isEmpty());
     }
 
     @Test

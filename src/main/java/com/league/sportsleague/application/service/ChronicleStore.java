@@ -4,6 +4,10 @@ import com.league.sportsleague.domain.ai.ChronicleRequest;
 import com.league.sportsleague.domain.ai.ChronicleResult;
 import com.league.sportsleague.domain.ai.Language;
 import com.league.sportsleague.domain.ai.MatchEventSummary;
+import com.league.sportsleague.domain.ai.TeamTableEffect;
+import com.league.sportsleague.domain.StandingsCalculator;
+import com.league.sportsleague.domain.StandingsEntry;
+import com.league.sportsleague.domain.model.Team;
 import com.league.sportsleague.domain.exception.EntityNotFoundException;
 import com.league.sportsleague.domain.model.Fixture;
 import com.league.sportsleague.domain.model.MatchChronicle;
@@ -49,7 +53,51 @@ public class ChronicleStore {
                 fixture.getHomeScore() != null ? fixture.getHomeScore() : 0,
                 fixture.getAwayScore() != null ? fixture.getAwayScore() : 0,
                 events,
-                language);
+                language,
+                tableEffects(fixture),
+                List.of());
+    }
+
+    /**
+     * What the match did to the season table for each of its teams: the table computed without this match
+     * against the table with it (the standings are always derived, so "before" is just "without"). Empty when
+     * the match is not finished, because an unfinished match is not in the table.
+     */
+    private List<TeamTableEffect> tableEffects(Fixture fixture) {
+        UUID seasonId = fixture.getRound().getSeason().getId();
+        List<Fixture> finished = fixtureRepository.findFinishedBySeasonWithTeams(seasonId);
+        if (finished.stream().noneMatch(f -> f.getId().equals(fixture.getId()))) {
+            return List.of();
+        }
+        List<StandingsEntry> after = StandingsCalculator.calculate(finished);
+        List<StandingsEntry> before = StandingsCalculator.calculate(
+                finished.stream().filter(f -> !f.getId().equals(fixture.getId())).toList());
+        return List.of(effectOf(fixture.getHomeTeam(), before, after), effectOf(fixture.getAwayTeam(), before, after));
+    }
+
+    private static TeamTableEffect effectOf(Team team, List<StandingsEntry> before, List<StandingsEntry> after) {
+        int posAfter = positionOf(team, after);
+        int posBefore = positionOf(team, before);
+        return new TeamTableEffect(
+                team.getName(),
+                posBefore == 0 ? null : posBefore,
+                posAfter,
+                pointsOf(team, before),
+                pointsOf(team, after));
+    }
+
+    /** 1-based position of the team in the table, 0 when it is not in it. */
+    private static int positionOf(Team team, List<StandingsEntry> table) {
+        for (int i = 0; i < table.size(); i++) {
+            if (table.get(i).teamId().equals(team.getId())) {
+                return i + 1;
+            }
+        }
+        return 0;
+    }
+
+    private static int pointsOf(Team team, List<StandingsEntry> table) {
+        return table.stream().filter(e -> e.teamId().equals(team.getId())).mapToInt(StandingsEntry::points).findFirst().orElse(0);
     }
 
     /** The stored chronicle of the fixture in {@code language}, if any. */
