@@ -34,6 +34,14 @@ public class RestExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(com.league.sportsleague.domain.exception.AiQuotaExceededException.class)
+    ProblemDetail handleAiQuota(com.league.sportsleague.domain.exception.AiQuotaExceededException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
+        problem.setType(URI.create("urn:sports-league:error:ai-quota"));
+        problem.setTitle("AI Quota Exceeded");
+        return problem;
+    }
+
     @ExceptionHandler(com.league.sportsleague.domain.exception.ChronicleUnavailableException.class)
     ProblemDetail handleChronicleUnavailable(com.league.sportsleague.domain.exception.ChronicleUnavailableException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());

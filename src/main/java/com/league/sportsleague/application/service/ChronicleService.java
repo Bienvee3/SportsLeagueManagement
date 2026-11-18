@@ -19,10 +19,12 @@ public class ChronicleService {
 
     private final ChronicleStore store;
     private final ChroniclePort chroniclePort;
+    private final AiCallLimiter limiter;
 
-    public ChronicleService(ChronicleStore store, ChroniclePort chroniclePort) {
+    public ChronicleService(ChronicleStore store, ChroniclePort chroniclePort, AiCallLimiter limiter) {
         this.store = store;
         this.chroniclePort = chroniclePort;
+        this.limiter = limiter;
     }
 
     /**
@@ -34,6 +36,7 @@ public class ChronicleService {
     public ChronicleResult generateChronicle(UUID fixtureId, Language language) {
         Language lang = orDefault(language);
         ChronicleRequest request = store.buildRequest(fixtureId, lang);   // transaction 1 (read)
+        limiter.acquire();                                                // cost guard, before any paid call
         ChronicleResult result = chroniclePort.generate(request);         // no transaction
         store.replace(fixtureId, lang, result.text());                    // transaction 2 (write)
         return result;
@@ -62,6 +65,7 @@ public class ChronicleService {
         if (source.isEmpty()) {
             return Optional.empty();
         }
+        limiter.acquire();                                                          // cost guard
         ChronicleResult translated = chroniclePort.translate(source.get(), lang);   // no transaction
         boolean stored = store.saveTranslation(fixtureId, source.get(), translated);
         return stored ? Optional.of(translated) : Optional.empty();

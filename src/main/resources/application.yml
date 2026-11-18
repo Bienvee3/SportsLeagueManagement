@@ -57,6 +57,7 @@ app:
   ai:
     timeout-ms: 30000           # per attempt
     max-attempts: 2             # total attempts including the first
+    max-calls-per-hour: 30      # cost guard on the shared API key (all users together); 0 disables it
 
 ---
 spring:

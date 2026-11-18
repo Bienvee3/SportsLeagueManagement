@@ -99,6 +99,18 @@ class ChronicleRestControllerTest {
                 .andExpect(jsonPath("$.title").value("AI Provider Unavailable"));
     }
 
+    @Test
+    @WithMockUser(roles = "OFFICIAL")
+    @DisplayName("a used-up AI quota is reported as 429 ProblemDetail")
+    void aiQuotaIs429() throws Exception {
+        when(chronicleService.generateChronicle(any(), any()))
+                .thenThrow(new com.league.sportsleague.domain.exception.AiQuotaExceededException(30, java.time.Duration.ofHours(1)));
+
+        mockMvc.perform(post("/api/fixtures/{id}/chronicle", FIXTURE_ID).with(csrf()))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.title").value("AI Quota Exceeded"));
+    }
+
     // ── GET: stored chronicle, read-only for every role ───────────────────────
 
     @Test

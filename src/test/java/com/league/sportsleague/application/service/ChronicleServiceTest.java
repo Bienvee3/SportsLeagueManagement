@@ -6,6 +6,8 @@ import com.league.sportsleague.domain.ai.ChronicleResult;
 import com.league.sportsleague.domain.ai.Language;
 import com.league.sportsleague.domain.exception.ChronicleUnavailableException;
 import com.league.sportsleague.domain.exception.EntityNotFoundException;
+import com.league.sportsleague.domain.exception.AiQuotaExceededException;
+import static org.mockito.Mockito.doThrow;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,11 +43,66 @@ class ChronicleServiceTest {
 
     @Mock ChronicleStore store;
     @Mock ChroniclePort chroniclePort;
+    @Mock AiCallLimiter limiter;
 
     @InjectMocks ChronicleService chronicleService;
 
     private static ChronicleRequest request(Language language) {
         return new ChronicleRequest("Dinamo Zagreb", "Hajduk Split", 2, 1, List.of(), language);
+    }
+
+    // ── quota ─────────────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("generate takes one quota slot before the provider call")
+    void generateAcquiresQuotaFirst() {
+        ChronicleRequest req = request(Language.ENGLISH);
+        when(store.buildRequest(FIXTURE_ID, Language.ENGLISH)).thenReturn(req);
+        when(chroniclePort.generate(req)).thenReturn(new ChronicleResult("Report.", Language.ENGLISH));
+
+        chronicleService.generateChronicle(FIXTURE_ID, Language.ENGLISH);
+
+        InOrder order = inOrder(limiter, chroniclePort);
+        order.verify(limiter).acquire();
+        order.verify(chroniclePort).generate(req);
+    }
+
+    @Test
+    @DisplayName("with the quota used up generate never calls the provider and stores nothing")
+    void generateStopsWhenQuotaIsUsedUp() {
+        when(store.buildRequest(FIXTURE_ID, Language.ENGLISH)).thenReturn(request(Language.ENGLISH));
+        doThrow(new AiQuotaExceededException(30, java.time.Duration.ofHours(1))).when(limiter).acquire();
+
+        assertThrows(AiQuotaExceededException.class,
+                () -> chronicleService.generateChronicle(FIXTURE_ID, Language.ENGLISH));
+
+        verifyNoInteractions(chroniclePort);
+        verify(store, never()).replace(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("translate spends quota only when it really calls the provider")
+    void translateSpendsQuotaOnlyForProviderCalls() {
+        when(store.findStored(FIXTURE_ID, Language.CROATIAN))
+                .thenReturn(Optional.of(new ChronicleResult("Izvještaj.", Language.CROATIAN)));
+
+        chronicleService.translateChronicle(FIXTURE_ID, Language.CROATIAN);
+
+        verifyNoInteractions(limiter);
+    }
+
+    @Test
+    @DisplayName("with the quota used up translate never calls the provider")
+    void translateStopsWhenQuotaIsUsedUp() {
+        ChronicleResult source = new ChronicleResult("English report.", Language.ENGLISH);
+        when(store.findStored(FIXTURE_ID, Language.CROATIAN)).thenReturn(Optional.empty());
+        when(store.findAnyStored(FIXTURE_ID)).thenReturn(Optional.of(source));
+        doThrow(new AiQuotaExceededException(30, java.time.Duration.ofHours(1))).when(limiter).acquire();
+
+        assertThrows(AiQuotaExceededException.class,
+                () -> chronicleService.translateChronicle(FIXTURE_ID, Language.CROATIAN));
+
+        verifyNoInteractions(chroniclePort);
     }
 
     // ── generate ──────────────────────────────────────────────────────────────
