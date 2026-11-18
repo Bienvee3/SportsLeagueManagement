@@ -8,6 +8,16 @@ Algebra Bernays University — Academic Year 2026/2027
 
 ---
 
+## 🌐 Live deployment
+
+**https://sportsleaguemanagement.onrender.com** — hosted on Render (Docker, free plan) with a managed PostgreSQL database on Neon.
+
+* **Cold start:** the free Render instance sleeps after about 15 minutes without traffic; the first request afterwards can take a minute or more while the JVM starts. The Neon database also suspends when idle, so the first query after a pause is slower.
+* **Health check:** `GET /actuator/health` (public, status only). REST API docs: `/swagger-ui`.
+* **Deploying:** `render.yaml` describes the service (a Render Blueprint); every commit to `main` redeploys. Secrets (database credentials, user passwords, `GEMINI_API_KEY`) live only in the Render dashboard.
+* **AI cost guard:** at most `app.ai.max-calls-per-hour` (30) paid AI calls per hour for the whole application; beyond that the chronicle endpoints answer `429`.
+* **Demo accounts:** one per role (`ADMIN`, `OFFICIAL`, `VIEWER`); credentials are handed to the examiner with the submission and are not stored in the repository.
+
 ## 📌 Project Overview
 
 A robust multi-tier web application designed to manage sports leagues, schedules, match events, dynamic standings, and historical result corrections with full audit logging and AI-assisted match report generation.
