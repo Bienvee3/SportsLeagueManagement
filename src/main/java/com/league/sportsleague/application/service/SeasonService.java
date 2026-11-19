@@ -1,5 +1,6 @@
 package com.league.sportsleague.application.service;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.league.sportsleague.application.dto.CreateSeasonRequest;
 import com.league.sportsleague.application.dto.PlayerStatsResponse;
 import com.league.sportsleague.application.dto.SeasonResponse;
@@ -47,6 +48,7 @@ public class SeasonService {
 
     // ── Commands ──────────────────────────────────────────────────────────────
 
+    @PreAuthorize("hasRole('ADMIN')")
     public UUID createSeason(UUID leagueId, CreateSeasonRequest request) {
         League league = leagueRepository.findById(leagueId)
                 .orElseThrow(() -> new EntityNotFoundException("League", leagueId));
@@ -55,23 +57,27 @@ public class SeasonService {
         return season.getId();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void activateSeason(UUID id) {
         Season season = requireSeason(id);
         season.activate();
         seasonRepository.save(season);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void completeSeason(UUID id) {
         Season season = requireSeason(id);
         season.complete();
         seasonRepository.save(season);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteSeason(UUID id) {
         Season season = requireSeason(id);
         seasonRepository.delete(season);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void registerTeam(UUID seasonId, UUID teamId, int initialSeed) {
         Season season = requireSeason(seasonId);
         Team team = teamRepository.findById(teamId)
@@ -95,6 +101,7 @@ public class SeasonService {
         seasonRepository.save(season);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void withdrawTeam(UUID seasonId, UUID teamId) {
         Season season = requireSeason(seasonId);
         SeasonTeam seasonTeam = season.getSeasonTeams().stream()
@@ -105,6 +112,7 @@ public class SeasonService {
         seasonRepository.save(season);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void completeRound(UUID roundId) {
         Round round = roundRepository.findById(roundId)
                 .orElseThrow(() -> new EntityNotFoundException("Round", roundId));
@@ -112,6 +120,7 @@ public class SeasonService {
         roundRepository.save(round);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void generateSchedule(UUID seasonId, Instant firstMatchTime) {
         Season season = requireSeason(seasonId);
         if (!season.getRounds().isEmpty()) {
@@ -134,6 +143,7 @@ public class SeasonService {
     }
 
     /** Adds the next numbered round (empty); numbering is automatic, matches are then added one by one. */
+    @PreAuthorize("hasRole('ADMIN')")
     public UUID createRound(UUID seasonId, LocalDate startDate) {
         Season season = requireSeason(seasonId);
         requireOpen(season);
@@ -145,6 +155,7 @@ public class SeasonService {
     }
 
     /** Adds one match to a round; both teams must be CONFIRMED in the season and free in that round. */
+    @PreAuthorize("hasRole('ADMIN')")
     public void addFixture(UUID seasonId, UUID roundId, UUID homeTeamId, UUID awayTeamId, Instant scheduledTime) {
         Season season = requireSeason(seasonId);
         requireOpen(season);
@@ -173,6 +184,7 @@ public class SeasonService {
     }
 
     /** Removes a match that has not been played; FINISHED matches carry results and cannot be deleted. */
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteFixture(UUID seasonId, UUID roundId, UUID fixtureId) {
         Season season = requireSeason(seasonId);
         Round round = requireRound(season, roundId);
@@ -188,6 +200,7 @@ public class SeasonService {
     }
 
     /** Removes a round with its unplayed matches; refused if any match in it is FINISHED. */
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteRound(UUID seasonId, UUID roundId) {
         Season season = requireSeason(seasonId);
         Round round = requireRound(season, roundId);

@@ -1,5 +1,6 @@
 package com.league.sportsleague.application.service;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import java.util.Set;
 import org.springframework.data.domain.Pageable;
 import com.league.sportsleague.application.dto.PageResponse;
@@ -30,6 +31,7 @@ public class TeamService {
 
     // ── Commands ──────────────────────────────────────────────────────────────
 
+    @PreAuthorize("hasRole('ADMIN')")
     public UUID createTeam(CreateTeamRequest request) {
         Team team = new Team(
                 request.name(),
@@ -43,6 +45,7 @@ public class TeamService {
         return team.getId();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void updateProfile(UUID id, String name, String stadiumName, String city, Integer foundedYear) {
         Team team = teamRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Team", id));
@@ -50,12 +53,14 @@ public class TeamService {
         teamRepository.save(team);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteTeam(UUID id) {
         Team team = teamRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Team", id));
         teamRepository.delete(team);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public UUID addPlayer(UUID teamId, PlayerRequest request) {
         Team team = requireTeam(teamId);
         Player player = team.addPlayer(request.name(), request.shirtNumber(), request.position());
@@ -74,6 +79,7 @@ public class TeamService {
      * @return the number of players added
      * @throws IllegalArgumentException naming the offending line
      */
+    @PreAuthorize("hasRole('ADMIN')")
     public int addPlayersFromText(UUID teamId, String text) {
         Team team = requireTeam(teamId);
         String[] lines = text == null ? new String[0] : text.split("\\R");
@@ -102,6 +108,7 @@ public class TeamService {
         return added;
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void updatePlayer(UUID teamId, UUID playerId, PlayerRequest request) {
         Team team = requireTeam(teamId);
         team.updatePlayer(requireActivePlayer(team, playerId),
@@ -110,6 +117,7 @@ public class TeamService {
     }
 
     /** Removes the player from the squad; the row is kept (deactivated) for match history. */
+    @PreAuthorize("hasRole('ADMIN')")
     public void removePlayer(UUID teamId, UUID playerId) {
         Team team = requireTeam(teamId);
         team.removePlayer(requireActivePlayer(team, playerId));

@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Run explicitly with: {@code mvnw verify -Pintegration} (Docker must be running).
  */
 @Tag("integration")
+@org.springframework.security.test.context.support.WithMockUser(roles = "ADMIN")
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 // The test application.yml (H2) forces the H2 dialect; on a PostgreSQL container Hibernate must use its own.

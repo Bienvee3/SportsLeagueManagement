@@ -1,5 +1,6 @@
 package com.league.sportsleague.application.service;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.league.sportsleague.domain.ai.ChroniclePort;
 import com.league.sportsleague.domain.ai.ChronicleRequest;
 import com.league.sportsleague.domain.ai.ChronicleResult;
@@ -49,6 +50,7 @@ public class ChronicleService {
      * @param language output language (defaults to ENGLISH if null)
      * @throws ChronicleUnavailableException when the provider fails or no answer passed verification
      */
+    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
     public ChronicleResult generateChronicle(UUID fixtureId, Language language) {
         Language lang = orDefault(language);
         ChronicleRequest base = store.buildRequest(fixtureId, lang);          // transaction 1 (read)
@@ -81,6 +83,7 @@ public class ChronicleService {
      * language — a verified translation of that text (stored for next time). Empty when no chronicle
      * has been generated yet; never invents a new story.
      */
+    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
     public Optional<ChronicleResult> translateChronicle(UUID fixtureId, Language language) {
         Language lang = orDefault(language);
         Optional<ChronicleResult> existing = store.findStored(fixtureId, lang);

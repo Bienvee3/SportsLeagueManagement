@@ -1,5 +1,6 @@
 package com.league.sportsleague.application.service;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import java.util.Set;
 import org.springframework.data.domain.Pageable;
 import com.league.sportsleague.application.dto.PageResponse;
@@ -29,6 +30,7 @@ public class LeagueService {
 
     // ── Commands ──────────────────────────────────────────────────────────────
 
+    @PreAuthorize("hasRole('ADMIN')")
     public UUID createLeague(CreateLeagueRequest request) {
         League league = new League(
                 request.name(),
@@ -40,6 +42,7 @@ public class LeagueService {
         return league.getId();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void rename(UUID id, UpdateLeagueRequest request) {
         League league = leagueRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("League", id));
@@ -47,6 +50,7 @@ public class LeagueService {
         leagueRepository.save(league);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void delete(UUID id) {
         League league = leagueRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("League", id));

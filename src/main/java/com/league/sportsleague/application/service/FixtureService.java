@@ -1,5 +1,6 @@
 package com.league.sportsleague.application.service;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.league.sportsleague.application.dto.CorrectResultRequest;
 import com.league.sportsleague.application.dto.FixtureResponse;
 import com.league.sportsleague.application.dto.MatchSheetResponse;
@@ -52,6 +53,7 @@ public class FixtureService {
 
     // ── Commands ──────────────────────────────────────────────────────────────
 
+    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
     public void recordResult(UUID fixtureId, RecordResultRequest request) {
         Fixture fixture = requireFixture(fixtureId);
         fixture.recordResult(new Score(request.homeScore(), request.awayScore()));
@@ -59,6 +61,7 @@ public class FixtureService {
         chronicleRepository.deleteByFixtureId(fixtureId);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
     public void correctResult(UUID fixtureId, CorrectResultRequest request, String correctedBy) {
         Fixture fixture = requireFixture(fixtureId);
         fixture.correctResult(
@@ -76,6 +79,7 @@ public class FixtureService {
      *
      * @throws IllegalStateException if a filed lineup still names a suspended player
      */
+    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
     public void kickOff(UUID fixtureId) {
         Fixture fixture = requireFixture(fixtureId);
         List<Fixture> seasonFixtures = seasonFixtures(fixture);
@@ -94,6 +98,7 @@ public class FixtureService {
     }
 
     /** Final whistle: IN_PROGRESS → FINISHED with the score reached through the goal events. */
+    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
     public void finish(UUID fixtureId) {
         Fixture fixture = requireFixture(fixtureId);
         fixture.finish();
@@ -101,18 +106,21 @@ public class FixtureService {
         chronicleRepository.deleteByFixtureId(fixtureId);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
     public void postponeFixture(UUID fixtureId, String reason) {
         Fixture fixture = requireFixture(fixtureId);
         fixture.postpone(reason);
         fixtureRepository.save(fixture);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
     public void cancelFixture(UUID fixtureId) {
         Fixture fixture = requireFixture(fixtureId);
         fixture.cancel();
         fixtureRepository.save(fixture);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
     public void rescheduleFixture(UUID fixtureId, Instant newTime) {
         Fixture fixture = requireFixture(fixtureId);
         fixture.reschedule(newTime);
@@ -124,6 +132,7 @@ public class FixtureService {
      * {@code relatedPlayerId} to the assist provider or the player coming on); otherwise the free-text
      * {@code playerName} is used, which is only accepted while the team has no lineup in this fixture.
      */
+    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
     public UUID recordMatchEvent(UUID fixtureId, RecordMatchEventRequest request) {
         Fixture fixture = requireFixture(fixtureId);
         Team team = teamRepository.findById(request.teamId())
@@ -149,6 +158,7 @@ public class FixtureService {
     }
 
     /** Removes an event recorded by mistake; stored AI chronicles described it, so they are discarded. */
+    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
     public void deleteMatchEvent(UUID fixtureId, UUID eventId) {
         Fixture fixture = requireFixture(fixtureId);
         MatchEvent event = fixture.getEvents().stream()
@@ -165,6 +175,7 @@ public class FixtureService {
      *
      * @throws IllegalArgumentException if a selected player is suspended for this fixture
      */
+    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
     public void submitLineup(UUID fixtureId, UUID teamId, SubmitLineupRequest request) {
         Fixture fixture = requireFixture(fixtureId);
         Team team = requireFixtureTeam(fixture, teamId);
@@ -183,6 +194,7 @@ public class FixtureService {
     }
 
     /** Withdraws the lineup of one of the two teams; only possible before kick-off. */
+    @PreAuthorize("hasAnyRole('ADMIN','OFFICIAL')")
     public void clearLineup(UUID fixtureId, UUID teamId) {
         Fixture fixture = requireFixture(fixtureId);
         fixture.clearLineup(requireFixtureTeam(fixture, teamId));
