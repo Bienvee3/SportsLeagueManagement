@@ -269,4 +269,29 @@ class TeamServiceTest {
         when(teamRepository.findById(sampleTeam.getId())).thenReturn(Optional.of(sampleTeam));
         assertThrows(IllegalArgumentException.class, () -> teamService.addPlayersFromText(sampleTeam.getId(), "  \n "));
     }
+
+    @Test
+    @DisplayName("findPage maps one page and passes the validated page, size and sort to the repository")
+    void findPageMapsAndSorts() {
+        org.mockito.ArgumentCaptor<org.springframework.data.domain.Pageable> captor =
+                org.mockito.ArgumentCaptor.forClass(org.springframework.data.domain.Pageable.class);
+        when(teamRepository.findAll(captor.capture())).thenReturn(
+                new org.springframework.data.domain.PageImpl<>(List.of(sampleTeam), org.springframework.data.domain.PageRequest.of(1, 5), 6));
+
+        var page = teamService.findPage(1, 5, "name,desc");
+
+        assertEquals(1, page.content().size());
+        assertEquals(6, page.totalElements());
+        assertEquals(2, page.totalPages());
+        assertEquals(1, captor.getValue().getPageNumber());
+        assertEquals(5, captor.getValue().getPageSize());
+        assertEquals("name: DESC", captor.getValue().getSort().toString());
+    }
+
+    @Test
+    @DisplayName("findPage rejects an unknown sort field before touching the repository")
+    void findPageRejectsUnknownSort() {
+        assertThrows(IllegalArgumentException.class, () -> teamService.findPage(0, 10, "id"));
+        verifyNoInteractions(teamRepository);
+    }
 }

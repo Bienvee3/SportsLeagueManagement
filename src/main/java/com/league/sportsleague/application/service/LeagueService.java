@@ -1,5 +1,9 @@
 package com.league.sportsleague.application.service;
 
+import java.util.Set;
+import org.springframework.data.domain.Pageable;
+import com.league.sportsleague.application.dto.PageResponse;
+import com.league.sportsleague.application.dto.PageQuery;
 import com.league.sportsleague.application.dto.CreateLeagueRequest;
 import com.league.sportsleague.application.dto.LeagueResponse;
 import com.league.sportsleague.application.dto.UpdateLeagueRequest;
@@ -63,6 +67,15 @@ public class LeagueService {
         return leagueRepository.findBySlug(new Slug(slug))
                 .map(LeagueResponse::from)
                 .orElseThrow(() -> new EntityNotFoundException("League", slug));
+    }
+
+    private static final Set<String> SORT_FIELDS = Set.of("name", "country", "sportType");
+
+    /** One page of leagues. Sort field is whitelisted ({@link PageQuery}); invalid input throws IllegalArgumentException. */
+    @Transactional(readOnly = true)
+    public PageResponse<LeagueResponse> findPage(Integer page, Integer size, String sort) {
+        Pageable pageable = PageQuery.of(page, size, sort, SORT_FIELDS, "name");
+        return PageResponse.of(leagueRepository.findAll(pageable), LeagueResponse::from);
     }
 
     @Transactional(readOnly = true)

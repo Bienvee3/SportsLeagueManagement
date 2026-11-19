@@ -1,5 +1,7 @@
 package com.league.sportsleague.web.api;
 
+import org.springframework.web.bind.annotation.RequestParam;
+import com.league.sportsleague.application.dto.PageResponse;
 import com.league.sportsleague.application.dto.CreateLeagueRequest;
 import com.league.sportsleague.application.dto.LeagueResponse;
 import com.league.sportsleague.application.dto.UpdateLeagueRequest;
@@ -35,9 +37,11 @@ public class LeagueRestController {
     }
 
     @GetMapping
-    @Operation(summary = "List all leagues")
-    public List<LeagueResponse> listAll() {
-        return leagueService.findAll();
+    @Operation(summary = "List leagues, paged: page (from 0), size (1-100, default 20), sort=field[,asc|desc]")
+    public PageResponse<LeagueResponse> listAll(@RequestParam(required = false) Integer page,
+                                          @RequestParam(required = false) Integer size,
+                                          @RequestParam(required = false) String sort) {
+        return leagueService.findPage(page, size, sort);
     }
 
     @GetMapping("/{id}")

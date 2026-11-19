@@ -1,5 +1,7 @@
 package com.league.sportsleague.domain.repository;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
 import com.league.sportsleague.domain.model.League;
 import com.league.sportsleague.domain.valueobject.Slug;
 
@@ -15,6 +17,7 @@ public interface LeagueRepository {
     Optional<League> findById(UUID id);
     Optional<League> findBySlug(Slug slug);
     List<League> findAll();
+    Page<League> findAll(Pageable pageable);
     League save(League league);
     void delete(League league);
 }

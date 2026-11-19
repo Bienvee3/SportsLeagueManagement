@@ -1,5 +1,6 @@
 package com.league.sportsleague.web.api;
 
+import com.league.sportsleague.application.dto.PageResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.league.sportsleague.application.dto.CreateTeamRequest;
 import com.league.sportsleague.application.dto.PlayerRequest;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -48,10 +50,24 @@ class TeamRestControllerTest {
     @WithMockUser(roles = "VIEWER")
     @DisplayName("GET /api/teams returns 200 with list")
     void listAll() throws Exception {
-        when(teamService.findAll()).thenReturn(List.of(sample()));
-        mockMvc.perform(get("/api/teams"))
+        when(teamService.findPage(1, 5, "city,desc"))
+                .thenReturn(new PageResponse<>(List.of(sample()), 1, 5, 11, 3));
+        mockMvc.perform(get("/api/teams").param("page", "1").param("size", "5").param("sort", "city,desc"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("Dinamo Zagreb"));
+                .andExpect(jsonPath("$.content[0].name").value("Dinamo Zagreb"))
+                .andExpect(jsonPath("$.totalElements").value(11))
+                .andExpect(jsonPath("$.totalPages").value(3));
+    }
+
+    @Test
+    @WithMockUser(roles = "VIEWER")
+    @DisplayName("GET /api/teams with an invalid sort field answers 400 ProblemDetail")
+    void listAllRejectsBadSort() throws Exception {
+        when(teamService.findPage(any(), any(), eq("password")))
+                .thenThrow(new IllegalArgumentException("Cannot sort by 'password'"));
+        mockMvc.perform(get("/api/teams").param("sort", "password"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Bad Request"));
     }
 
     @Test

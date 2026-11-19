@@ -1,5 +1,6 @@
 package com.league.sportsleague.web.api;
 
+import com.league.sportsleague.application.dto.PageResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.league.sportsleague.application.dto.CreateLeagueRequest;
 import com.league.sportsleague.application.dto.LeagueResponse;
@@ -52,10 +53,12 @@ class LeagueRestControllerTest {
     @WithMockUser(roles = "VIEWER")
     @DisplayName("GET /api/leagues returns 200 with list")
     void listAll() throws Exception {
-        when(leagueService.findAll()).thenReturn(List.of(sampleResponse()));
+        when(leagueService.findPage(null, null, null))
+                .thenReturn(new PageResponse<>(List.of(sampleResponse()), 0, 20, 1, 1));
         mockMvc.perform(get("/api/leagues"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("SuperSport HNL"));
+                .andExpect(jsonPath("$.content[0].name").value("SuperSport HNL"))
+                .andExpect(jsonPath("$.size").value(20));
     }
 
     @Test
