@@ -29,12 +29,12 @@ $$\text{League} \longrightarrow \text{Season} \longrightarrow \text{Round} \long
 ### Advanced Requirements
 
 1. **Round-Robin Fixture Generation**: Home/away balance algorithm with no team playing twice in the same round.
-2. **Dynamic Standings with Tie-Breaks**: Configurable tie-break criteria applied in strict order:
+2. **Dynamic Standings with Tie-Breaks**: the table is always derived from the finished fixtures (never stored) and ordered by a fixed cascade (`StandingsCalculator`):
    - Total Points
-   - Head-to-Head Points
-   - Head-to-Head Goal Difference
    - Overall Goal Difference
    - Goals Scored
+   - Head-to-Head Points (between the two teams compared)
+   - Head-to-Head Goal Difference (between the two teams compared)
 3. **Audited Result Corrections**: Retroactive score correction recalculating affected standings with an immutable audit trail (`ResultAudit`).
 4. **AI Match Reports**: Bilingual (English & Croatian) fact-strict match chronicles generated via Ports & Adapters architecture.
 
@@ -47,7 +47,7 @@ $$\text{League} \longrightarrow \text{Season} \longrightarrow \text{Round} \long
 * **Persistence & ORM**: Spring Data JPA over Hibernate 7
 * **Database**: PostgreSQL 17 (managed locally with Docker Compose)
 * **Migrations**: Flyway (`validate` mode in production)
-* **Connection Pool**: HikariCP (deliberately tuned)
+* **Connection Pool**: HikariCP, sized per environment: 5 connections in production (a free managed PostgreSQL allows few connections; 5 serve the web threads and the 2 Quartz workers without exhausting it), `connection-timeout` 20 s so a saturated pool fails fast instead of hanging requests, `max-lifetime` 20 min so connections are recycled before an idle cut-off by the platform, `open-in-view: false` so a connection is held only inside a service transaction (the AI call runs between two short transactions for the same reason)
 * **Security**: Spring Security 7 (Form Login, CSRF, BCrypt, 3 distinct roles: `ADMIN`, `OFFICIAL`, `VIEWER`)
 * **Frontend**: Thymeleaf with layout dialect, Bean Validation, POST-Redirect-GET, and i18n
 * **API Documentation**: OpenAPI 3.x with SpringDoc
